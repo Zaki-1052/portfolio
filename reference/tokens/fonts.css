@@ -1,0 +1,32 @@
+/* ============================================================
+   @font-face declarations
+   Self-hosted variable fonts for the warm-to-cool type descent.
+   - Lora      → serif, warm headings (tissue, cellular)
+   - Fira Code → mono, terminal headings (code, expression)
+   - Inter     → sans body everywhere + mid-scale headings
+                 (loaded from Google Fonts; see note below)
+   ============================================================ */
+
+/* Lora — variable weight 400–700. Brushed, calligraphic serif. */
+@font-face {
+  font-family: "Lora";
+  src: url("../assets/fonts/Lora-VariableFont_wght.ttf") format("truetype-variations");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Fira Code — variable weight 300–700. Editor font with ligatures. */
+@font-face {
+  font-family: "Fira Code";
+  src: url("../assets/fonts/FiraCode-VariableFont_wght.ttf") format("truetype-variations");
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Inter — body sans on every scale.
+   NOTE: no Inter binary was provided, so it loads from Google Fonts.
+   Swap this @import for a self-hosted woff2 set before production
+   (the SPEC calls for self-hosted, subset fonts under 300 KB total). */
+@import url("https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap");

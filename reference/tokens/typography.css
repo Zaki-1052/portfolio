@@ -1,0 +1,63 @@
+/* ============================================================
+   TYPOGRAPHY — three families, scale-boundary switching.
+   Serif (Lora) warm/top → Sans (Inter) middle → Mono (Fira Code)
+   cool/bottom. Body is always Inter. Type is generous and airy
+   at the top, tighter and denser at the bottom.
+   Modular scale ≈ 1.25. Line length capped 65–75ch for prose.
+   ============================================================ */
+
+:root {
+  /* ---- Families ---- */
+  --font-serif: "Lora", Georgia, "Times New Roman", serif;
+  --font-sans:  "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono:  "Fira Code", "SF Mono", "JetBrains Mono", ui-monospace, monospace;
+
+  /* Active heading font — overridden per scale. Body never changes. */
+  --font-heading: var(--font-sans);
+  --font-body:    var(--font-sans);
+
+  /* ---- Modular type scale (1.25) ---- */
+  --text-2xs:  0.6875rem;  /* 11px — depth indicator, micro-labels */
+  --text-xs:   0.78rem;    /* 12.5px — tags, captions             */
+  --text-sm:   0.875rem;   /* 14px — UI, fine print               */
+  --text-base: 1rem;       /* 16px — body                         */
+  --text-md:   1.125rem;   /* 18px — lead body                    */
+  --text-lg:   1.4rem;     /* 22.4px — h4                         */
+  --text-xl:   1.75rem;    /* 28px — h3                           */
+  --text-2xl:  2.1875rem;  /* 35px — h2                           */
+  --text-3xl:  2.75rem;    /* 44px — h1 / section title           */
+  --text-4xl:  3.85rem;    /* 61.6px — hero display               */
+  --text-5xl:  5rem;       /* 80px — arrival display              */
+
+  /* ---- Line heights ---- */
+  --leading-tight:   1.1;
+  --leading-snug:    1.28;
+  --leading-normal:  1.55;
+  --leading-relaxed: 1.72;  /* airy prose at tissue scale         */
+
+  /* ---- Tracking ---- */
+  --tracking-tight:  -0.02em;
+  --tracking-snug:   -0.01em;
+  --tracking-normal: 0;
+  --tracking-wide:   0.04em;
+  --tracking-caps:   0.14em;  /* micro all-caps labels            */
+
+  /* ---- Weights ---- */
+  --weight-regular:  400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+
+  /* ---- Prose measure ---- */
+  --measure: 68ch;        /* ~68 chars; sits inside the 65–75 cap */
+  --measure-wide: 100ch;  /* terminal listings / project cards    */
+}
+
+/* Heading font shifts with the descent. Serif at top two scales,
+   Inter through the middle, Fira Code at the bottom two. */
+[data-scale="tissue"],
+[data-scale="cellular"]   { --font-heading: var(--font-serif); }
+[data-scale="chromatin"],
+[data-scale="protein"]    { --font-heading: var(--font-sans); }
+[data-scale="code"],
+[data-scale="expression"] { --font-heading: var(--font-mono); }

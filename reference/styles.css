@@ -1,0 +1,10 @@
+/* ============================================================
+   Biological Scale Descent — design system entry point.
+   Consumers link THIS file. It is @import lines only.
+   ============================================================ */
+
+@import "tokens/fonts.css";
+@import "tokens/colors.css";
+@import "tokens/typography.css";
+@import "tokens/spacing.css";
+@import "tokens/base.css";

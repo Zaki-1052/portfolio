@@ -1,0 +1,22 @@
+<!-- @dsCard group="Type" viewport="700x200" name="Heading font shifts per scale" subtitle="Serif → sans → mono, switched at scale boundaries" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; background: var(--surface); padding: 18px 24px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .cell { padding: 12px 14px; border-radius: var(--radius); border: 1px solid var(--hairline-soft); }
+  .h { font-family: var(--font-heading); color: var(--text-strong); font-size: 20px; line-height: 1.1; }
+  .l { font-family: var(--font-sans); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+</style>
+</head>
+<body>
+  <div class="grid">
+    <div class="cell" data-scale="tissue"><div class="l">tissue · serif</div><div class="h">About me</div></div>
+    <div class="cell" data-scale="chromatin"><div class="l">chromatin · sans</div><div class="h">Publications</div></div>
+    <div class="cell" data-scale="code"><div class="l">code · mono</div><div class="h">~/projects</div></div>
+  </div>
+</body>
+</html>

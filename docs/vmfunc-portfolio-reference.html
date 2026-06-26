@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<!--
+  vmfunc.re Portfolio — Reconstructed Reference
+  =============================================
+  Original: https://vmfunc.re by Celeste (vmfunc)
+  Stack: Astro + 98.css (Windows 98 CSS framework)
+  
+  This is a self-contained reconstruction for reference/inspiration.
+  Stripped: backend API calls, Astro view transitions, Vercel analytics,
+  oneko.js cat, Last.fm integration, external image assets.
+  Kept: all structural patterns, tab system, taskbar, start menu,
+  boot sequence, theme switcher, desktop icons, music player skeleton.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#008080">
+  <title>vmfunc.re · lockpicking but for computers</title>
+
+  <!-- 98.css — the Windows 98 CSS framework (CDN) -->
+  <link id="theme-stylesheet" rel="stylesheet" href="https://unpkg.com/98.css">
+
+  <style>
+    /* ============================================================
+       GLOBAL / BODY
+       ============================================================ */
+    html, body { overflow-x: hidden; max-width: 100%; }
+
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      color: #222;
+      margin: 0;
+      /* tiled background — replace /str.gif with your own */
+      background: #008080;
+      background-size: fixed;
+      background-repeat: repeat;
+      padding-bottom: 30px;
+    }
+
+    /* ============================================================
+       CRT SCANLINE OVERLAY (optional theme)
+       ============================================================ */
+    html.crt::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 99990;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(0,0,0,0.13) 0, rgba(0,0,0,0.13) 1px,
+        transparent 1px, transparent 3px
+      );
+    }
+
+    /* ============================================================
+       SPLASH / BOOT SCREEN
+       ============================================================ */
+    .splash-screen {
+      position: fixed; inset: 0;
+      background: #000;
+      display: flex; /* toggled to 'none' after boot */
+      justify-content: center; align-items: center;
+      z-index: 9999;
+    }
+    .splash-content { text-align: center; }
+    .splash-content .window { max-width: 90vw; }
+
+    /* ============================================================
+       LAYOUT WRAPPERS
+       ============================================================ */
+    .wrapper {
+      display: flex; flex-direction: column;
+      width: 100%; align-items: center;
+    }
+    .contain {
+      display: flex; flex-wrap: wrap;
+      justify-content: space-around;
+    }
+    .containrow {
+      display: flex; flex-direction: column;
+      text-align: center; align-items: center;
+    }
+
+    /* ============================================================
+       CUSTOM WINDOW OVERRIDES
+       ============================================================ */
+    .window { font-size: 13px !important; position: relative; z-index: 5; }
+
+    /* ASCII banner styling */
+    .banner-wrap { display: flex; flex-direction: column; width: 100%; align-items: center; }
+    .banner-wrap pre {
+      font-family: monospace; font-size: 16px;
+      background: silver !important; box-shadow: none !important;
+      display: block !important; margin: 0 !important; padding: 12px 8px !important;
+      color: #000; text-shadow: 0 0 10px #9d04cc; position: relative;
+    }
+
+    /* monospace accent color */
+    .idk {
+      font-family: monospace; color: #6a0399;
+      text-shadow: 0 0 10px #9d04cc; position: relative;
+    }
+    #clock {
+      font-family: monospace; color: #6a0399;
+      text-shadow: 0 0 10px #9d04cc;
+    }
+
+    /* ============================================================
+       BADGE WALL (88x31 buttons)
+       ============================================================ */
+    .badge-wall {
+      display: flex !important; flex-wrap: wrap;
+      justify-content: center; align-items: center;
+      gap: 5px; padding-left: 0 !important;
+      margin: 0 !important; list-style: none;
+    }
+    .badge-link { text-decoration: none; }
+    .badge-link img { vertical-align: middle; }
+
+    /* ============================================================
+       DESKTOP ICONS (absolutely positioned on wide screens)
+       ============================================================ */
+    .desktop-icon {
+      text-decoration: none; position: absolute;
+      text-align: center; width: 55px; z-index: 1;
+    }
+    .desktop-icon p {
+      margin-top: 0 !important; color: white;
+      text-align: center; font-size: 11px;
+    }
+    .desktop-icon img {
+      image-rendering: pixelated;
+    }
+
+    /* ============================================================
+       TASKBAR
+       ============================================================ */
+    .taskbar {
+      position: fixed; bottom: 0; left: 0;
+      width: 100%; height: 28px;
+      background-color: silver;
+      border-top: 1px solid #fff;
+      display: flex; align-items: center;
+      padding: 0 2px;
+      box-shadow: inset 0 1px #dfdfdf, 0 -1px #000;
+      z-index: 9998;
+    }
+
+    /* Start button */
+    .start-button { position: relative; height: 22px; margin: 0 2px; }
+    .start-button-inner {
+      display: flex; align-items: center; gap: 4px;
+      height: 100%; padding: 0 2px 0 4px;
+      font-weight: 700; font-size: 11px;
+      background: silver;
+      box-shadow: inset 1px 1px #fff, inset -1px -1px #888;
+      cursor: pointer; border: none; min-width: auto; min-height: auto;
+    }
+    .start-button-inner:active {
+      box-shadow: inset -1px -1px #fff, inset 1px 1px #888;
+      padding: 1px 1px 0 5px;
+    }
+
+    /* Start menu */
+    .start-menu {
+      position: absolute; bottom: calc(100% + 10px); left: 0;
+      width: 210px; background-color: silver;
+      border: 1px solid #000;
+      box-shadow: 1px 1px #dfdfdf, -1px -1px #888;
+      display: none; z-index: 99999;
+    }
+    .start-menu-header {
+      height: 100%; width: 23px;
+      background: linear-gradient(to right, navy, #1084d0);
+      position: absolute; left: 0; top: 0; bottom: 0;
+    }
+    .start-menu-header-label {
+      color: #fff; font-weight: 700; font-size: 16px;
+      white-space: nowrap; writing-mode: vertical-lr;
+      transform: rotate(180deg);
+      position: absolute; bottom: 6px; left: 3px; letter-spacing: 1px;
+    }
+    .start-menu-items { padding: 3px; margin-left: 23px; }
+    .start-menu-item {
+      display: flex; align-items: center; gap: 4px;
+      padding: 4px 8px 4px 4px; font-size: 11px;
+      cursor: pointer; min-height: 20px;
+    }
+    .start-menu-item:hover { background-color: navy; color: #fff; }
+    .start-menu-item img { margin-right: 4px; width: 16px; height: 16px; }
+    .start-menu-divider {
+      height: 1px; background-color: #888; margin: 4px 0 4px 2px;
+    }
+
+    /* Taskbar sub-elements */
+    .taskbar-divider {
+      width: 1px; height: 18px; background-color: #888; margin: 0 2px;
+    }
+    .open-apps {
+      flex: 1; display: flex; align-items: center;
+      padding: 0 2px; gap: 2px; overflow-x: hidden;
+    }
+    .taskbar-app {
+      height: 22px; display: flex; align-items: center; gap: 4px;
+      padding: 0 5px; background-color: silver;
+      box-shadow: inset 1px 1px #fff, inset -1px -1px #888;
+      min-width: 120px; max-width: 200px; font-size: 11px;
+      cursor: pointer; white-space: nowrap; overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .taskbar-app.active {
+      box-shadow: inset -1px -1px #fff, inset 1px 1px #888;
+      padding: 1px 4px 0 6px;
+    }
+    .tray {
+      display: flex; align-items: center; background-color: silver;
+      box-shadow: inset 1px 1px #888, inset -1px -1px #fff;
+      height: 22px; padding: 0 5px;
+    }
+    .tray-divider {
+      width: 1px; height: 16px; background-color: #888; margin: 0 5px;
+    }
+    .taskbar-time { font-size: 11px; padding: 0 2px; }
+
+    /* Music controls in tray */
+    .music-controls {
+      display: flex; align-items: center; gap: 2px;
+      padding: 0 2px; margin-right: 5px;
+    }
+    .music-controls button {
+      width: 24px; height: 22px; display: flex;
+      justify-content: center; align-items: center;
+      background-color: silver;
+      box-shadow: inset 1px 1px #fff, inset -1px -1px #888;
+      cursor: pointer; padding: 0; border: none;
+      min-width: auto; min-height: auto;
+    }
+    .music-controls button:active {
+      box-shadow: inset -1px -1px #fff, inset 1px 1px #888;
+    }
+    .now-playing-text {
+      font-size: 11px; margin-right: 4px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      max-width: 150px; padding: 0 5px;
+      border: 1px inset #888; background-color: #fff;
+      color: navy; height: 16px; line-height: 16px;
+    }
+
+    /* ============================================================
+       DISPLAY PROPERTIES DIALOG (theme switcher)
+       ============================================================ */
+    #display-props {
+      position: fixed; top: 70px; left: 50%;
+      transform: translateX(-50%);
+      width: 300px; max-width: 92vw;
+      z-index: 99997; display: none;
+    }
+
+    /* ============================================================
+       START MENU BADGE
+       ============================================================ */
+    .start-menu-item-badge {
+      font-size: 8px; background-color: #3f3; color: #000;
+      padding: 0 3px; border-radius: 2px; margin-left: 5px;
+    }
+
+    /* ============================================================
+       MOBILE RESPONSIVE
+       ============================================================ */
+    @media screen and (max-width: 1100px) {
+      .contain { display: contents; }
+      .window {
+        width: auto !important; max-width: 100%;
+        box-sizing: border-box;
+        margin-left: 6px !important; margin-right: 6px !important;
+      }
+      .desktop-icon { display: none !important; }
+      .containrow { order: 2; }
+      .containrow .window { display: none !important; }
+      .banner-wrap pre {
+        font-size: 8px !important; line-height: 1.05;
+        text-shadow: 0 0 6px #9d04cc;
+      }
+    }
+    @media screen and (max-width: 640px) {
+      body { padding-bottom: 44px; }
+      .taskbar { height: 38px; }
+      .start-button-inner span { display: none; }
+      .start-button-inner { padding: 0 10px; }
+      .open-apps, .now-playing-text { display: none; }
+      .music-controls button { width: 38px; height: 32px; }
+      .tray { height: 32px; }
+      .taskbar-time { font-size: 12px; }
+      .start-menu {
+        width: calc(100vw - 8px); left: 4px;
+        max-height: 70vh; overflow-y: auto;
+      }
+      .start-menu-item { min-height: 40px; font-size: 14px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ====================================================================
+       SPLASH / BOOT SCREEN
+       Shows a fake typewriter boot log, then a "continue" button.
+       ==================================================================== -->
+  <div class="splash-screen" id="splash-screen">
+    <div class="splash-content">
+      <div class="window" style="width: 320px; margin-bottom: 10px;">
+        <div class="title-bar">
+          <div class="title-bar-text">sys/init</div>
+          <div class="title-bar-controls">
+            <button aria-label="Minimize"></button>
+            <button aria-label="Maximize"></button>
+            <button aria-label="Close"></button>
+          </div>
+        </div>
+        <div class="window-body" style="text-align:left; font-family: monospace; font-size: 12px; padding: 12px;">
+          <div id="boot-log" style="margin: 0; line-height: 1.8;"></div>
+          <div id="boot-continue" style="text-align: center; margin-top: 12px; display: none;">
+            <button id="enter-button">continue</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Boot sequence typewriter effect
+    (function () {
+      var bootLines = [
+        { time: '[0.000]', text: ' loading vmfunc.re...' },
+        { time: '[0.013]', text: ' mounting /dev/audio' },
+        { time: '[0.029]', text: ' initializing 98.css' },
+        { time: '[0.037]', text: ' oneko.service started' },
+        { time: '[0.044]', text: ' all systems nominal' },
+      ];
+      var bootLog = document.getElementById('boot-log');
+      var bootContinue = document.getElementById('boot-continue');
+      var lineIdx = 0;
+
+      function typeLine() {
+        if (lineIdx >= bootLines.length) {
+          if (bootContinue) bootContinue.style.display = 'block';
+          return;
+        }
+        var line = bootLines[lineIdx];
+        var el = document.createElement('div');
+        el.innerHTML = '<span style="color:#808080;">' + line.time + '</span>';
+        bootLog.appendChild(el);
+        var chars = line.text.split('');
+        var charIdx = 0;
+
+        function typeChar() {
+          if (charIdx < chars.length) {
+            el.innerHTML += chars[charIdx];
+            charIdx++;
+            setTimeout(typeChar, 3 + Math.random() * 5);
+          } else {
+            lineIdx++;
+            setTimeout(typeLine, 60 + Math.random() * 80);
+          }
+        }
+        typeChar();
+      }
+      typeLine();
+    })();
+  </script>
+
+
+  <!-- ====================================================================
+       MAIN CONTENT
+       ==================================================================== -->
+  <div id="main-content" style="display: none;">
+    <div class="wrapper" style="padding-top: 30px;">
+
+      <!-- Desktop icons (hidden on mobile via CSS) -->
+      <a href="https://github.com/vmfunc" class="desktop-icon"
+         style="top: 240px; left: 85px;" target="_blank" rel="noopener">
+        <img src="https://win98icons.alexmeub.com/icons/png/computer_explorer_cool-3.png"
+             width="32" alt="GitHub">
+        <p>GitHub</p>
+      </a>
+      <a href="#" class="desktop-icon"
+         style="top: 380px; left: 85px;" target="_blank" rel="noopener">
+        <img src="https://win98icons.alexmeub.com/icons/png/console_prompt-0.png"
+             width="32" alt="Terminal">
+        <p>Terminal</p>
+      </a>
+      <a href="#" class="desktop-icon"
+         style="bottom: 200px; right: 70px;"
+         onclick="document.querySelector('button[aria-controls=asn]').click(); return false;">
+        <img src="https://win98icons.alexmeub.com/icons/png/network_cool_two_pcs-3.png"
+             width="32" alt="Network">
+        <p style="font-size: 10px;">Network Neighborhood</p>
+      </a>
+      <a href="#" class="desktop-icon" style="bottom: 50px; right: 70px;"
+         onclick="alert('already empty...'); return false;">
+        <img src="https://win98icons.alexmeub.com/icons/png/recycle_bin_empty-0.png"
+             width="32" alt="Recycle Bin">
+        <p>Recycle Bin</p>
+      </a>
+
+      <div class="contain">
+
+        <!-- ============================================================
+             SIDEBAR: Links window + "Add my button" window
+             ============================================================ -->
+        <div class="containrow" style="align-items: flex-start;">
+          <div class="window" style="width: 173px; margin-bottom: 10px;">
+            <div class="title-bar">
+              <div class="title-bar-text">Links</div>
+              <div class="title-bar-controls">
+                <button aria-label="Minimize"></button>
+                <button aria-label="Maximize"></button>
+                <button aria-label="Close"></button>
+              </div>
+            </div>
+            <div class="window-body" style="text-align:left; font-size: 13px;">
+              <span style="font-size: 11px; color: #5e5e5e;">-- philes --</span><br>
+              <span class="idk">[-]</span> <a href="#">nullpt.rs</a><br>
+              <span class="idk">[-]</span> <a href="#">ud2.rip</a><br>
+              <span style="font-size: 11px; color: #5e5e5e;">-- socials --</span><br>
+              <span class="idk">[-]</span> <a href="#">GitHub</a><br>
+              <span class="idk">[-]</span> <a href="#">Twitter</a><br>
+              <span class="idk">[-]</span> <a href="#">SoundCloud</a><br>
+              <span class="idk">[-]</span> <a href="#">last.fm</a><br>
+              <span style="font-size: 11px; color: #5e5e5e;">-- other --</span><br>
+              <span class="idk">[-]</span> <a href="#">Diary</a><br>
+              <span class="idk">[-]</span> <a href="#">RSS</a><br>
+              <span class="idk">[-]</span> <a href="#">ident.txt</a><br>
+              <span style="font-size: 11px; color: #5e5e5e;">-- meta --</span><br>
+              <span class="idk">[-]</span> <a href="#">security.txt</a><br>
+              <span class="idk">[-]</span> <a href="#">humans.txt</a><br>
+              <span class="idk">[-]</span> <a href="#">llms.txt</a><br>
+            </div>
+          </div>
+
+          <div class="window" style="width: 173px; margin-bottom: 10px;">
+            <div class="title-bar">
+              <div class="title-bar-text">Add my button!</div>
+              <div class="title-bar-controls">
+                <button aria-label="Minimize"></button>
+                <button aria-label="Maximize"></button>
+                <button aria-label="Close"></button>
+              </div>
+            </div>
+            <div class="window-body" style="font-size: 13px;">
+              <p style="margin-bottom: 8px; text-align: center;">
+                <!-- 88x31 button placeholder -->
+                <span style="display: inline-block; width: 88px; height: 31px;
+                             background: navy; color: white; font-size: 10px;
+                             line-height: 31px; text-align: center;">
+                  yoursite.tld
+                </span>
+              </p>
+              <textarea readonly
+                style="width: 100%; height: 60px; font-family: monospace;
+                       font-size: 11px; resize: none;"
+              >&lt;a href="https://yoursite.tld"&gt;
+&lt;img src="button.png" width="88" height="31" /&gt;
+&lt;/a&gt;</textarea>
+              <div style="text-align: right; margin-top: 5px;">
+                <button onclick="navigator.clipboard.writeText(
+                  this.parentNode.previousElementSibling.value
+                ); this.textContent='Copied!';
+                setTimeout(() => this.textContent='Copy', 2000)">Copy</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============================================================
+             MAIN WINDOW — tabbed content
+             ============================================================ -->
+        <div class="window" style="width: 790px; margin: 0 15px;" id="window">
+          <div class="title-bar">
+            <div class="title-bar-text">celeste@void:~/</div>
+            <div class="title-bar-controls" style="z-index: 2;">
+              <button aria-label="Minimize"></button>
+              <button aria-label="Maximize"></button>
+              <button aria-label="Close"
+                onclick="alert('you can\'t close the window. it\'s load-bearing.')"></button>
+            </div>
+          </div>
+          <div class="window-body">
+            <h1 style="display: none">vmfunc</h1> <!-- for SEO -->
+
+            <!-- ASCII art banner -->
+            <div class="banner-wrap">
+              <pre> ██▒   █▓ ███▄ ▄███▓  █████▒█    ██  ███▄    █  ▄████▄
+▓██░   █▒▓██▒▀█▀ ██▒▓██   ▒ ██  ▓██▒ ██ ▀█   █ ▒██▀ ▀█
+ ▓██  █▒░▓██    ▓██░▒████ ░▓██  ▒██░▓██  ▀█ ██▒▒▓█    ▄
+  ▒██ █░░▒██    ▒██ ░▓█▒  ░▓▓█  ░██░▓██▒  ▐▌██▒▒▓▓▄ ▄██▒
+   ▒▀█░  ▒██▒   ░██▒░▒█░   ▒▒█████▓ ▒██░   ▓██░▒ ▓███▀ ░
+   ░ ▐░  ░ ▒░   ░  ░ ▒ ░   ░▒▓▒ ▒ ▒ ░ ▒░   ▒ ▒ ░ ░▒ ▒  ░
+   ░ ░░  ░  ░      ░ ░     ░░▒░ ░ ░ ░ ░░   ░ ▒░  ░  ▒
+     ░░  ░      ░    ░ ░    ░░░ ░ ░    ░   ░ ░ ░
+      ░         ░             ░              ░ ░ ░
+     ░                                         ░</pre>
+            </div>
+
+            <!-- Tab bar -->
+            <menu role="tablist">
+              <button aria-selected="true" aria-controls="about">About</button>
+              <button aria-controls="press">Press</button>
+              <button aria-controls="contact">Contact</button>
+              <button aria-controls="music">Music</button>
+              <button aria-controls="asn">Network</button>
+            </menu>
+
+            <!-- ==================== TAB: About ==================== -->
+            <article role="tabpanel" id="about">
+              <fieldset style="margin-top: 15px;">
+                <legend>
+                  <img src="https://win98icons.alexmeub.com/icons/png/font_tt-0.png"
+                       width="16" height="16"
+                       style="vertical-align: text-bottom; margin-right: 4px;">
+                  Profile
+                </legend>
+                <div style="margin: 12px 0; padding: 2px 10px;">
+                  <p style="font-size: 14px; line-height: 1.6; margin: 0;">
+                    handle: vmfunc | it/its | bay area<br><br>
+                    mostly known for: RE, exploit dev, security research.<br><br>
+                    currently work on cybersecurity and ai alignment.<br><br>
+                    previously at nous, thales, turingpi, lunchcat.
+                    started with game cheats... went sideways from there.<br>
+                    welcome to my small corner of the internet.
+                  </p>
+                  <p style="font-size: 11px; color: #5e5e5e; margin: 8px 0 0 0;">
+                    last updated: 2026-06-17
+                  </p>
+                </div>
+              </fieldset>
+
+              <fieldset>
+                <legend>
+                  <img src="https://win98icons.alexmeub.com/icons/png/directory_open_file_mydocs-4.png"
+                       width="16" height="16"
+                       style="vertical-align: text-bottom; margin-right: 4px;">
+                  Philes
+                </legend>
+                <div style="max-height: 200px; overflow-y: auto; padding: 4px 0;">
+                  <table style="width: 100%; font-size: 13px; font-family: monospace;
+                                border-collapse: collapse;">
+                    <tr>
+                      <td style="padding: 3px 6px;">
+                        <img src="https://win98icons.alexmeub.com/icons/png/certificate-0.png"
+                             width="14" height="14" style="vertical-align: text-bottom;">
+                      </td>
+                      <td style="padding: 3px 0;">
+                        <a href="#">the watchers: identity surveillance machine</a>
+                      </td>
+                      <td style="padding: 3px 6px; color: #5e5e5e; text-align: right;
+                                 font-size: 11px;">2026</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 3px 6px;">
+                        <img src="https://win98icons.alexmeub.com/icons/png/key_padlock-0.png"
+                             width="14" height="14" style="vertical-align: text-bottom;">
+                      </td>
+                      <td style="padding: 3px 0;">
+                        <a href="#">cracked a $200 software protection with xcopy</a>
+                      </td>
+                      <td style="padding: 3px 6px; color: #5e5e5e; text-align: right;
+                                 font-size: 11px;">2025</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 3px 6px;">
+                        <img src="https://win98icons.alexmeub.com/icons/png/certificate_seal_lock-0.png"
+                             width="14" height="14" style="vertical-align: text-bottom;">
+                      </td>
+                      <td style="padding: 3px 0;">
+                        <a href="#">forging passkeys: FIDO2/WebAuthn attack surface</a>
+                      </td>
+                      <td style="padding: 3px 6px; color: #5e5e5e; text-align: right;
+                                 font-size: 11px;">2025</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 3px 6px;">
+                        <img src="https://win98icons.alexmeub.com/icons/png/regedit_binary-0.png"
+                             width="14" height="14" style="vertical-align: text-bottom;">
+                      </td>
+                      <td style="padding: 3px 0;">
+                        <a href="#">reverse engineering arm64 hypervisor internals</a>
+                      </td>
+                      <td style="padding: 3px 6px; color: #5e5e5e; text-align: right;
+                                 font-size: 11px;">2024</td>
+                    </tr>
+                  </table>
+                </div>
+              </fieldset>
+
+              <fieldset>
+                <legend>
+                  <img src="https://win98icons.alexmeub.com/icons/png/notepad-2.png"
+                       width="16" height="16"
+                       style="vertical-align: text-bottom; margin-right: 4px;">
+                  .plan
+                </legend>
+                <p style="font-size: 11px; color: #5e5e5e; margin: 4px 0 6px;">
+                  the classic finger(1) status file. what i'm up to.
+                </p>
+                <pre style="font-size: 11px !important; line-height: 1.4;
+                            max-height: 200px; overflow-y: auto;
+                            white-space: pre-wrap; text-shadow: none !important;
+                            padding: 10px !important; color: #000;">─── vmfunc · .plan ──────────────────────────────────
+▶ doing
+  · zen ext: claude auto-sorts tabs into groups
+  · statusline session names
+
+▷ next
+  · coral: verify dashboard fullscreen
+  · wire otter CI runner
+
+~ someday
+  · typed rice.theme polish
+  · rice.bar / waybar parity</pre>
+              </fieldset>
+
+              <fieldset>
+                <legend>
+                  <img src="https://win98icons.alexmeub.com/icons/png/users-0.png"
+                       width="16" height="16"
+                       style="vertical-align: text-bottom; margin-right: 4px;">
+                  Friends
+                </legend>
+                <ul class="badge-wall">
+                  <!-- 88x31 friend buttons go here -->
+                  <span style="display: inline-block; width: 88px; height: 31px;
+                               background: #333; color: #aaa; font-size: 9px;
+                               line-height: 31px; text-align: center;">
+                    friend1.tld
+                  </span>
+                  <span style="display: inline-block; width: 88px; height: 31px;
+                               background: #226; color: #aaf; font-size: 9px;
+                               line-height: 31px; text-align: center;">
+                    friend2.tld
+                  </span>
+                  <span style="display: inline-block; width: 88px; height: 31px;
+                               background: #262; color: #afa; font-size: 9px;
+                               line-height: 31px; text-align: center;">
+                    friend3.tld
+                  </span>
+                </ul>
+              </fieldset>
+            </article>
+
+            <!-- ==================== TAB: Press ==================== -->
+            <article role="tabpanel" hidden id="press">
+              <fieldset style="margin-top: 15px;">
+                <legend>
+                  <img src="https://win98icons.alexmeub.com/icons/png/msg_information-0.png"
+                       width="16" height="16"
+                       style="vertical-align: text-bottom; margin-right: 4px;">
+                  Press coverage
+                </legend>
+                <div style="max-height: 300px; overflow-y: auto;">
+                  <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
+                    <tr>
+                      <td style="padding: 3px 10px 3px 0;">
+                        <a href="#">Fortune</a>
+                        <span style="color:#5e5e5e;">discord distances itself</span>
+                      </td>
+                      <td style="padding: 3px 0; text-align: right; color: #5e5e5e;
+                                 font-size: 11px;">2026-02</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 3px 10px 3px 0;">
+                        <a href="#">Kotaku</a>
+                        <span style="color:#5e5e5e;">hackers raise the alarm</span>
+                      </td>
+                      <td style="padding: 3px 0; text-align: right; color: #5e5e5e;
+                                 font-size: 11px;">2026-02</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 3px 10px 3px 0;">
+                        <a href="#">PC Gamer</a>
+                        <span style="color:#5e5e5e;">269 verification checks</span>
+                      </td>
+                      <td style="padding: 3px 0; text-align: right; color: #5e5e5e;
+                                 font-size: 11px;">2026-02</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 3px 10px 3px 0;">
+                        <a href="#">Hacker News</a>
+                        <span style="color:#5e5e5e;">the watchers (657 pts)</span>
+                      </td>
+                      <td style="padding: 3px 0; text-align: right; color: #5e5e5e;
+                                 font-size: 11px;">2026-02</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 3px 10px 3px 0;">
+                        <a href="#">Malwarebytes</a>
+                        <span style="color:#5e5e5e;">frontend left exposed</span>
+                      </td>
+                      <td style="padding: 3px 0; text-align: right; color: #5e5e5e;
+                                 font-size: 11px;">2026-02</td>
+                    </tr>
+                  </table>
+                </div>
+              </fieldset>
+            </article>
+
+            <!-- ==================== TAB: Contact ==================== -->
+            <article role="tabpanel" hidden id="contact">
+              <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid #c0c0c0; width: 20%;">
+                    <strong>GitHub:</strong>
+                  </td>
+                  <td style="padding: 8px; border-bottom: 1px solid #c0c0c0;">
+                    <a href="#">@vmfunc</a>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid #c0c0c0;">
+                    <strong>Email:</strong>
+                  </td>
+                  <td style="padding: 8px; border-bottom: 1px solid #c0c0c0;">
+                    <a href="#">celeste@linux.com</a>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid #c0c0c0;">
+                    <strong>Matrix:</strong>
+                  </td>
+                  <td style="padding: 8px; border-bottom: 1px solid #c0c0c0;">
+                    <a href="#">@vmfunc:mozilla.org</a>
+                  </td>
+                </tr>
+              </table>
+              <fieldset style="margin-top: 15px;">
+                <legend>
+                  <img src="https://win98icons.alexmeub.com/icons/png/msg_information-0.png"
+                       width="16" height="16"
+                       style="vertical-align: text-bottom; margin-right: 4px;">
+                  Note
+                </legend>
+                <p style="margin: 8px 0; font-size: 13px;">
+                  twitter or email for anything urgent.
+                </p>
+              </fieldset>
+            </article>
+
+            <!-- ==================== TAB: Music ==================== -->
+            <article role="tabpanel" hidden id="music">
+              <p style="font-size: 14px; margin-top: 10px;">
+                i DJ sometimes. mostly drain gang adjacent, cloud rap,
+                emo electronic, whatever's in the headphones at 3am.
+              </p>
+              <fieldset style="margin-top: 12px;">
+                <legend>on heavy rotation</legend>
+                <div style="font-size: 13px; font-family: monospace; line-height: 1.7;">
+                  <span class="idk">[♫]</span> toby fox
+                  <span style="color:#5e5e5e;">· undertale / deltarune brainrot</span><br>
+                  <span class="idk">[♫]</span> drain gang
+                  <span style="color:#5e5e5e;">· bladee, ecco2k, thaiboy</span><br>
+                  <span class="idk">[♫]</span> whatever's in the headphones at 3am
+                </div>
+              </fieldset>
+            </article>
+
+            <!-- ==================== TAB: Network ==================== -->
+            <article role="tabpanel" hidden id="asn">
+              <h3 style="margin: 0 !important; font-size: 16px;">
+                the network. (such as it is.)
+              </h3>
+              <p style="font-size: 14px; margin-bottom: 15px;">
+                the boxes. all hosted in the US.
+                sometimes they're online, sometimes they're not.
+              </p>
+              <fieldset>
+                <legend>Server Status</legend>
+                <table style="width: 100%; font-size: 13px;">
+                  <thead>
+                    <tr>
+                      <th style="text-align: left;">Server</th>
+                      <th style="text-align: center;">Status</th>
+                      <th style="text-align: right;">Latency</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Mainframe</td>
+                      <td style="text-align: center;">
+                        <span style="color: #198009; text-shadow: 0 0 10px #198009;">●</span> online
+                      </td>
+                      <td style="text-align: right;">12ms</td>
+                    </tr>
+                    <tr>
+                      <td>GPU Server</td>
+                      <td style="text-align: center;">
+                        <span style="color: #198009; text-shadow: 0 0 10px #198009;">●</span> online
+                      </td>
+                      <td style="text-align: right;">8ms</td>
+                    </tr>
+                    <tr>
+                      <td>Web Server</td>
+                      <td style="text-align: center;">
+                        <span style="color: #198009; text-shadow: 0 0 10px #198009;">●</span> online
+                      </td>
+                      <td style="text-align: right;">3ms</td>
+                    </tr>
+                    <tr>
+                      <td>Game Server</td>
+                      <td style="text-align: center;">
+                        <span style="color: #cf0000; text-shadow: 0 0 10px #cf0000;">●</span> offline
+                      </td>
+                      <td style="text-align: right;">-</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </fieldset>
+              <fieldset>
+                <legend>ASN Information</legend>
+                <p style="font-size: 13px; color: #5e5e5e;">
+                  ASN info loads from a backend API on the real site.
+                </p>
+              </fieldset>
+            </article>
+
+            <!-- Bottom marquee + buttons -->
+            <div style="font-size: 11px; padding: 4px 8px;
+                        border-top: 1px solid #c0c0c0; margin-top: 8px;">
+              <marquee behavior="scroll" direction="left" scrollamount="2"
+                       style="color: #5e5e5e;">
+                vmfunc.re - nullpt.rs - ud2.rip - tcp.direct -
+                lockpicking but for computers -
+                they broke the locks so we could see what's inside
+              </marquee>
+            </div>
+            <section class="field-row" style="justify-content: flex-end; align-items: center;">
+              <span id="hit-counter"
+                    style="font-size: 11px; color: #5e5e5e;
+                           margin-right: auto; padding-left: 4px;"></span>
+              <button>OK</button>
+              <button onclick="alert('cancelled. (nothing was happening anyway.)')">Cancel</button>
+            </section>
+          </div>
+        </div>
+
+        <!-- ============================================================
+             SIDEBAR: Clock window
+             ============================================================ -->
+        <div class="containrow">
+          <div class="window" style="width: 173px; margin-bottom: 10px;">
+            <div class="title-bar">
+              <div class="title-bar-text">timedatectl.d</div>
+              <div class="title-bar-controls">
+                <button aria-label="Minimize"></button>
+                <button aria-label="Maximize"></button>
+                <button aria-label="Close"></button>
+              </div>
+            </div>
+            <div class="window-body" style="text-align:center; font-size: 13px;">
+              <p>It is currently: <span id="clock"></span></p>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- .contain -->
+    </div><!-- .wrapper -->
+  </div><!-- #main-content -->
+
+
+  <!-- ====================================================================
+       DISPLAY PROPERTIES DIALOG (theme switcher)
+       ==================================================================== -->
+  <div class="window" id="display-props">
+    <div class="title-bar">
+      <div class="title-bar-text">Display Properties</div>
+      <div class="title-bar-controls">
+        <button aria-label="Close" id="dp-close"></button>
+      </div>
+    </div>
+    <div class="window-body">
+      <fieldset>
+        <legend>Theme</legend>
+        <div class="field-row">
+          <input type="radio" id="dp-98" name="dp-theme" value="98" checked>
+          <label for="dp-98">Windows 98 (default)</label>
+        </div>
+        <div class="field-row">
+          <input type="radio" id="dp-crt" name="dp-theme" value="crt">
+          <label for="dp-crt">98 + CRT scanlines</label>
+        </div>
+      </fieldset>
+      <p style="font-size: 11px; color: #5e5e5e; margin: 8px 2px 0;">
+        applies instantly, remembered next time.
+      </p>
+      <section class="field-row" style="justify-content: flex-end; margin-top: 10px;">
+        <button id="dp-ok">OK</button>
+      </section>
+    </div>
+  </div>
+
+
+  <!-- ====================================================================
+       TASKBAR
+       ==================================================================== -->
+  <div class="taskbar" id="windows-taskbar">
+    <!-- Start button -->
+    <div class="start-button">
+      <button class="start-button-inner" id="start-btn">
+        <img src="https://win98icons.alexmeub.com/icons/png/windows-0.png"
+             width="16" height="16" alt="Start">
+        <span>Start</span>
+      </button>
+
+      <!-- Start menu (hidden by default) -->
+      <div class="start-menu" id="start-menu">
+        <div class="start-menu-header">
+          <div class="start-menu-header-label">Windows 98</div>
+        </div>
+        <div class="start-menu-items">
+          <a href="#" style="text-decoration: none; color: inherit;">
+            <div class="start-menu-item">
+              <img src="https://win98icons.alexmeub.com/icons/png/console_prompt-0.png"
+                   width="16" height="16" alt="Terminal">
+              <span>Terminal</span>
+            </div>
+          </a>
+          <a href="#" style="text-decoration: none; color: inherit;">
+            <div class="start-menu-item">
+              <img src="https://win98icons.alexmeub.com/icons/png/directory_open_file_mydocs-4.png"
+                   width="16" height="16" alt="Philes">
+              <span>Philes</span>
+            </div>
+          </a>
+          <a href="#" style="text-decoration: none; color: inherit;">
+            <div class="start-menu-item">
+              <img src="https://win98icons.alexmeub.com/icons/png/notepad-2.png"
+                   width="16" height="16" alt="Diary">
+              <span>Diary</span>
+              <span class="start-menu-item-badge">NEW</span>
+            </div>
+          </a>
+          <div class="start-menu-divider"></div>
+          <div class="start-menu-item" id="open-display-props">
+            <img src="https://win98icons.alexmeub.com/icons/png/display_properties-0.png"
+                 width="16" height="16" alt="Display Properties">
+            <span>Display Properties</span>
+          </div>
+          <div class="start-menu-divider"></div>
+          <div class="start-menu-item"
+               onclick="document.body.style.filter='invert(1)';
+                        setTimeout(() => document.body.style.filter='', 3000);">
+            <img src="https://win98icons.alexmeub.com/icons/png/standby_monitor_moon-0.png"
+                 width="16" height="16" alt="Log Off">
+            <span>Log Off vmfunc...</span>
+          </div>
+          <div class="start-menu-item" onclick="alert('it is now safe to turn off your computer.')">
+            <img src="https://win98icons.alexmeub.com/icons/png/shut_down_normal-1.png"
+                 width="16" height="16" alt="Shut Down">
+            <span>Shut Down...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="taskbar-divider"></div>
+
+    <!-- Open apps area -->
+    <div class="open-apps" id="taskbar-apps">
+      <div class="taskbar-app active">
+        <span>vmfunc.re</span>
+      </div>
+    </div>
+
+    <!-- System tray -->
+    <div class="tray">
+      <div class="music-controls">
+        <div class="now-playing-text" id="now-playing-text" title="now playing">
+          ♪ no track loaded
+        </div>
+        <button title="Previous">
+          <span style="font-weight: bold;">◄</span>
+        </button>
+        <button id="play-pause" title="Play/Pause">
+          <span style="font-weight: bold;">►</span>
+        </button>
+        <button title="Next">
+          <span style="font-weight: bold;">►|</span>
+        </button>
+      </div>
+      <div class="tray-divider"></div>
+      <div class="taskbar-time" id="taskbar-time">9:41 AM</div>
+    </div>
+  </div>
+
+
+  <!-- ====================================================================
+       ALL INTERACTIVITY
+       ==================================================================== -->
+  <script>
+    // === Boot screen → main content transition ===
+    document.getElementById('enter-button')?.addEventListener('click', function () {
+      document.getElementById('splash-screen').style.display = 'none';
+      document.getElementById('main-content').style.display = '';
+    });
+
+    // === Tab system ===
+    (function () {
+      var tabs = document.querySelectorAll('menu[role="tablist"] button');
+      var panels = document.querySelectorAll('article[role="tabpanel"]');
+
+      function activate(btn) {
+        tabs.forEach(function (t) { t.setAttribute('aria-selected', 'false'); });
+        panels.forEach(function (p) { p.hidden = true; });
+        btn.setAttribute('aria-selected', 'true');
+        var id = btn.getAttribute('aria-controls');
+        if (id) {
+          var panel = document.getElementById(id);
+          if (panel) panel.hidden = false;
+        }
+      }
+
+      tabs.forEach(function (btn) {
+        btn.addEventListener('click', function () { activate(btn); });
+      });
+    })();
+
+    // === Clock (in sidebar window + taskbar) ===
+    function updateClocks() {
+      var now = new Date();
+      var hh = now.getHours().toString().padStart(2, '0');
+      var mm = now.getMinutes().toString().padStart(2, '0');
+      var ss = now.getSeconds().toString().padStart(2, '0');
+
+      var clockEl = document.getElementById('clock');
+      if (clockEl) clockEl.textContent = hh + ':' + mm + ':' + ss;
+
+      var h12 = now.getHours() % 12 || 12;
+      var ampm = now.getHours() >= 12 ? 'PM' : 'AM';
+      var taskbarTime = document.getElementById('taskbar-time');
+      if (taskbarTime) taskbarTime.textContent = h12 + ':' + mm + ' ' + ampm;
+    }
+    updateClocks();
+    setInterval(updateClocks, 1000);
+
+    // === Hit counter (localStorage, just for fun) ===
+    (function () {
+      var el = document.getElementById('hit-counter');
+      if (!el) return;
+      var hits = parseInt(localStorage.getItem('vmfunc_hits') || '0');
+      if (hits === 0) hits = 13370 + Math.floor(Math.random() * 500);
+      hits++;
+      localStorage.setItem('vmfunc_hits', hits.toString());
+      el.textContent = 'visitors: ' + hits.toString().padStart(6, '0');
+    })();
+
+    // === Start menu toggle ===
+    (function () {
+      var btn = document.getElementById('start-btn');
+      var menu = document.getElementById('start-menu');
+      btn?.addEventListener('click', function () {
+        menu.style.display = menu.style.display !== 'block' ? 'block' : 'none';
+      });
+      document.addEventListener('click', function (e) {
+        if (menu && !e.target.closest('.start-button') && menu.style.display === 'block') {
+          menu.style.display = 'none';
+        }
+      });
+    })();
+
+    // === Display Properties dialog ===
+    (function () {
+      var dp = document.getElementById('display-props');
+      document.getElementById('open-display-props')?.addEventListener('click', function () {
+        dp.style.display = dp.style.display === 'block' ? 'none' : 'block';
+        // close start menu
+        document.getElementById('start-menu').style.display = 'none';
+      });
+      document.getElementById('dp-close')?.addEventListener('click', function () {
+        dp.style.display = 'none';
+      });
+      document.getElementById('dp-ok')?.addEventListener('click', function () {
+        dp.style.display = 'none';
+      });
+
+      // Theme switching (CRT scanlines toggle)
+      document.querySelectorAll('input[name="dp-theme"]').forEach(function (radio) {
+        radio.addEventListener('change', function () {
+          document.documentElement.classList.toggle('crt', radio.value === 'crt');
+          try { localStorage.setItem('vmfunc_theme', radio.value); } catch (e) {}
+        });
+      });
+    })();
+
+    // === Minimize button behavior ===
+    document.addEventListener('click', function (e) {
+      var minBtn = e.target.closest('.title-bar-controls button[aria-label="Minimize"]');
+      if (!minBtn) return;
+      var body = minBtn.closest('.window')?.querySelector('.window-body');
+      if (body) body.style.display = body.style.display === 'none' ? '' : 'none';
+    });
+
+    // === Tiny UI click sound (Web Audio API) ===
+    var audioCtx = null;
+    function clickSound() {
+      try {
+        if (!audioCtx) audioCtx = new AudioContext();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        var osc = audioCtx.createOscillator();
+        var gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.type = 'square'; osc.frequency.value = 800;
+        gain.gain.value = 0.15;
+        osc.start();
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.06);
+        osc.stop(audioCtx.currentTime + 0.06);
+      } catch (e) {}
+    }
+    document.addEventListener('click', function (e) {
+      var t = e.target;
+      if (t.tagName === 'BUTTON' || t.closest('button') ||
+          t.tagName === 'A' || t.closest('a')) {
+        clickSound();
+      }
+    });
+  </script>
+</body>
+</html>
