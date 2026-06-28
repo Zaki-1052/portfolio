@@ -28,6 +28,7 @@ export function ChromatinContent() {
         {publications.map((pub) => (
           <article
             key={pub.id}
+            className="publication"
             style={{
               borderLeft: '1px solid var(--accent-line)',
               paddingLeft: 'var(--space-5)',

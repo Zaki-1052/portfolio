@@ -1,5 +1,4 @@
 // src/scales/code/TerminalListing.tsx
-import { useState } from 'react';
 
 export interface TerminalRow {
   name: string;
@@ -14,21 +13,21 @@ interface TerminalListingProps {
   items: TerminalRow[];
 }
 
-function Row({ name, description, stars, href, perms = 'drwxr-xr-x' }: TerminalRow) {
-  const [hover, setHover] = useState(false);
+function formatStars(n: number): string {
+  return n >= 1000 ? n.toLocaleString() : String(n);
+}
 
+function Row({ name, description, stars, href, perms = 'drwxr-xr-x' }: TerminalRow) {
   const inner = (
     <div
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
+      className="terminal-row"
       style={{
         display: 'grid',
         gridTemplateColumns: 'minmax(0, max-content) minmax(0, 1fr) max-content',
         gap: 'var(--space-4)',
         alignItems: 'baseline',
         padding: '5px 16px',
-        background: hover ? 'rgba(152,195,121,0.08)' : 'transparent',
-        transition: 'background var(--dur-fast) var(--ease-out)',
+        background: 'var(--_row-bg, transparent)',
         textDecoration: 'none',
       }}
     >
@@ -36,8 +35,9 @@ function Row({ name, description, stars, href, perms = 'drwxr-xr-x' }: TerminalR
       <span style={{ minWidth: 0 }}>
         <span
           style={{
-            color: hover ? 'var(--accent)' : 'var(--text-strong)',
+            color: 'var(--_row-name, var(--text-strong))',
             fontWeight: 'var(--weight-medium)',
+            transition: 'color var(--dur-fast) var(--ease-out)',
           }}
         >
           {name}
@@ -50,7 +50,7 @@ function Row({ name, description, stars, href, perms = 'drwxr-xr-x' }: TerminalR
         )}
       </span>
       <span style={{ color: 'var(--syntax-star)', whiteSpace: 'nowrap', textAlign: 'right' }}>
-        {stars ? `★ ${stars}` : ''}
+        {stars ? `★ ${formatStars(stars)}` : ''}
       </span>
     </div>
   );
@@ -76,6 +76,7 @@ function Row({ name, description, stars, href, perms = 'drwxr-xr-x' }: TerminalR
 export function TerminalListing({ cwd = '~/projects', items }: TerminalListingProps) {
   return (
     <div
+      className="terminal-listing"
       style={{
         fontFamily: 'var(--font-mono)',
         fontSize: 'var(--text-sm)',
@@ -92,6 +93,7 @@ export function TerminalListing({ cwd = '~/projects', items }: TerminalListingPr
           padding: '10px 16px',
           borderBottom: '1px solid var(--hairline)',
           color: 'var(--text-muted)',
+          background: 'rgba(0, 0, 0, 0.15)',
         }}
       >
         <span style={{ color: 'var(--syntax-fn)' }}>{cwd}</span>{' '}

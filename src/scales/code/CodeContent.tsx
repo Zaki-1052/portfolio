@@ -7,6 +7,7 @@ import { getSection, getProjects } from '@/content/loader';
 function FeaturedProject({ name, line, href }: { name: string; line: string; href?: string }) {
   const content = (
     <div
+      className="featured-block"
       style={{
         border: '1px solid var(--hairline)',
         borderRadius: 0,
@@ -70,12 +71,10 @@ export function CodeContent() {
       {section && <MarkdownRenderer content={section.body} className="prose" />}
 
       <div
+        className="featured-grid"
         style={{
           marginTop: 'var(--space-6)',
           marginBottom: 'var(--space-6)',
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: 'var(--space-4)',
         }}
       >
         {featuredSoftware.map((p) => (

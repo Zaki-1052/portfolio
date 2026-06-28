@@ -44,6 +44,8 @@ export function ScaleSection({
     >
       <div
         style={{
+          position: 'relative',
+          zIndex: 1,
           maxWidth: 'min(1080px, 100%)',
           margin: align === 'center' ? '0 auto' : '0',
           textAlign: align,

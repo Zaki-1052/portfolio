@@ -15,14 +15,7 @@ export function ExpressionContent() {
 
   return (
     <ScaleSection scale="expression" title={section?.frontmatter.title} kicker="surface, again">
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
-          gap: 'var(--space-7)',
-          alignItems: 'start',
-        }}
-      >
+      <div className="content-grid content-grid--equal">
         {section && <MarkdownRenderer content={section.body} className="prose" />}
 
         <nav className="contact-links" aria-label="Contact">

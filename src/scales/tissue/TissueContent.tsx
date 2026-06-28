@@ -46,9 +46,11 @@ export function TissueContent() {
           style={{
             marginTop: 'var(--space-6)',
             padding: 'var(--space-4) var(--space-5)',
-            border: '1px solid var(--hairline)',
-            borderRadius: 'var(--radius)',
+            border: 'none',
+            borderLeft: '2px solid var(--accent-line)',
+            borderRadius: 'var(--radius-sharp)',
             background: 'var(--surface-overlay)',
+            boxShadow: 'var(--glow-accent)',
             maxWidth: 540,
           }}
         >

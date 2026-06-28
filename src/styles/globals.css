@@ -78,6 +78,7 @@
   --bg: var(--aod-bg);
   --fog-color: #2b3038;
   --text: var(--aod-fg);
+  --grain-opacity: 0;
 
   /* ---- Terminal syntax ---- */
   --syntax-keyword: var(--aod-purple);
@@ -198,6 +199,8 @@
   --fog-color: #34302b;
   --font-heading: var(--font-serif);
   --radius: var(--radius-organic);
+  --grain-opacity: 0.04;
+  --bg-next: #2a292e;
 }
 
 [data-scale='cellular'] {
@@ -208,6 +211,8 @@
   --fog-color: #312b30;
   --font-heading: var(--font-serif);
   --radius: var(--radius-soft);
+  --grain-opacity: 0.03;
+  --bg-next: #282c34;
 }
 
 [data-scale='chromatin'] {
@@ -218,6 +223,8 @@
   --fog-color: #2b3038;
   --font-heading: var(--font-sans);
   --radius: var(--radius-base);
+  --grain-opacity: 0.018;
+  --bg-next: #262b30;
 }
 
 [data-scale='protein'] {
@@ -228,6 +235,7 @@
   --fog-color: #243034;
   --font-heading: var(--font-sans);
   --radius: var(--radius-base);
+  --bg-next: #21252b;
 }
 
 [data-scale='code'] {
@@ -238,6 +246,7 @@
   --fog-color: #1d2228;
   --font-heading: var(--font-mono);
   --radius: var(--radius-square);
+  --bg-next: #21252b;
 }
 
 [data-scale='expression'] {
@@ -256,6 +265,84 @@
     --dur-base: 0ms;
     --dur-slow: 0ms;
   }
+}
+
+/* ============================================================
+   ATMOSPHERIC BACKGROUNDS
+   Per-scale radial gradients + noise grain create warm-to-cool
+   descent without 3D. Pseudo-elements sit behind content
+   (z-index: 0) within each section's stacking context.
+   ============================================================ */
+
+[data-scale]::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+[data-scale='tissue']::before {
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 35%, rgba(229, 192, 123, 0.08) 0%, transparent 70%),
+    linear-gradient(to bottom, transparent 85%, var(--bg-next) 100%);
+}
+
+[data-scale='cellular']::before {
+  background:
+    radial-gradient(ellipse 70% 50% at 72% 40%, rgba(213, 122, 165, 0.06) 0%, transparent 70%),
+    linear-gradient(to bottom, transparent 85%, var(--bg-next) 100%);
+}
+
+[data-scale='chromatin']::before {
+  background:
+    radial-gradient(ellipse 60% 60% at 50% 45%, rgba(97, 175, 239, 0.04) 0%, transparent 65%),
+    linear-gradient(to bottom, transparent 85%, var(--bg-next) 100%);
+}
+
+[data-scale='protein']::before {
+  background:
+    radial-gradient(ellipse 65% 55% at 30% 60%, rgba(86, 182, 194, 0.05) 0%, transparent 65%),
+    linear-gradient(to bottom, transparent 85%, var(--bg-next) 100%);
+}
+
+[data-scale='code']::before {
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 59px,
+      rgba(152, 195, 121, 0.025) 59px,
+      rgba(152, 195, 121, 0.025) 60px
+    ),
+    linear-gradient(to bottom, transparent 85%, var(--bg-next) 100%);
+}
+
+[data-scale='expression']::before {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 59px,
+    rgba(152, 195, 121, 0.012) 59px,
+    rgba(152, 195, 121, 0.012) 60px
+  );
+}
+
+[data-scale]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+  opacity: var(--grain-opacity, 0);
+  mix-blend-mode: overlay;
+}
+
+[data-scale] + [data-scale] {
+  border-top: 1px solid var(--hairline-soft);
 }
 
 /* ============================================================
@@ -328,15 +415,17 @@ p {
 
 a {
   color: var(--accent);
-  text-decoration: none;
+  text-decoration: underline;
+  text-decoration-color: transparent;
   text-underline-offset: 0.18em;
   text-decoration-thickness: 1px;
   transition:
     color var(--dur-fast) var(--ease-out),
+    text-decoration-color var(--dur-fast) var(--ease-out),
     opacity var(--dur-fast) var(--ease-out);
 }
 a:hover {
-  text-decoration: underline;
+  text-decoration-color: var(--accent);
 }
 
 code,
@@ -431,16 +520,22 @@ hr {
   color: var(--text-body);
   transition:
     border-color var(--dur-base) var(--ease-out),
+    background var(--dur-base) var(--ease-out),
     opacity var(--dur-base) var(--ease-out);
 }
 .branch[aria-pressed='true'] {
   border-top-color: var(--accent);
+  background: var(--accent-soft);
+}
+.branch[aria-pressed='true'] h4 {
+  color: var(--accent);
 }
 .branch[data-dim='true'] {
   opacity: 0.4;
 }
 .branch:hover {
   border-top-color: var(--accent-line);
+  background: var(--accent-soft);
 }
 .branch h4 {
   font-family: var(--font-serif);
@@ -465,14 +560,19 @@ hr {
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-4);
-  padding: var(--space-3) 0;
+  padding: var(--space-3) var(--space-4);
+  margin: 0 calc(-1 * var(--space-4));
   border-bottom: 1px solid var(--hairline-soft);
+  border-radius: var(--radius-sharp);
   text-decoration: none;
   color: var(--text-body);
-  transition: color var(--dur-fast) var(--ease-out);
+  transition:
+    color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
 }
 .contact-row:hover {
   color: var(--accent);
+  background: var(--accent-soft);
   text-decoration: none;
 }
 .contact-row .k {
@@ -507,13 +607,97 @@ hr {
   0%,
   100% {
     transform: translateY(0);
+    opacity: 0.6;
   }
   50% {
-    transform: translateY(3px);
+    transform: translateY(4px);
+    opacity: 1;
   }
 }
 @media (prefers-reduced-motion: reduce) {
   .scroll-hint span {
     animation: none;
+  }
+}
+
+/* ---- Project card ---- */
+
+.project-card {
+  transition:
+    border-color var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out);
+}
+.project-card:hover {
+  --_card-border: var(--accent-line);
+  --_card-shadow: var(--shadow-md);
+  --_card-title: var(--accent);
+  --_card-arrow: 1;
+}
+
+/* ---- Terminal listing ---- */
+
+.terminal-listing {
+  border-top: 2px solid var(--accent-line);
+}
+.terminal-row {
+  transition: background var(--dur-fast) var(--ease-out);
+}
+.terminal-row:hover {
+  --_row-bg: rgba(152, 195, 121, 0.08);
+  --_row-name: var(--accent);
+}
+.terminal-listing li:nth-child(even) .terminal-row {
+  background: rgba(255, 255, 255, 0.015);
+}
+.terminal-listing li:nth-child(even) .terminal-row:hover {
+  background: rgba(152, 195, 121, 0.08);
+}
+
+/* ---- Featured project blocks ---- */
+
+.featured-block {
+  border-top: 2px solid var(--accent-line);
+  transition: background var(--dur-base) var(--ease-out);
+}
+.featured-block:hover {
+  background: var(--accent-soft);
+}
+
+/* ---- Publication articles ---- */
+
+.publication {
+  transition: border-left-color var(--dur-base) var(--ease-out);
+}
+.publication:hover {
+  border-left-color: var(--accent);
+}
+
+/* ---- Content grids (responsive) ---- */
+
+.content-grid {
+  display: grid;
+  gap: var(--space-7);
+  align-items: start;
+}
+.content-grid--asymmetric {
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+}
+.content-grid--equal {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+.featured-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+@media (max-width: 760px) {
+  .content-grid--asymmetric,
+  .content-grid--equal {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 640px) {
+  .featured-grid {
+    grid-template-columns: 1fr;
   }
 }

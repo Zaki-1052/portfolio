@@ -1,5 +1,4 @@
 // src/components/ProjectCard.tsx
-import { useState } from 'react';
 
 interface ProjectCardProps {
   title: string;
@@ -7,23 +6,12 @@ interface ProjectCardProps {
   description?: string;
   tags?: string[];
   meta?: string;
-  glass?: boolean;
 }
 
-export function ProjectCard({
-  title,
-  href,
-  description,
-  tags = [],
-  meta,
-  glass = false,
-}: ProjectCardProps) {
-  const [hover, setHover] = useState(false);
-
+export function ProjectCard({ title, href, description, tags = [], meta }: ProjectCardProps) {
   return (
     <article
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
+      className="project-card"
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -31,13 +19,9 @@ export function ProjectCard({
         padding: 'var(--space-5)',
         borderRadius: 'var(--radius)',
         border: '1px solid',
-        borderColor: hover ? 'var(--accent-line)' : 'var(--hairline)',
-        background: glass ? 'var(--surface-overlay)' : 'var(--surface-raised)',
-        backdropFilter: glass ? 'blur(10px)' : 'none',
-        WebkitBackdropFilter: glass ? 'blur(10px)' : 'none',
-        boxShadow: hover ? 'var(--shadow-md)' : 'var(--shadow-sm)',
-        transition:
-          'border-color var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out)',
+        borderColor: 'var(--_card-border, var(--hairline))',
+        background: 'var(--surface-raised)',
+        boxShadow: 'var(--_card-shadow, var(--shadow-sm))',
         maxWidth: 'var(--measure-wide)',
       }}
     >
@@ -53,7 +37,7 @@ export function ProjectCard({
           style={{
             margin: 0,
             fontSize: 'var(--text-lg)',
-            color: hover ? 'var(--accent)' : 'var(--text-strong)',
+            color: 'var(--_card-title, var(--text-strong))',
             transition: 'color var(--dur-fast) var(--ease-out)',
           }}
         >
@@ -68,7 +52,7 @@ export function ProjectCard({
               <span
                 aria-hidden="true"
                 style={{
-                  opacity: hover ? 1 : 0,
+                  opacity: 'var(--_card-arrow, 0)',
                   marginLeft: 8,
                   fontSize: '0.8em',
                   transition: 'opacity var(--dur-fast) var(--ease-out)',
