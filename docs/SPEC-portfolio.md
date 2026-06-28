@@ -64,7 +64,8 @@ zalibhai.com/
 │   ├── projects.json             # All project metadata (Tier 1 + Tier 2)
 │   ├── publications.json         # Publication data
 │   ├── status.json               # "Currently working on" line
-│   └── links.json                # Contact links, socials, resume URL
+│   ├── links.json                # Contact links, socials, resume URL
+│   └── form.json                 # Formspree endpoint + contact form config
 ├── src/
 │   ├── app.tsx                   # Root: Canvas + HTML sections + providers
 │   ├── main.tsx                  # Entry point
@@ -92,6 +93,8 @@ zalibhai.com/
 │   │   │   ├── CodeContent.tsx
 │   │   │   └── TerminalListing.tsx # Tier 2 ls -la directory
 │   │   └── expression/
+│   │       ├── ExpressionContent.tsx
+│   │       └── TerminalMail.tsx  # Terminal mail contact form popup
 │   ├── components/
 │   │   ├── DepthIndicator.tsx    # Right-edge scale bar + magnification
 │   │   ├── LoadingSequence.tsx   # Typed intro + zoom-in
@@ -108,6 +111,7 @@ zalibhai.com/
 │   │   ├── useCurrentScale.ts    # Derived: which scale level is active
 │   │   ├── useScrollProgress.ts  # Per-section local progress (0 to 1)
 │   │   ├── useReducedMotion.ts   # prefers-reduced-motion + toggle state
+│   │   ├── useTerminalMail.ts    # Contact form state, validation, Formspree submission
 │   │   └── useTrackEvent.ts      # Analytics stub hook
 │   ├── shaders/
 │   │   ├── reaction-diffusion.glsl  # Gray-Scott organic texture
@@ -280,7 +284,7 @@ Each scale level has two scroll phases within its range:
 | Chromatin/nuclear | 0.33 to 0.50 | Instanced nucleosome beads on spline | Publications, research writeups, Ferguson Lab work | Inter (sans) |
 | Protein/MD | 0.50 to 0.67 | Abstracted protein structure, MD trajectory | Amaro Lab work (5-HT2A, possibly MPro) | Inter (sans) |
 | Code/terminal | 0.67 to 0.83 | Terminal/code aesthetic, minimal 3D | Tier 1 software featured moments, Tier 2 listing, workflows | Fira Code (mono) |
-| Expression/contact | 0.83 to 1.00 | Continues code register | Contact links, socials, resume, external links | Fira Code (mono) |
+| Expression/contact | 0.83 to 1.00 | Continues code register | Contact links, socials, resume, `$ mail zara` terminal contact form | Fira Code (mono) |
 
 Depth ranges are approximate. Exact boundaries will be tuned during prototyping.
 

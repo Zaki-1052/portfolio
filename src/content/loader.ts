@@ -4,6 +4,7 @@ import type {
   PublicationsData,
   LinksData,
   Status,
+  FormConfig,
   ParsedSection,
   SectionFrontmatter,
 } from './types';
@@ -14,6 +15,7 @@ import publicationsData from '../../content/publications.json';
 import linksData from '../../content/links.json';
 import statusData from '../../content/status.json';
 import toolkitData from '../../content/toolkit.json';
+import formData from '../../content/form.json';
 
 const markdownFiles = import.meta.glob('/content/sections/*.md', {
   eager: true,
@@ -95,4 +97,8 @@ export interface ToolkitEntry {
 
 export function getToolkit(): ToolkitEntry[] {
   return toolkitData as ToolkitEntry[];
+}
+
+export function getFormConfig(): FormConfig {
+  return formData as FormConfig;
 }

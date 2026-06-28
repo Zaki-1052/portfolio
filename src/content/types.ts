@@ -69,3 +69,10 @@ export interface ParsedSection {
   frontmatter: SectionFrontmatter;
   body: string;
 }
+
+export interface FormConfig {
+  endpoint: string;
+  recipientDisplay: string;
+  maxDailySubmissions: number;
+  minMessageLength: number;
+}

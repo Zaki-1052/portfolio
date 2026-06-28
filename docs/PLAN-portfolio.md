@@ -177,7 +177,7 @@ Build `src/scales/code/TerminalListing.tsx`: renders the `ls -la` styled output 
 
 ### 1.8 Expression/contact section (HTML only)
 
-Contact links, socials, resume link. Loaded from `content/links.json`. Styled in the code/terminal register.
+Contact links, socials, resume link. Loaded from `content/links.json`. Styled in the code/terminal register. Terminal mail contact form (`$ mail zara` trigger, green terminal popup, Formspree submission via `content/form.json` config). Form component: `src/scales/expression/TerminalMail.tsx`, logic hook: `src/hooks/useTerminalMail.ts`.
 
 ### 1.9 Navigation (HTML only)
 
@@ -201,6 +201,7 @@ Test the complete HTML site with:
 - TypeScript types enforce content schemas
 - Screen reader, keyboard, and URL fragment navigation all work
 - Depth indicator shows section dots with click-to-jump
+- Contact form functional with Formspree submission
 - Lighthouse accessibility 95+
 - All text meets WCAG AA contrast
 

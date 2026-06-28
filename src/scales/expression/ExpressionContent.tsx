@@ -4,12 +4,14 @@ import { ScaleSection } from '@/components/ScaleSection';
 import { MarkdownRenderer } from '@/content/markdown';
 import { getSection, getLinks, getToolkit } from '@/content/loader';
 import { useReveal } from '@/hooks/useReveal';
+import { TerminalMail } from './TerminalMail';
 
 export function ExpressionContent() {
   const section = getSection('expression');
   const links = getLinks();
   const toolkit = getToolkit();
   const [expandedBlurb, setExpandedBlurb] = useState<string | null>(null);
+  const [mailOpen, setMailOpen] = useState(false);
   const contactRef = useReveal<HTMLElement>();
 
   const allLinks = [
@@ -61,20 +63,35 @@ export function ExpressionContent() {
           </details>
         </div>
 
-        <nav ref={contactRef} className="contact-links reveal" aria-label="Contact">
-          {allLinks.map((l) => (
-            <a
-              key={l.k}
-              className="contact-row"
-              href={l.href}
-              target={l.href.startsWith('mailto:') ? undefined : '_blank'}
-              rel={l.href.startsWith('mailto:') ? undefined : 'noopener noreferrer'}
-            >
-              <span className="k">{l.k}</span>
-              <span className="v">{l.v}</span>
-            </a>
-          ))}
-        </nav>
+        <div>
+          <nav ref={contactRef} className="contact-links reveal" aria-label="Contact">
+            {allLinks.map((l) => (
+              <a
+                key={l.k}
+                className="contact-row"
+                href={l.href}
+                target={l.href.startsWith('mailto:') ? undefined : '_blank'}
+                rel={l.href.startsWith('mailto:') ? undefined : 'noopener noreferrer'}
+              >
+                <span className="k">{l.k}</span>
+                <span className="v">{l.v}</span>
+              </a>
+            ))}
+          </nav>
+          <button
+            className="contact-row mail-trigger"
+            onClick={() => setMailOpen(true)}
+            aria-haspopup="dialog"
+          >
+            <span className="k">
+              <span style={{ color: 'var(--text-faint)' }}>$ </span>
+              <span style={{ color: 'var(--accent)' }}>mail</span> zara
+            </span>
+            <span className="v" style={{ color: 'var(--text-faint)' }}>
+              send a message
+            </span>
+          </button>
+        </div>
       </div>
 
       <div
@@ -99,6 +116,7 @@ export function ExpressionContent() {
           <span>zalibhai.com</span>
         </a>
       </div>
+      <TerminalMail open={mailOpen} onClose={() => setMailOpen(false)} />
       {expandedBlurb &&
         (() => {
           const entry = toolkit.find((t) => t.key === expandedBlurb);
