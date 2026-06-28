@@ -1,0 +1,93 @@
+{
+  "tier1": [
+    {
+      "id": "hic-pipeline",
+      "title": "Hi-C chromatin conformation pipeline",
+      "domain": "Epigenetics",
+      "branch": "epigenetics",
+      "oneLiner": "Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod.",
+      "tags": ["R", "mariner", "edgeR", "Hi-C"],
+      "links": { "github": "https://github.com/Zaki-1052/mariner_hi-c" },
+      "scale": "chromatin"
+    },
+    {
+      "id": "methylation-pipeline",
+      "title": "DNA methylation (Biomodal DUET evoC)",
+      "domain": "Epigenetics",
+      "branch": "epigenetics",
+      "oneLiner": "Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod.",
+      "tags": ["R", "5mC/5hmC", "DMRs", "ROC"],
+      "links": { "github": "https://github.com/Zaki-1052/mariner_hi-c" },
+      "scale": "chromatin"
+    },
+    {
+      "id": "5ht2a-md",
+      "title": "Postsynaptic membrane protein MD",
+      "domain": "Structural Biology",
+      "branch": "structural",
+      "oneLiner": "Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod.",
+      "tags": ["MD", "GROMACS", "structural"],
+      "links": {},
+      "scale": "protein"
+    },
+    {
+      "id": "cleave",
+      "title": "Cleave",
+      "domain": "Software",
+      "branch": "software",
+      "oneLiner": "Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod.",
+      "tags": ["React", "FastAPI", "PostgreSQL", "AWS"],
+      "links": { "github": "https://github.com/Zaki-1052/cleave" },
+      "scale": "code"
+    },
+    {
+      "id": "metaencode",
+      "title": "MetaENCODE",
+      "domain": "Software",
+      "branch": "software",
+      "oneLiner": "Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod.",
+      "tags": ["SBERT", "UMAP", "search"],
+      "links": { "github": "https://github.com/Zaki-1052/MetaEncode" },
+      "scale": "code"
+    }
+  ],
+  "tier2": [
+    {
+      "id": "gptportal",
+      "title": "GPTPortal",
+      "oneLiner": "Lorem ipsum dolor sit amet, consectetur adipiscing.",
+      "stars": 397,
+      "links": { "github": "https://github.com/Zaki-1052/GPTPortal" }
+    },
+    {
+      "id": "webreg",
+      "title": "WebReg",
+      "oneLiner": "Lorem ipsum dolor sit amet, consectetur adipiscing.",
+      "links": { "github": "https://github.com/Zaki-1052/WebReg-Auto-Enroller" }
+    },
+    {
+      "id": "ao3-explorer",
+      "title": "AO3-Explorer",
+      "oneLiner": "Lorem ipsum dolor sit amet, consectetur adipiscing.",
+      "links": { "github": "https://github.com/Zaki-1052/AO3-History-Explorer" }
+    },
+    {
+      "id": "yeast-msa",
+      "title": "YeastMSA",
+      "oneLiner": "Lorem ipsum dolor sit amet, consectetur adipiscing.",
+      "links": { "github": "https://github.com/Zaki-1052/Yeast_MSA" }
+    },
+    {
+      "id": "mpro-analysis",
+      "title": "MPro-Analysis",
+      "oneLiner": "Lorem ipsum dolor sit amet, consectetur adipiscing.",
+      "links": { "github": "https://github.com/Zaki-1052" }
+    },
+    {
+      "id": "crime-analysis",
+      "title": "Crime-Analysis",
+      "oneLiner": "Lorem ipsum dolor sit amet, consectetur adipiscing.",
+      "links": { "github": "https://github.com/Zaki-1052/Crime_Analysis" }
+    }
+  ]
+}

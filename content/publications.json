@@ -1,0 +1,22 @@
+{
+  "publications": [
+    {
+      "id": "hic-2026",
+      "title": "Regulation of chromatin conformation by the histone deubiquitinase BAP1 in the brain",
+      "year": 2026,
+      "status": "in preparation",
+      "venue": "URC / ACS-SA Symposium",
+      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+      "links": { "preprint": null, "paper": null }
+    },
+    {
+      "id": "methylation-2026",
+      "title": "Coordinated methylation and hydroxymethylation changes at gene bodies after BAP1 loss",
+      "year": 2026,
+      "status": "in preparation",
+      "venue": "Ferguson Lab",
+      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+      "links": { "preprint": null, "paper": null }
+    }
+  ]
+}

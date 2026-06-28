@@ -1,63 +1,18 @@
 // src/app.tsx
 import { Canvas } from '@react-three/fiber';
-import { SCALES, type ScaleName } from '@/stores/depth';
-
-const SCALE_LABELS: Record<ScaleName, string> = {
-  tissue: 'Tissue / Brain',
-  cellular: 'Cellular / Neuron',
-  chromatin: 'Chromatin / Nuclear',
-  protein: 'Protein / MD',
-  code: 'Code / Terminal',
-  expression: 'Expression / Contact',
-};
-
-function ScaleSection({ scale }: { scale: ScaleName }) {
-  return (
-    <section
-      id={scale}
-      data-scale={scale}
-      style={{
-        minHeight: '100vh',
-        backgroundColor: 'var(--bg)',
-        color: 'var(--text-body)',
-        padding: 'var(--section-pad-y) var(--gutter)',
-        position: 'relative',
-        zIndex: 'var(--z-content)',
-      }}
-    >
-      <h2
-        style={{
-          fontFamily: 'var(--font-heading)',
-          fontSize: 'var(--text-3xl)',
-          color: 'var(--text-strong)',
-          lineHeight: 'var(--leading-tight)',
-          letterSpacing: 'var(--tracking-tight)',
-          marginBottom: 'var(--space-5)',
-        }}
-      >
-        {SCALE_LABELS[scale]}
-      </h2>
-      <p
-        style={{
-          fontFamily: 'var(--font-body)',
-          fontSize: 'var(--text-md)',
-          lineHeight: 'var(--leading-relaxed)',
-          maxWidth: 'var(--measure)',
-          color: 'var(--text-body)',
-        }}
-      >
-        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut
-        labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco
-        laboris nisi ut aliquip ex ea commodo consequat.
-      </p>
-    </section>
-  );
-}
+import { TissueContent } from '@/scales/tissue/TissueContent';
+import { CellularContent } from '@/scales/cellular/CellularContent';
+import { ChromatinContent } from '@/scales/chromatin/ChromatinContent';
+import { ProteinContent } from '@/scales/protein/ProteinContent';
+import { CodeContent } from '@/scales/code/CodeContent';
+import { ExpressionContent } from '@/scales/expression/ExpressionContent';
+import { DepthIndicator } from '@/components/DepthIndicator';
 
 export function App() {
   return (
     <>
       <Canvas
+        aria-hidden="true"
         style={{
           position: 'fixed',
           top: 0,
@@ -74,10 +29,14 @@ export function App() {
         <color attach="background" args={['#282c34']} />
       </Canvas>
       <main>
-        {SCALES.map((scale) => (
-          <ScaleSection key={scale} scale={scale} />
-        ))}
+        <TissueContent />
+        <CellularContent />
+        <ChromatinContent />
+        <ProteinContent />
+        <CodeContent />
+        <ExpressionContent />
       </main>
+      <DepthIndicator />
     </>
   );
 }
