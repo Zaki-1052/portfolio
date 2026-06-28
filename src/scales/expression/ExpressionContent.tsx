@@ -34,26 +34,17 @@ export function ExpressionContent() {
         </nav>
       </div>
 
-      <hr
-        style={{
-          border: 'none',
-          borderTop: '1px solid var(--accent-line)',
-          margin: 'var(--space-9) 0 var(--space-5)',
-          maxWidth: 120,
-        }}
-      />
       <div
         style={{
+          marginTop: 'var(--space-9)',
           display: 'flex',
           alignItems: 'center',
           gap: 'var(--space-3)',
-          color: 'var(--text-muted)',
+          color: 'var(--text-faint)',
           fontFamily: 'var(--font-mono)',
-          fontSize: 'var(--text-sm)',
-          letterSpacing: '0.02em',
+          fontSize: 'var(--text-xs)',
         }}
       >
-        <span style={{ color: 'var(--accent)' }}>{'>'}</span>
         <span>zalibhai.com</span>
       </div>
     </ScaleSection>

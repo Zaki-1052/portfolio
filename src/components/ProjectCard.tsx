@@ -19,9 +19,8 @@ export function ProjectCard({ title, href, description, tags = [], meta }: Proje
         padding: 'var(--space-5)',
         borderRadius: 'var(--radius)',
         border: '1px solid',
-        borderColor: 'var(--_card-border, var(--hairline-soft))',
-        borderLeft: '3px solid var(--_card-border, var(--accent-line))',
-        background: 'var(--surface-deep)',
+        borderColor: 'var(--_card-border, var(--hairline))',
+        background: 'var(--surface-raised)',
         boxShadow: 'var(--_card-shadow, var(--shadow-sm))',
         maxWidth: 'var(--measure-wide)',
       }}
@@ -113,9 +112,8 @@ export function ProjectCard({ title, href, description, tags = [], meta }: Proje
                 lineHeight: 1,
                 padding: '4px 8px',
                 borderRadius: 'var(--radius-sharp)',
-                border: '1px solid var(--accent-line)',
-                color: 'var(--text-body)',
-                background: 'var(--accent-soft)',
+                border: '1px solid var(--hairline)',
+                color: 'var(--text-muted)',
               }}
             >
               {t}

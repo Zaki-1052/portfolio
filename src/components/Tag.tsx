@@ -16,9 +16,8 @@ export function Tag({ children, tone = 'muted' }: TagProps) {
         lineHeight: 1,
         padding: '4px 8px',
         borderRadius: 'var(--radius-sharp)',
-        border: `1px solid var(--accent-line)`,
-        color: isAccent ? 'var(--accent)' : 'var(--text-body)',
-        background: 'var(--accent-soft)',
+        border: `1px solid ${isAccent ? 'var(--accent-line)' : 'var(--hairline)'}`,
+        color: isAccent ? 'var(--accent)' : 'var(--text-muted)',
       }}
     >
       {children}

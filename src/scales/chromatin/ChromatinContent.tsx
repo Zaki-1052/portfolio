@@ -26,7 +26,14 @@ export function ChromatinContent() {
         }}
       >
         {publications.map((pub) => (
-          <article key={pub.id} className="publication">
+          <article
+            key={pub.id}
+            className="publication"
+            style={{
+              borderLeft: '1px solid var(--accent-line)',
+              paddingLeft: 'var(--space-5)',
+            }}
+          >
             <div
               style={{
                 fontFamily: 'var(--font-mono)',
