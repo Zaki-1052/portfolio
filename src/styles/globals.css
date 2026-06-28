@@ -1,0 +1,290 @@
+@import 'tailwindcss';
+
+/* ---- Font loading ---- */
+
+@font-face {
+  font-family: 'Lora';
+  src: url('/fonts/Lora-VariableFont_wght.ttf') format('truetype');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/Inter-VariableFont.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Fira Code';
+  src: url('/fonts/FiraCode-VariableFont_wght.ttf') format('truetype');
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ============================================================
+   COLOR — Atom One Dark, with per-scale accent emphasis.
+   The site descends warm → cool. Backgrounds and accents shift
+   per biological scale. Everything that changes per scale reads
+   from a semantic alias so components never hardcode hex.
+   All text/bg pairs below meet WCAG AA on their scale's bg.
+   ============================================================ */
+
+:root {
+  /* ---- Atom One Dark canonical palette ---- */
+  --aod-bg: #282c34;
+  --aod-bg-deep: #21252b;
+  --aod-bg-warm: #2c2a28;
+  --aod-gutter: #3a3f4b;
+  --aod-line: #3e4451;
+
+  --aod-fg: #abb2bf;
+  --aod-fg-bright: #d7dae0;
+  --aod-fg-dim: #828896;
+  --aod-comment: #5c6370;
+
+  --aod-red: #e06c75;
+  --aod-orange: #d19a66;
+  --aod-gold: #e5c07b;
+  --aod-green: #98c379;
+  --aod-cyan: #56b6c2;
+  --aod-blue: #61afef;
+  --aod-purple: #c678dd;
+  --aod-rose: #d57aa5;
+
+  /* ---- Semantic surfaces ---- */
+  --surface: var(--aod-bg);
+  --surface-deep: var(--aod-bg-deep);
+  --surface-raised: #2f343e;
+  --surface-overlay: rgba(40, 44, 52, 0.72);
+  --hairline: var(--aod-line);
+  --hairline-soft: rgba(171, 178, 191, 0.12);
+
+  /* ---- Semantic text ---- */
+  --text-strong: var(--aod-fg-bright);
+  --text-body: var(--aod-fg);
+  --text-muted: var(--aod-fg-dim);
+  --text-faint: var(--aod-comment);
+  --text-on-accent: #1b1f25;
+
+  /* ---- Scroll-driven theme channels ---- */
+  --accent: var(--aod-blue);
+  --accent-soft: rgba(97, 175, 239, 0.16);
+  --accent-line: rgba(97, 175, 239, 0.4);
+  --bg: var(--aod-bg);
+  --fog-color: #2b3038;
+  --text: var(--aod-fg);
+
+  /* ---- Terminal syntax ---- */
+  --syntax-keyword: var(--aod-purple);
+  --syntax-string: var(--aod-green);
+  --syntax-fn: var(--aod-blue);
+  --syntax-number: var(--aod-orange);
+  --syntax-comment: var(--aod-comment);
+  --syntax-perm: var(--aod-fg-dim);
+  --syntax-star: var(--aod-gold);
+
+  /* ---- Families ---- */
+  --font-serif: 'Lora', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Fira Code', 'SF Mono', 'JetBrains Mono', ui-monospace, monospace;
+
+  --font-heading: var(--font-sans);
+  --font-body: var(--font-sans);
+
+  /* ---- Modular type scale (1.25) ---- */
+  --text-2xs: 0.6875rem;
+  --text-xs: 0.78rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-md: 1.125rem;
+  --text-lg: 1.4rem;
+  --text-xl: 1.75rem;
+  --text-2xl: 2.1875rem;
+  --text-3xl: 2.75rem;
+  --text-4xl: 3.85rem;
+  --text-5xl: 5rem;
+
+  /* ---- Line heights ---- */
+  --leading-tight: 1.1;
+  --leading-snug: 1.28;
+  --leading-normal: 1.55;
+  --leading-relaxed: 1.72;
+
+  /* ---- Tracking ---- */
+  --tracking-tight: -0.02em;
+  --tracking-snug: -0.01em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.04em;
+  --tracking-caps: 0.14em;
+
+  /* ---- Weights ---- */
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* ---- Prose measure ---- */
+  --measure: 68ch;
+  --measure-wide: 100ch;
+
+  /* ---- Spacing scale (4px base) ---- */
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+  --space-9: 6rem;
+  --space-10: 8rem;
+
+  /* ---- Section rhythm ---- */
+  --section-pad-y: clamp(4rem, 10vh, 8rem);
+  --gutter: clamp(1.25rem, 5vw, 3rem);
+
+  /* ---- Corner radius ---- */
+  --radius-organic: 16px;
+  --radius-soft: 10px;
+  --radius-base: 6px;
+  --radius-sharp: 2px;
+  --radius-square: 0;
+  --radius-pill: 999px;
+  --radius: var(--radius-base);
+
+  /* ---- Borders ---- */
+  --border-hairline: 1px solid var(--hairline);
+  --border-soft: 1px solid var(--hairline-soft);
+  --border-accent: 1px solid var(--accent-line);
+
+  /* ---- Shadow ---- */
+  --shadow-none: none;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 6px 24px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 18px 60px rgba(0, 0, 0, 0.5);
+  --glow-accent: 0 0 32px -6px var(--accent-line);
+  --ring-focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+
+  /* ---- Motion ---- */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 160ms;
+  --dur-base: 280ms;
+  --dur-slow: 460ms;
+
+  /* ---- Layering ---- */
+  --z-canvas: -1;
+  --z-content: 0;
+  --z-overlay: 10;
+  --z-nav: 30;
+  --z-modal: 50;
+}
+
+/* ============================================================
+   PER-SCALE THEME SCOPES
+   ============================================================ */
+
+[data-scale='tissue'] {
+  --accent: var(--aod-gold);
+  --accent-soft: rgba(229, 192, 123, 0.16);
+  --accent-line: rgba(229, 192, 123, 0.42);
+  --bg: var(--aod-bg-warm);
+  --fog-color: #34302b;
+  --font-heading: var(--font-serif);
+  --radius: var(--radius-organic);
+}
+
+[data-scale='cellular'] {
+  --accent: var(--aod-rose);
+  --accent-soft: rgba(213, 122, 165, 0.16);
+  --accent-line: rgba(213, 122, 165, 0.42);
+  --bg: #2a292e;
+  --fog-color: #312b30;
+  --font-heading: var(--font-serif);
+  --radius: var(--radius-soft);
+}
+
+[data-scale='chromatin'] {
+  --accent: var(--aod-blue);
+  --accent-soft: rgba(97, 175, 239, 0.16);
+  --accent-line: rgba(97, 175, 239, 0.4);
+  --bg: var(--aod-bg);
+  --fog-color: #2b3038;
+  --font-heading: var(--font-sans);
+  --radius: var(--radius-base);
+}
+
+[data-scale='protein'] {
+  --accent: var(--aod-cyan);
+  --accent-soft: rgba(86, 182, 194, 0.16);
+  --accent-line: rgba(86, 182, 194, 0.4);
+  --bg: #262b30;
+  --fog-color: #243034;
+  --font-heading: var(--font-sans);
+  --radius: var(--radius-base);
+}
+
+[data-scale='code'] {
+  --accent: var(--aod-green);
+  --accent-soft: rgba(152, 195, 121, 0.15);
+  --accent-line: rgba(152, 195, 121, 0.38);
+  --bg: var(--aod-bg-deep);
+  --fog-color: #1d2228;
+  --font-heading: var(--font-mono);
+  --radius: var(--radius-square);
+}
+
+[data-scale='expression'] {
+  --accent: var(--aod-green);
+  --accent-soft: rgba(152, 195, 121, 0.15);
+  --accent-line: rgba(152, 195, 121, 0.38);
+  --bg: var(--aod-bg-deep);
+  --fog-color: #20242a;
+  --font-heading: var(--font-mono);
+  --radius: var(--radius-square);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms;
+    --dur-base: 0ms;
+    --dur-slow: 0ms;
+  }
+}
+
+/* ============================================================
+   BASE STYLES
+   ============================================================ */
+
+html {
+  background-color: var(--aod-bg);
+  color: var(--text-body);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}

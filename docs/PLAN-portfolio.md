@@ -38,7 +38,7 @@ Install production dependencies (pinned):
 ```bash
 npm i three@~0.170.0 @react-three/fiber@^8.17.0 @react-three/drei@^9.114.0 \
   @react-three/postprocessing@^2.16.0 gsap@^3.12.5 lenis@^1.1.0 \
-  zustand@^4.5.0 react-markdown@^9.0.0 remark-gfm@^4.0.0
+  zustand@^5.0.0 react-markdown@^9.0.0 remark-gfm@^4.0.0
 ```
 
 Install Tailwind CSS 4 (pinned):

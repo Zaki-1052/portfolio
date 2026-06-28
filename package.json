@@ -1,0 +1,65 @@
+{
+  "name": "zalibhai-portfolio",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{css,json}": [
+      "prettier --write"
+    ]
+  },
+  "dependencies": {
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.6.1",
+    "@react-three/postprocessing": "^3.0.4",
+    "@tailwindcss/vite": "^4.3.1",
+    "gsap": "^3.15.0",
+    "lenis": "^1.3.25",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-markdown": "^9.1.0",
+    "remark-gfm": "^4.0.1",
+    "tailwindcss": "^4.3.1",
+    "three": "^0.170.0",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "@theatre/core": "^0.7.2",
+    "@theatre/r3f": "^0.7.2",
+    "@theatre/studio": "^0.7.2",
+    "@types/node": "^22.20.0",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@types/three": "^0.170.0",
+    "@vitejs/plugin-react": "^4.7.0",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^9.1.2",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.26",
+    "husky": "^9.1.7",
+    "leva": "^0.9.36",
+    "lint-staged": "^15.5.2",
+    "prettier": "^3.9.1",
+    "r3f-perf": "^7.2.3",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.62.0",
+    "vite": "^6.4.3",
+    "vite-plugin-compression": "^0.5.1",
+    "vitest": "^2.1.9"
+  }
+}
