@@ -52,8 +52,8 @@ export function ProjectCard({ title, href, description, tags = [], meta }: Proje
               <span
                 aria-hidden="true"
                 style={{
-                  opacity: 'var(--_card-arrow, 0)',
-                  marginLeft: 8,
+                  opacity: 'var(--_card-arrow, 0.3)',
+                  marginLeft: 'var(--space-2)',
                   fontSize: '0.8em',
                   transition: 'opacity var(--dur-fast) var(--ease-out)',
                 }}
@@ -110,7 +110,7 @@ export function ProjectCard({ title, href, description, tags = [], meta }: Proje
                 fontFamily: 'var(--font-mono)',
                 fontSize: 'var(--text-xs)',
                 lineHeight: 1,
-                padding: '4px 8px',
+                padding: 'var(--space-1) var(--space-2)',
                 borderRadius: 'var(--radius-sharp)',
                 border: '1px solid var(--hairline)',
                 color: 'var(--text-muted)',

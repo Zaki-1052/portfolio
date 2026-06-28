@@ -2,10 +2,12 @@
 import { ScaleSection } from '@/components/ScaleSection';
 import { MarkdownRenderer } from '@/content/markdown';
 import { getSection, getPublications } from '@/content/loader';
+import { useReveal } from '@/hooks/useReveal';
 
 export function ChromatinContent() {
   const section = getSection('chromatin');
   const { publications } = getPublications();
+  const pubsRef = useReveal<HTMLDivElement>();
 
   return (
     <ScaleSection
@@ -17,6 +19,8 @@ export function ChromatinContent() {
       {section && <MarkdownRenderer content={section.body} className="prose" />}
 
       <div
+        ref={pubsRef}
+        className="reveal"
         style={{
           display: 'flex',
           flexDirection: 'column',
@@ -31,7 +35,8 @@ export function ChromatinContent() {
             className="publication"
             style={{
               borderLeft: '1px solid var(--accent-line)',
-              paddingLeft: 'var(--space-5)',
+              padding: 'var(--space-4) var(--space-4) var(--space-4) var(--space-5)',
+              borderRadius: 'var(--radius-sharp)',
             }}
           >
             <div

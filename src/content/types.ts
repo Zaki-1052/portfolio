@@ -17,6 +17,7 @@ export interface Tier2Project {
   title: string;
   oneLiner: string;
   stars?: number;
+  metric?: string;
   tags?: string[];
   links: { github: string };
 }

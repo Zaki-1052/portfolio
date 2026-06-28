@@ -13,6 +13,7 @@ import projectsData from '../../content/projects.json';
 import publicationsData from '../../content/publications.json';
 import linksData from '../../content/links.json';
 import statusData from '../../content/status.json';
+import toolkitData from '../../content/toolkit.json';
 
 const markdownFiles = import.meta.glob('/content/sections/*.md', {
   eager: true,
@@ -84,4 +85,14 @@ export function getLinks(): LinksData {
 
 export function getStatus(): Status {
   return statusData as Status;
+}
+
+export interface ToolkitEntry {
+  key: string;
+  value: string;
+  blurb?: string;
+}
+
+export function getToolkit(): ToolkitEntry[] {
+  return toolkitData as ToolkitEntry[];
 }

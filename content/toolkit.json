@@ -1,0 +1,22 @@
+[
+  {
+    "key": "languages",
+    "value": "Python, R, TypeScript, Java, Rust, Bash",
+    "blurb": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+  },
+  {
+    "key": "bioinfo",
+    "value": "AMBER, cpptraj, ChimeraX, MDAnalysis, Bioconductor, samtools",
+    "blurb": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris."
+  },
+  {
+    "key": "web",
+    "value": "React, Three.js, FastAPI, PostgreSQL, AWS",
+    "blurb": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum."
+  },
+  {
+    "key": "workflow",
+    "value": "Neovim, tmux, Git, SLURM, Claude Code",
+    "blurb": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia."
+  }
+]

@@ -6,3 +6,4 @@ dist/
 theatre/
 .DS_Store
 *.tsbuildinfo
+.playwright-mcp/

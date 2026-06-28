@@ -3,6 +3,7 @@ import { ScaleSection } from '@/components/ScaleSection';
 import { TerminalListing, type TerminalRow } from '@/scales/code/TerminalListing';
 import { MarkdownRenderer } from '@/content/markdown';
 import { getSection, getProjects } from '@/content/loader';
+import { useReveal } from '@/hooks/useReveal';
 
 function FeaturedProject({ name, line, href }: { name: string; line: string; href?: string }) {
   const content = (
@@ -56,6 +57,8 @@ function FeaturedProject({ name, line, href }: { name: string; line: string; hre
 export function CodeContent() {
   const section = getSection('code');
   const { tier1, tier2 } = getProjects();
+  const featuredRef = useReveal<HTMLDivElement>();
+  const terminalRef = useReveal<HTMLDivElement>();
 
   const featuredSoftware = tier1.filter((p) => p.scale === 'code');
 
@@ -63,6 +66,7 @@ export function CodeContent() {
     name: p.title,
     description: p.oneLiner,
     stars: p.stars,
+    metric: p.metric,
     href: p.links.github,
   }));
 
@@ -71,7 +75,8 @@ export function CodeContent() {
       {section && <MarkdownRenderer content={section.body} className="prose" />}
 
       <div
-        className="featured-grid"
+        ref={featuredRef}
+        className="featured-grid reveal"
         style={{
           marginTop: 'var(--space-6)',
           marginBottom: 'var(--space-6)',
@@ -82,7 +87,9 @@ export function CodeContent() {
         ))}
       </div>
 
-      <TerminalListing cwd="~/projects" items={terminalItems} />
+      <div ref={terminalRef} className="reveal">
+        <TerminalListing cwd="~/projects" items={terminalItems} />
+      </div>
     </ScaleSection>
   );
 }

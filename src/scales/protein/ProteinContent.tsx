@@ -78,7 +78,7 @@ export function ProteinContent() {
               gap: 'var(--space-3)',
             }}
           >
-            <StatusRow k="system" v="postsynaptic membrane protein" />
+            <StatusRow k="system" v="post-synaptic CNS membrane protein" />
             <StatusRow k="lab" v="Amaro Lab, UCSD" />
             <StatusRow k="state" v="first trajectory running" />
             <StatusRow k="compute" v="SDSC Expanse (SLURM)" />
@@ -92,7 +92,7 @@ export function ProteinContent() {
             }}
           >
             <Tag tone="accent">MD</Tag>
-            <Tag>GROMACS</Tag>
+            <Tag>AMBER</Tag>
             <Tag>membrane</Tag>
           </div>
         </aside>

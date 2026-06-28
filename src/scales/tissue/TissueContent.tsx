@@ -24,7 +24,7 @@ export function TissueContent() {
             letterSpacing: '0.02em',
           }}
         >
-          {section?.frontmatter.subtitle ?? 'computational biology @ UCSD'}
+          {section?.frontmatter.subtitle ?? 'bioinformatics @ UCSD'}
         </p>
 
         <h1

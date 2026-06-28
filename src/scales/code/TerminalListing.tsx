@@ -4,6 +4,7 @@ export interface TerminalRow {
   name: string;
   description: string;
   stars?: number;
+  metric?: string;
   href?: string;
   perms?: string;
 }
@@ -17,7 +18,7 @@ function formatStars(n: number): string {
   return n >= 1000 ? n.toLocaleString() : String(n);
 }
 
-function Row({ name, description, stars, href, perms = 'drwxr-xr-x' }: TerminalRow) {
+function Row({ name, description, stars, metric, href, perms = 'drwxr-xr-x' }: TerminalRow) {
   const inner = (
     <div
       className="terminal-row"
@@ -26,7 +27,7 @@ function Row({ name, description, stars, href, perms = 'drwxr-xr-x' }: TerminalR
         gridTemplateColumns: 'minmax(0, max-content) minmax(0, 1fr) max-content',
         gap: 'var(--space-4)',
         alignItems: 'baseline',
-        padding: '5px 16px',
+        padding: 'var(--space-1) var(--space-4)',
         background: 'var(--_row-bg, transparent)',
         textDecoration: 'none',
       }}
@@ -50,7 +51,7 @@ function Row({ name, description, stars, href, perms = 'drwxr-xr-x' }: TerminalR
         )}
       </span>
       <span style={{ color: 'var(--syntax-star)', whiteSpace: 'nowrap', textAlign: 'right' }}>
-        {stars ? `★ ${formatStars(stars)}` : ''}
+        {stars ? `★ ${formatStars(stars)}` : metric || ''}
       </span>
     </div>
   );
@@ -80,7 +81,7 @@ export function TerminalListing({ cwd = '~/projects', items }: TerminalListingPr
       style={{
         fontFamily: 'var(--font-mono)',
         fontSize: 'var(--text-sm)',
-        lineHeight: 1.7,
+        lineHeight: 'var(--leading-relaxed)',
         background: 'var(--surface-deep)',
         border: '1px solid var(--hairline)',
         borderRadius: 'var(--radius-square)',
@@ -90,17 +91,17 @@ export function TerminalListing({ cwd = '~/projects', items }: TerminalListingPr
     >
       <div
         style={{
-          padding: '10px 16px',
+          padding: 'var(--space-2) var(--space-4)',
           borderBottom: '1px solid var(--hairline)',
           color: 'var(--text-muted)',
-          background: 'rgba(0, 0, 0, 0.15)',
+          background: 'rgba(0, 0, 0, 0.2)',
         }}
       >
         <span style={{ color: 'var(--syntax-fn)' }}>{cwd}</span>{' '}
         <span style={{ color: 'var(--text-faint)' }}>$</span>{' '}
         <span style={{ color: 'var(--text-body)' }}>ls -la</span>
       </div>
-      <ul style={{ listStyle: 'none', margin: 0, padding: '6px 0' }}>
+      <ul style={{ listStyle: 'none', margin: 0, padding: 'var(--space-1) 0' }}>
         {items.map((it) => (
           <Row key={it.name} {...it} />
         ))}

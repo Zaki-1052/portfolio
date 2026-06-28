@@ -1,11 +1,16 @@
 // src/scales/expression/ExpressionContent.tsx
+import { useState } from 'react';
 import { ScaleSection } from '@/components/ScaleSection';
 import { MarkdownRenderer } from '@/content/markdown';
-import { getSection, getLinks } from '@/content/loader';
+import { getSection, getLinks, getToolkit } from '@/content/loader';
+import { useReveal } from '@/hooks/useReveal';
 
 export function ExpressionContent() {
   const section = getSection('expression');
   const links = getLinks();
+  const toolkit = getToolkit();
+  const [expandedBlurb, setExpandedBlurb] = useState<string | null>(null);
+  const contactRef = useReveal<HTMLElement>();
 
   const allLinks = [
     { k: 'email', v: links.email, href: `mailto:${links.email}` },
@@ -15,10 +20,48 @@ export function ExpressionContent() {
 
   return (
     <ScaleSection scale="expression" title={section?.frontmatter.title} kicker="surface, again">
+      <div style={{ position: 'relative' }}>
+        <img
+          src="/favicon.svg"
+          alt=""
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            top: 'calc(-1 * var(--space-8))',
+            right: 0,
+            width: 60,
+            height: 60,
+            opacity: 0.4,
+          }}
+        />
+      </div>
       <div className="content-grid content-grid--equal">
-        {section && <MarkdownRenderer content={section.body} className="prose" />}
+        <div>
+          {section && <MarkdownRenderer content={section.body} className="prose" />}
 
-        <nav className="contact-links" aria-label="Contact">
+          <details className="toolkit">
+            <summary>
+              <span style={{ color: 'var(--text-faint)' }}>$ </span>
+              <span style={{ color: 'var(--accent)' }}>cat</span> ~/.toolkit
+            </summary>
+            <div className="toolkit__body">
+              {toolkit.map((entry) => (
+                <div key={entry.key} className="toolkit__group">
+                  <div
+                    className="toolkit__key"
+                    data-has-blurb={entry.blurb ? '' : undefined}
+                    onClick={entry.blurb ? () => setExpandedBlurb(entry.key) : undefined}
+                  >
+                    {entry.key}
+                  </div>
+                  <div className="toolkit__val">{entry.value}</div>
+                </div>
+              ))}
+            </div>
+          </details>
+        </div>
+
+        <nav ref={contactRef} className="contact-links reveal" aria-label="Contact">
           {allLinks.map((l) => (
             <a
               key={l.k}
@@ -45,8 +88,33 @@ export function ExpressionContent() {
           fontSize: 'var(--text-xs)',
         }}
       >
-        <span>zalibhai.com</span>
+        <a
+          href="https://github.com/Zaki-1052/portfolio"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: 'inherit', textDecoration: 'none' }}
+        >
+          <span style={{ color: 'var(--accent)' }}>~</span>
+          <span style={{ color: 'var(--text-faint)', margin: '0 var(--space-1)' }}>/</span>
+          <span>zalibhai.com</span>
+        </a>
       </div>
+      {expandedBlurb &&
+        (() => {
+          const entry = toolkit.find((t) => t.key === expandedBlurb);
+          if (!entry?.blurb) return null;
+          return (
+            <div className="holo-overlay" onClick={() => setExpandedBlurb(null)}>
+              <div className="holo-popup" onClick={(e) => e.stopPropagation()}>
+                <button className="holo-popup__close" onClick={() => setExpandedBlurb(null)}>
+                  esc
+                </button>
+                <div className="holo-popup__header">{entry.key}</div>
+                <div className="holo-popup__body">{entry.blurb}</div>
+              </div>
+            </div>
+          );
+        })()}
     </ScaleSection>
   );
 }

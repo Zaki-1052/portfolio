@@ -4,6 +4,7 @@ import { ScaleSection } from '@/components/ScaleSection';
 import { ProjectCard } from '@/components/ProjectCard';
 import { MarkdownRenderer } from '@/content/markdown';
 import { getSection, getProjects } from '@/content/loader';
+import { useReveal } from '@/hooks/useReveal';
 
 type BranchKey = 'epigenetics' | 'structural' | 'software';
 
@@ -28,6 +29,7 @@ export function CellularContent() {
   const [focus, setFocus] = useState<BranchKey>('epigenetics');
   const section = getSection('cellular');
   const { tier1 } = getProjects();
+  const cardsRef = useReveal<HTMLDivElement>();
 
   const branchProjects = tier1.filter((p) => p.branch === focus);
 
@@ -58,7 +60,11 @@ export function CellularContent() {
         ))}
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+      <div
+        ref={cardsRef}
+        className="reveal"
+        style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}
+      >
         {branchProjects.map((project) => (
           <ProjectCard
             key={project.id}

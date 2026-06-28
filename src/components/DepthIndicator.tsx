@@ -53,53 +53,14 @@ export function DepthIndicator() {
   const fillPct = SCALE_INFO.length > 1 ? (activeIndex / (SCALE_INFO.length - 1)) * 100 : 0;
 
   return (
-    <nav
-      aria-label="Scale depth"
-      style={{
-        position: 'fixed',
-        top: '50%',
-        right: 'clamp(12px, 2vw, 28px)',
-        transform: 'translateY(-50%)',
-        zIndex: 'var(--z-nav)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'flex-start',
-      }}
-    >
-      <div
-        style={{
-          position: 'relative',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          paddingLeft: 2,
-        }}
-      >
-        {/* Track */}
+    <nav className="depth-indicator" aria-label="Scale depth">
+      <div className="depth-indicator__inner">
+        <span className="depth-indicator__track" aria-hidden="true" />
         <span
+          className="depth-indicator__fill"
           aria-hidden="true"
           style={{
-            position: 'absolute',
-            top: 6,
-            bottom: 6,
-            left: '50%',
-            width: 1,
-            transform: 'translateX(-50%)',
-            background: 'var(--hairline)',
-          }}
-        />
-        {/* Fill */}
-        <span
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            top: 6,
-            left: '50%',
-            width: 1,
-            height: `calc(${fillPct}% - 12px * ${fillPct / 100})`,
-            transform: 'translateX(-50%)',
-            background: 'var(--accent-line)',
-            transition: 'height var(--dur-base) var(--ease-out)',
+            height: `calc(${fillPct}% - var(--space-2) * 2 * ${fillPct / 100})`,
           }}
         />
 
@@ -108,46 +69,18 @@ export function DepthIndicator() {
           return (
             <button
               key={s.id}
+              className="depth-indicator__btn"
               onClick={() => handleJump(s.id)}
               aria-current={active ? 'true' : undefined}
               title={s.name}
-              style={{
-                position: 'relative',
-                appearance: 'none',
-                background: 'transparent',
-                border: 0,
-                cursor: 'pointer',
-                padding: '10px 6px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-              }}
             >
               <span
+                className="depth-indicator__dot"
                 aria-hidden="true"
                 data-scale={active ? s.id : undefined}
-                style={{
-                  width: active ? 9 : 5,
-                  height: active ? 9 : 5,
-                  borderRadius: '50%',
-                  background: active ? 'var(--accent)' : 'var(--text-faint)',
-                  boxShadow: active ? 'var(--glow-accent)' : 'none',
-                  transition: 'all var(--dur-base) var(--ease-out)',
-                }}
               />
               {active && (
-                <span
-                  style={{
-                    position: 'absolute',
-                    right: 'calc(100% + 4px)',
-                    whiteSpace: 'nowrap',
-                    fontFamily: 'var(--font-sans)',
-                    fontSize: 'var(--text-2xs)',
-                    letterSpacing: 'var(--tracking-caps)',
-                    textTransform: 'uppercase',
-                    color: 'var(--text-muted)',
-                  }}
-                >
+                <span className="depth-indicator__label">
                   {s.name}
                   {s.magnification ? ` · ${s.magnification}` : ''}
                 </span>
