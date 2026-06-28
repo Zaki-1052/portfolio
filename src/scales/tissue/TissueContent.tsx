@@ -20,11 +20,11 @@ export function TissueContent() {
             margin: '0 0 var(--space-3)',
             color: 'var(--accent)',
             fontFamily: 'var(--font-sans)',
-            fontSize: 'var(--text-sm)',
+            fontSize: 'var(--text-base)',
             letterSpacing: '0.02em',
           }}
         >
-          {section?.frontmatter.subtitle ?? 'computational biology @ UCSD'}
+          {section?.frontmatter.subtitle ?? 'bioinformatics @ UCSD'}
         </p>
 
         <h1
@@ -34,6 +34,8 @@ export function TissueContent() {
             lineHeight: 1.02,
             letterSpacing: '-0.02em',
             margin: '0 0 var(--space-5)',
+            paddingBottom: 'var(--space-3)',
+            borderBottom: '3px solid var(--accent-line)',
             maxWidth: '12ch',
           }}
         >
