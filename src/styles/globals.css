@@ -739,6 +739,17 @@ hr {
   font-size: var(--text-sm);
 }
 
+/* Profile picture */
+.pfp {
+  transition:
+    box-shadow 0.3s ease,
+    filter 0.3s ease;
+}
+.pfp:hover {
+  box-shadow: 0 0 24px 4px oklch(from var(--accent) l c h / 0.35);
+  filter: brightness(1.08);
+}
+
 /* Scroll hint */
 .scroll-hint {
   display: inline-flex;

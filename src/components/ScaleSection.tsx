@@ -10,6 +10,7 @@ interface ScaleSectionProps {
   children: ReactNode;
   full?: boolean;
   align?: 'left' | 'center';
+  maxWidth?: string;
   className?: string;
   id?: string;
   style?: CSSProperties;
@@ -23,6 +24,7 @@ export function ScaleSection({
   children,
   full = false,
   align = 'left',
+  maxWidth,
   className,
   id,
   style,
@@ -46,7 +48,7 @@ export function ScaleSection({
         style={{
           position: 'relative',
           zIndex: 1,
-          maxWidth: 'min(1080px, 100%)',
+          maxWidth: maxWidth ?? 'min(1080px, 100%)',
           margin: align === 'center' ? '0 auto' : '0',
           textAlign: align,
         }}
