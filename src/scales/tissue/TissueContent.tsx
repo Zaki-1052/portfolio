@@ -1,11 +1,22 @@
 // src/scales/tissue/TissueContent.tsx
+import { useMemo } from 'react';
 import { ScaleSection } from '@/components/ScaleSection';
 import { MarkdownRenderer } from '@/content/markdown';
 import { getSection, getStatus } from '@/content/loader';
+import { useGlitchCycle } from '@/hooks/useGlitchCycle';
+
+const ROLES = [
+  'bioinformatics',
+  'computational biology',
+  'epigenomics research',
+  'full-stack development',
+];
 
 export function TissueContent() {
   const section = getSection('tissue');
   const status = getStatus();
+  const roles = useMemo(() => ROLES, []);
+  const role = useGlitchCycle(roles);
 
   return (
     <ScaleSection
@@ -28,12 +39,12 @@ export function TissueContent() {
             style={{
               margin: '0 0 var(--space-3)',
               color: 'var(--accent)',
-              fontFamily: 'var(--font-sans)',
-              fontSize: 'var(--text-sm)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 'var(--text-md)',
               letterSpacing: '0.02em',
             }}
           >
-            {section?.frontmatter.subtitle ?? 'bioinformatics @ UCSD'}
+            {role} @ UCSD
           </p>
 
           <h1
