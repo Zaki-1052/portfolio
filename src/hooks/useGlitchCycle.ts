@@ -5,29 +5,46 @@ const GLITCH_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012345
 
 interface GlitchCycleOptions {
   holdMs?: number;
-  scramblMs?: number;
+  scrambleMs?: number;
   resolveMs?: number;
 }
 
+function prefersReducedMotion(): boolean {
+  return (
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
+}
+
+/**
+ * Cycles a headline word through a scramble-and-resolve "glitch" reveal.
+ * Holds each item, then scrambles into the next on a loop.
+ * Respects prefers-reduced-motion by holding the first item statically.
+ */
 export function useGlitchCycle(
   items: string[],
-  { holdMs = 3000, scramblMs = 600, resolveMs = 400 }: GlitchCycleOptions = {},
+  { holdMs = 3000, scrambleMs = 600, resolveMs = 400 }: GlitchCycleOptions = {},
 ): string {
-  const [display, setDisplay] = useState(items[0]);
+  const [display, setDisplay] = useState<string>(items[0] ?? '');
   const indexRef = useRef(0);
   const rafRef = useRef<number>(0);
 
   useEffect(() => {
     if (items.length < 2) return;
 
-    function randomChar() {
-      return GLITCH_CHARS[Math.floor(Math.random() * GLITCH_CHARS.length)];
+    // Reduced-motion: hold the first role, no scramble, no cycle.
+    if (prefersReducedMotion()) {
+      setDisplay(items[0] ?? '');
+      return;
+    }
+
+    function randomChar(): string {
+      return GLITCH_CHARS.charAt(Math.floor(Math.random() * GLITCH_CHARS.length));
     }
 
     function scrambleResolve(from: string, to: string) {
       const maxLen = Math.max(from.length, to.length);
       const padded = to.padEnd(maxLen);
-      const totalMs = scramblMs + resolveMs;
+      const totalMs = scrambleMs + resolveMs;
       const start = performance.now();
 
       function tick() {
@@ -37,16 +54,11 @@ export function useGlitchCycle(
           return;
         }
 
+        const charProgress = elapsed / totalMs;
         let result = '';
         for (let i = 0; i < maxLen; i++) {
-          const charProgress = elapsed / totalMs;
           const charThreshold = i / maxLen;
-
-          if (charProgress > charThreshold + 0.3) {
-            result += padded[i];
-          } else {
-            result += randomChar();
-          }
+          result += charProgress > charThreshold + 0.3 ? padded.charAt(i) : randomChar();
         }
         setDisplay(result.trimEnd());
         rafRef.current = requestAnimationFrame(tick);
@@ -59,16 +71,16 @@ export function useGlitchCycle(
       () => {
         const prevIndex = indexRef.current;
         indexRef.current = (indexRef.current + 1) % items.length;
-        scrambleResolve(items[prevIndex], items[indexRef.current]);
+        scrambleResolve(items[prevIndex] ?? '', items[indexRef.current] ?? '');
       },
-      holdMs + scramblMs + resolveMs,
+      holdMs + scrambleMs + resolveMs,
     );
 
     return () => {
       clearInterval(interval);
       cancelAnimationFrame(rafRef.current);
     };
-  }, [items, holdMs, scramblMs, resolveMs]);
+  }, [items, holdMs, scrambleMs, resolveMs]);
 
   return display;
 }
