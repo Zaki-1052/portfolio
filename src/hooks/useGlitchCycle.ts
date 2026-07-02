@@ -1,5 +1,6 @@
 // src/hooks/useGlitchCycle.ts
 import { useState, useEffect, useRef } from 'react';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 const GLITCH_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%&*';
 
@@ -9,16 +10,11 @@ interface GlitchCycleOptions {
   resolveMs?: number;
 }
 
-function prefersReducedMotion(): boolean {
-  return (
-    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  );
-}
-
 /**
  * Cycles a headline word through a scramble-and-resolve "glitch" reveal.
  * Holds each item, then scrambles into the next on a loop.
- * Respects prefers-reduced-motion by holding the first item statically.
+ * Respects reduced motion (OS pref or on-page toggle, live) by holding the
+ * first item statically — flipping the toggle mid-cycle snaps it to rest.
  */
 export function useGlitchCycle(
   items: string[],
@@ -27,12 +23,12 @@ export function useGlitchCycle(
   const [display, setDisplay] = useState<string>(items[0] ?? '');
   const indexRef = useRef(0);
   const rafRef = useRef<number>(0);
+  const reduced = useReducedMotion();
 
   useEffect(() => {
-    if (items.length < 2) return;
-
-    // Reduced-motion: hold the first role, no scramble, no cycle.
-    if (prefersReducedMotion()) {
+    // Reduced motion or nothing to cycle: hold the first item, no scramble.
+    if (items.length < 2 || reduced) {
+      indexRef.current = 0;
       setDisplay(items[0] ?? '');
       return;
     }
@@ -80,7 +76,7 @@ export function useGlitchCycle(
       clearInterval(interval);
       cancelAnimationFrame(rafRef.current);
     };
-  }, [items, holdMs, scrambleMs, resolveMs]);
+  }, [items, holdMs, scrambleMs, resolveMs, reduced]);
 
   return display;
 }

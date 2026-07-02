@@ -44,7 +44,9 @@ export function TissueContent() {
               letterSpacing: '0.02em',
             }}
           >
-            {role} @ UCSD
+            {/* Stable label for screen readers; the scrambling text is decorative. */}
+            <span className="visually-hidden">{ROLES[0]} @ UCSD</span>
+            <span aria-hidden="true">{role} @ UCSD</span>
           </p>
 
           <h1

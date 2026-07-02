@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import 'lenis/dist/lenis.css';
 
 /* ---- Font loading ---- */
 
@@ -270,6 +271,30 @@
   }
 }
 
+/* On-page toggle mirror of every reduced-motion @media block in this file.
+   Media queries can't read JS state, so MotionToggle drives the same rules via
+   [data-motion='reduced'] on <html>. Kept in sync with the @media blocks below
+   (holo, scroll-hint, reveal, terminal-mail). */
+:root[data-motion='reduced'] {
+  --dur-fast: 0ms;
+  --dur-base: 0ms;
+  --dur-slow: 0ms;
+}
+[data-motion='reduced'] .holo-overlay,
+[data-motion='reduced'] .scroll-hint span,
+[data-motion='reduced'] .terminal-mail-overlay,
+[data-motion='reduced'] .terminal-mail__bar-fill {
+  animation: none;
+}
+[data-motion='reduced'] .terminal-mail__bar-fill {
+  transform: scaleX(0.5);
+}
+[data-motion='reduced'] .reveal {
+  opacity: 1;
+  transform: none;
+  transition: none;
+}
+
 /* ============================================================
    ATMOSPHERIC BACKGROUNDS
    Per-scale radial gradients + noise grain create warm-to-cool
@@ -353,12 +378,14 @@
    ============================================================ */
 
 html {
-  background-color: var(--aod-bg);
+  /* Tracks the scroll-driven root theme so overscroll/rubber-band areas match
+     the current scale. Lenis owns smooth scrolling — no CSS scroll-behavior
+     (it double-smooths and stutters against Lenis's rAF scroll writes). */
+  background-color: var(--bg);
   color: var(--text-body);
   font-family: var(--font-body);
   font-size: var(--text-base);
   line-height: var(--leading-normal);
-  scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -954,7 +981,9 @@ hr {
   width: 1px;
   transform: translateX(-50%);
   background: var(--accent-line);
-  transition: height var(--dur-base) var(--ease-out);
+  /* Height is set imperatively every scroll tick (see DepthIndicator);
+     Lenis-driven depth updates make it smooth, so no CSS transition here
+     (a transition would lag the bar behind the scroll). */
 }
 
 .depth-indicator__btn {
@@ -1001,6 +1030,40 @@ hr {
   letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
   color: var(--text-muted);
+  /* Remounted on scale change (key={currentScale}) so this replays. */
+  animation: label-fade var(--dur-base) var(--ease-out);
+}
+@keyframes label-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ---- Motion toggle ---- */
+
+.motion-toggle {
+  position: fixed;
+  right: clamp(12px, 2vw, 28px);
+  bottom: clamp(16px, 4vh, 40px);
+  z-index: var(--z-nav);
+  appearance: none;
+  background: none;
+  border: none;
+  padding: var(--space-1) var(--space-2);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--text-faint);
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.motion-toggle:hover,
+.motion-toggle[aria-pressed='true'] {
+  color: var(--accent);
 }
 
 /* ---- Terminal mail ---- */

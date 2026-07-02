@@ -1,6 +1,7 @@
 // src/scales/expression/TerminalMail.tsx
 import { useEffect, useRef, useCallback } from 'react';
 import { useTerminalMail } from '@/hooks/useTerminalMail';
+import { getLenis } from '@/engine/scroll-engine';
 
 interface TerminalMailProps {
   open: boolean;
@@ -37,6 +38,16 @@ export function TerminalMail({ open, onClose }: TerminalMailProps) {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [open, onClose]);
+
+  // Lock page scroll behind the modal (lenis.css .lenis-stopped { overflow:
+  // clip }); resume on close. data-lenis-prevent below keeps the modal's own
+  // wheel/touch native.
+  useEffect(() => {
+    if (!open) return;
+    const lenis = getLenis();
+    lenis?.stop();
+    return () => lenis?.start();
+  }, [open]);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -75,6 +86,7 @@ export function TerminalMail({ open, onClose }: TerminalMailProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="terminal-mail-title"
+        data-lenis-prevent
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >

@@ -1,5 +1,6 @@
 // src/hooks/useReveal.ts
 import { useEffect, useRef } from 'react';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 const OBSERVER_OPTIONS: IntersectionObserverInit = {
   threshold: 0.15,
@@ -25,14 +26,15 @@ function getObserver(): IntersectionObserver {
 
 export function useReveal<T extends HTMLElement = HTMLDivElement>() {
   const ref = useRef<T>(null);
+  const reduced = useReducedMotion();
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
 
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    if (prefersReducedMotion) {
+    // Reduced motion (OS pref or on-page toggle, live): reveal immediately, no
+    // observer. Re-runs if the toggle flips mid-session.
+    if (reduced) {
       el.classList.add('revealed');
       return;
     }
@@ -50,7 +52,7 @@ export function useReveal<T extends HTMLElement = HTMLDivElement>() {
         refCount = 0;
       }
     };
-  }, []);
+  }, [reduced]);
 
   return ref;
 }
