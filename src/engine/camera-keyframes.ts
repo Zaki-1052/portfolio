@@ -30,7 +30,7 @@ export interface CameraSample {
 // identity (looking down -z toward the shell at the origin); tilt is added in
 // leva. See camera-keyframes.test.ts for the invariants this table must hold.
 export const CAMERA_KEYFRAMES: readonly CameraKeyframe[] = [
-  { depth: 0.0, position: [0, 0, 26], quaternion: [0, 0, 0, 1], fov: 50 }, // establishing (shell radius ≈12)
+  { depth: 0.0, position: [0, 0, 26], quaternion: [0, 0, 0, 1], fov: 60 }, // establishing (shell radius ≈12); wider fov frames the whole form
   { depth: 0.08, position: [0, 0.5, 19], quaternion: [0, 0, 0, 1], fov: 50 }, // arrival→content push
   { depth: 0.15, position: [0, 0, 13.5], quaternion: [0, 0, 0, 1], fov: 52 }, // lined up, just outside the shell
   { depth: 0.19, position: [0, 0, 3], quaternion: [0, 0, 0, 1], fov: 60 }, // punched through the aperture

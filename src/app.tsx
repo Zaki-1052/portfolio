@@ -112,11 +112,6 @@ export function App() {
             <SceneManager />
             <CameraController />
             <PostFX />
-            {CameraDevTools && (
-              <Suspense fallback={null}>
-                <CameraDevTools />
-              </Suspense>
-            )}
             {CameraTheatreSpike && (
               // Own boundary so a Theatre failure never trips the Canvas boundary.
               <WebGLErrorBoundary onError={() => console.warn('Theatre spike disabled')}>
@@ -143,6 +138,12 @@ export function App() {
       </main>
       <DepthIndicator />
       <MotionToggle />
+      {/* leva panel lives in the HTML layer (renders DOM), not the Canvas. */}
+      {CameraDevTools && (
+        <Suspense fallback={null}>
+          <CameraDevTools />
+        </Suspense>
+      )}
     </>
   );
 }

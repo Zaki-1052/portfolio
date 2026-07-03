@@ -1,22 +1,25 @@
 // src/engine/camera-dev-tools.tsx
-// DEV-ONLY leva panel for tuning the camera keyframes live. Writes straight into
+// DEV-ONLY leva panel for tuning the camera keyframes live. Rendered in the HTML
+// layer (NOT the Canvas) and returns <Leva/> explicitly: leva 0.9.36's implicit
+// auto-mount uses the removed ReactDOM.render and crashes on React 19, whereas an
+// in-tree <Leva/> renders through normal React. useControls writes into
 // liveCameraKeyframes (which CameraController reads) and invalidate()s so edits
-// render immediately under frameloop="demand". The "bake" button copies the
-// tuned table as JSON to paste back into CAMERA_KEYFRAMES. Lazy-loaded behind
-// import.meta.env.DEV in app.tsx, so it's dead-code-eliminated from production.
+// show under frameloop="demand"; "bake" copies the tuned table as JSON. Lazy +
+// DEV-gated in app.tsx, so production never bundles leva.
+//
+// leva keys must be globally unique and contain no '.' (its path separator), so
+// folders are integer-indexed (kf0…) and leaf keys carry the index.
 import { useMemo } from 'react';
 import { invalidate } from '@react-three/fiber';
-import { button, folder, useControls } from 'leva';
+import { Leva, button, folder, useControls } from 'leva';
 import { CAMERA_KEYFRAMES, liveCameraKeyframes } from './camera-keyframes';
 
-export function CameraDevTools(): null {
+export function CameraDevTools() {
   const schema = useMemo(() => {
-    // leva's own schema-parameter type — its folder/button generics don't unify
-    // in a hand-typed Record, but this has the index signature + variance leva wants.
     const s: Parameters<typeof folder>[0] = {};
     CAMERA_KEYFRAMES.forEach((kf, i) => {
-      s[`depth ${kf.depth}`] = folder({
-        position: {
+      s[`kf${i} · d${Math.round(kf.depth * 100)}`] = folder({
+        [`pos${i}`]: {
           value: { x: kf.position[0], y: kf.position[1], z: kf.position[2] },
           step: 0.5,
           onChange: (v: { x: number; y: number; z: number }) => {
@@ -27,7 +30,7 @@ export function CameraDevTools(): null {
             }
           },
         },
-        fov: {
+        [`fov${i}`]: {
           value: kf.fov,
           min: 20,
           max: 100,
@@ -51,5 +54,5 @@ export function CameraDevTools(): null {
   }, []);
 
   useControls('camera', schema);
-  return null;
+  return <Leva collapsed />;
 }

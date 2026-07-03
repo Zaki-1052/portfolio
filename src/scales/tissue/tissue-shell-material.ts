@@ -1,11 +1,15 @@
 // src/scales/tissue/tissue-shell-material.ts
 // The folded-cortex shell's ShaderMaterial. Built with drei's shaderMaterial so
-// uniforms are typed props and settable instance fields (matRef.current.uTime =
-// …). The shared noise.glsl is prepended to both stages (raw-string compose; no
-// GLSL #include plugin). Lighting + fog are hand-set uniforms — a custom
-// ShaderMaterial receives neither scene lights nor three's fog automatically.
+// each uniform is a settable instance field (material.uTime = …). The shared
+// noise.glsl is prepended to both stages (raw-string compose; no GLSL #include
+// plugin). Lighting + fog are hand-set uniforms — a custom ShaderMaterial gets
+// neither scene lights nor three's fog automatically.
+//
+// Consumed by `new TissueShellMaterial()` + a mesh `material={…}` prop (see
+// TissueScene). NOT via extend()/a JSX intrinsic: TissueScene would reference
+// this only in a type position, so esbuild would elide the import and the
+// extend side-effect would never run ("not part of the THREE namespace").
 import { shaderMaterial } from '@react-three/drei';
-import { extend, type ThreeElement } from '@react-three/fiber';
 import { Color, DataTexture, RGBAFormat, type Texture } from 'three';
 import noise from '@/shaders/noise.glsl?raw';
 import vert from './shaders/tissue-shell.vert.glsl?raw';
@@ -24,11 +28,11 @@ export const TissueShellMaterial = shaderMaterial(
   {
     uTime: 0,
     uOpacity: 1,
-    uBaseColor: new Color('#6e3d24'), // warm brown matte
+    uBaseColor: new Color('#7e5230'), // warm tan-brown matte (lit gyri read; sulci darken via AO)
     uFresnelColor: new Color('#e5c07b'), // gold rim → bloom source
-    uFresnelPower: 2.6,
+    uFresnelPower: 3.0, // soft silhouette glow (accent, not the whole surface)
     uFogColor: new Color('#34302b'),
-    uFogDensity: 0.02,
+    uFogDensity: 0.01,
     uRDTexture: placeholderRD as Texture,
     uRDBlend: 0,
     uDissolve: 0,
@@ -38,11 +42,3 @@ export const TissueShellMaterial = shaderMaterial(
   vertexShader,
   fragmentShader,
 );
-
-extend({ TissueShellMaterial });
-
-declare module '@react-three/fiber' {
-  interface ThreeElements {
-    tissueShellMaterial: ThreeElement<typeof TissueShellMaterial>;
-  }
-}

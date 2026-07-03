@@ -1,0 +1,24 @@
+<!doctype html>
+<!-- tissue-preview.html — DEV-ONLY isolated preview of the tissue shell. Served by
+     Vite at /tissue-preview.html in dev; not referenced by index.html, so it is
+     never included in the production build. -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tissue Shell Preview (dev)</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #141210;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="preview-root"></div>
+    <script type="module" src="/src/dev/tissue-preview.tsx"></script>
+  </body>
+</html>
