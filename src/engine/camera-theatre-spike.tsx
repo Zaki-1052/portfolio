@@ -31,7 +31,7 @@ export function CameraTheatreSpike(): null {
         studio.initialize();
         studioStarted = true;
       }
-      const sheet = getProject('Portfolio · Camera').sheet('Tissue');
+      const sheet = getProject('Portfolio · Camera').sheet('Surface');
       objRef.current = sheet.object('camera', { posX: 0, posY: 0, posZ: 26, fov: 50 });
     } catch (err) {
       console.warn('Theatre spike failed to initialize (expected under R3F v9):', err);

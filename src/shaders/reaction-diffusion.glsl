@@ -2,7 +2,7 @@
 // Gray-Scott reaction-diffusion step, run by GPUComputationRenderer. It injects
 // `uniform sampler2D textureGrayScott;` (the variable's own previous state) and
 // a `resolution` #define. Channel r = chemical A, g = chemical B. B forms the
-// coral/fold pattern sampled by the tissue shell for surface detail.
+// coral/fold pattern sampled by the shell for surface detail.
 uniform float uFeed;
 uniform float uKill;
 uniform float uDiffuseA;

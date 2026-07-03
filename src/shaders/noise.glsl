@@ -82,7 +82,14 @@ float fbm(vec3 p) {
   return sum;
 }
 
-// Ridged multifractal — sharp creases read as sulci/gyri. Output ~[0, 1].
+// Two-octave fbm — cheap variant for warps evaluated per pixel, where the
+// full 4-octave stack adds detail below what the warp can express anyway.
+// Output ~[-0.75, 0.75].
+float fbm2(vec3 p) {
+  return 0.5 * snoise(p) + 0.25 * snoise(p * 2.0);
+}
+
+// Ridged multifractal — sharp creases read as grooves/ridges. Output ~[0, 1].
 float ridgedFbm(vec3 p) {
   float sum = 0.0;
   float amp = 0.5;

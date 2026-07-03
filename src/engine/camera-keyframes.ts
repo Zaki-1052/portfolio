@@ -26,7 +26,7 @@ export interface CameraSample {
 // Starter table — PLACEHOLDER values, tuned live in leva (camera-dev-tools.tsx)
 // then baked back here. Anchors: establishing dolly, arrival→content push, the
 // aperture line-up, and continued descent through the (Phase-3 empty) void so
-// scrolling past tissue keeps moving rather than freezing. Quaternions start at
+// scrolling past the first scale keeps moving rather than freezing. Quaternions start at
 // identity (looking down -z toward the shell at the origin); tilt is added in
 // leva. See camera-keyframes.test.ts for the invariants this table must hold.
 export const CAMERA_KEYFRAMES: readonly CameraKeyframe[] = [

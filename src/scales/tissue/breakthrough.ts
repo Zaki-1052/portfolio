@@ -1,6 +1,6 @@
 // src/scales/tissue/breakthrough.ts
-// Pure ramps for the cortex-breakthrough beat that straddles the tissue→cellular
-// boundary (0.17). The shell shader's dissolve, the particle burst, and the
+// Pure ramps for the shell-breakthrough beat that straddles the first→second
+// scale boundary (0.17). The shell shader's dissolve, the particle burst, and the
 // warm→magenta fog push all read from these so the whole sequence is a
 // deterministic function of scroll depth (scrubs cleanly in both directions).
 import { clamp, smoothstep } from '@/utils/math';
@@ -26,7 +26,7 @@ export function dissolveAmountFor(depth: number, reduced: boolean): number {
   return smoothstep(BREAKTHROUGH_START, BREAKTHROUGH_END, depth);
 }
 
-/** 0..1 blend from the tissue fog color toward the magenta (cellular) anchor. */
+/** 0..1 blend from the first scale's fog color toward the magenta (second scale) anchor. */
 export function fogBlendT(depth: number): number {
   return smoothstep(BREAKTHROUGH_START, BREAKTHROUGH_END, depth);
 }

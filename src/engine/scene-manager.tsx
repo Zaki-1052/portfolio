@@ -10,11 +10,11 @@ import { useShallow } from 'zustand/react/shallow';
 import { useDepthStore } from '@/stores/depth';
 import { type ScaleName } from '@/engine/scale-manager';
 import { scalesToMount } from '@/engine/scene-registry';
-import { TissueScene } from '@/scales/tissue/TissueScene';
+import { SurfaceScene } from '@/scales/tissue/TissueScene';
 import { CellularVoidStub } from '@/scales/cellular/CellularVoidStub';
 
 const SCENE_REGISTRY: Partial<Record<ScaleName, ComponentType>> = {
-  tissue: TissueScene,
+  tissue: SurfaceScene,
   cellular: CellularVoidStub,
 };
 

@@ -21,7 +21,7 @@ export interface RDParams {
 }
 
 export const RD_SIZE = 256;
-// Labyrinth/coral regime — reads as organic brain-like mottling.
+// Labyrinth/coral regime — reads as organic maze-like mottling.
 export const RD_PARAMS: RDParams = {
   feed: 0.055,
   kill: 0.062,
