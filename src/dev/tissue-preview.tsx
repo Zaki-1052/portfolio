@@ -18,6 +18,10 @@ const params = new URLSearchParams(window.location.search);
 const RX = MathUtils.degToRad(Number(params.get('rx') ?? '0'));
 const RY = MathUtils.degToRad(Number(params.get('ry') ?? '0'));
 const SPIN = params.get('spin') === '1';
+// ?z=<dist>&fov=<deg> match the site camera (establishing shot is z=26, fov 50)
+// to review the shell at its real on-site framing, not just the wide preview.
+const CAM_Z = Number(params.get('z') ?? '40');
+const CAM_FOV = Number(params.get('fov') ?? '45');
 
 // eslint-disable-next-line react-refresh/only-export-components -- dev-only entry, not a fast-refresh module
 function Shell() {
@@ -54,7 +58,8 @@ if (root) {
   createRoot(root).render(
     <Canvas
       style={{ position: 'fixed', inset: 0, background: '#141210' }}
-      camera={{ fov: 45, near: 0.1, far: 1000, position: [0, 0, 40] }}
+      camera={{ fov: CAM_FOV, near: 0.1, far: 1000, position: [0, 0, CAM_Z] }}
+      dpr={[1, 2]}
       gl={{ antialias: false }}
     >
       <Shell />

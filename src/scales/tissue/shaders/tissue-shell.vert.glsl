@@ -11,6 +11,7 @@
 
 varying vec3 vWorldPos;
 varying vec3 vWorldNormal;
+varying vec3 vSmoothNormal; // pure ellipsoid normal — banding-free fallback for the cavity zone
 varying vec3 vViewDir;
 varying float vViewDist;
 varying vec3 vDir; // unit sphere direction (pre-displacement)
@@ -50,6 +51,7 @@ void main() {
   vec4 worldPos = modelMatrix * vec4(displaced, 1.0);
   vWorldPos = worldPos.xyz;
   vWorldNormal = normalize(mat3(modelMatrix) * baseNormal);
+  vSmoothNormal = normalize(mat3(modelMatrix) * nrm);
 
   vec3 toCam = cameraPosition - worldPos.xyz;
   vViewDir = normalize(toCam);

@@ -12,7 +12,7 @@ uniform float uTime;
 // -- sculpted form --
 const float TAPER = 0.84; // base-radius multiplier at the bottom (broad top, narrower low waist)
 const float CLEFT_WIDTH = 0.055; // half-width of the central cleft valley, |dir.x| units — a SEAM, not a canyon
-const float CLEFT_DEPTH = 1.6; // cleft recession between the two halves
+const float CLEFT_DEPTH = 1.6; // deep slot: pulls the center in so each half reads as a slim vertical lobe (front view is the shipping camera)
 const float NOTCH_EXTRA = 1.1; // additional cleft depth at the bottom notch
 const float MOUND_HEIGHT = 0.9; // how far each half swells beside the cleft
 const float LOBE_HEIGHT = 2.8; // paired lower-lobe bulge amplitude
@@ -45,6 +45,9 @@ float baseForm(vec3 p) {
   float wobble = fbm2(dir * 1.3 + 40.0) * 0.03;
   float ax = abs(dir.x + wobble);
   float valley = 1.0 - smoothstep(0.0, CLEFT_WIDTH, ax);
+  // Swell tight to the seam: concentrates each half's mass beside the cleft so
+  // the two halves read as slim vertical lobes pressed together (the front
+  // view — the shipping camera) and bulges the silhouette shoulders.
   float mound = smoothstep(CLEFT_WIDTH, 0.22, ax) * (1.0 - smoothstep(0.5, 0.9, ax));
   float notch = smoothstep(0.3, 0.85, -dir.y);
 

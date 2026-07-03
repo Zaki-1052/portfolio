@@ -22,6 +22,7 @@ uniform vec3 uDissolveEdgeColor;
 
 varying vec3 vWorldPos;
 varying vec3 vWorldNormal;
+varying vec3 vSmoothNormal;
 varying vec3 vViewDir;
 varying float vViewDist;
 varying vec3 vDir;
@@ -70,8 +71,16 @@ void main() {
 
   // Occlusion as SHADOW, not paint: deep ambient pool in the cleft/notch plus
   // narrow dark crevices where adjacent ropes meet (profile → 0).
+  // Inside the cavity the vertex FD normal bands across the steep narrow slot
+  // (sparse sampling of a deep valley) — swap toward the smooth ellipsoid
+  // normal there and let the cavity AO carry the recess instead.
+  float cavity = cleftCavity(dir);
+  vec3 smoothN = normalize(vSmoothNormal);
+  if (!gl_FrontFacing) smoothN = -smoothN;
+  N = normalize(mix(N, smoothN, cavity * 0.85));
+
   float hAA = mix(RIDGE_MEAN, h0, aaFade);
-  float ao = mix(1.0, 0.1, cleftCavity(dir));
+  float ao = mix(1.0, 0.1, cavity);
   ao *= mix(0.35, 1.0, smoothstep(0.02, 0.5, hAA));
 
   // Occlusion with hue-in-shadow: same VALUE structure as plain gray AO (the
