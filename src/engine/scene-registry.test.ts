@@ -4,18 +4,18 @@ import { scalesToMount, MOUNT_MARGIN } from './scene-registry';
 
 describe('scalesToMount', () => {
   it('mounts a single scene deep inside a band', () => {
-    expect(scalesToMount(0.05)).toEqual(['tissue']); // well inside [0, 0.17)
-    expect(scalesToMount(0.42)).toEqual(['chromatin']); // well inside [0.33, 0.5)
+    expect(scalesToMount(0.05)).toEqual(['approach']); // well inside [0, 0.14)
+    expect(scalesToMount(0.5)).toEqual(['chromatin']); // well inside [0.43, 0.57)
   });
 
   it('mounts exactly the two neighbours around a boundary', () => {
-    expect(scalesToMount(0.17)).toEqual(['tissue', 'cellular']);
-    expect(scalesToMount(0.33)).toEqual(['cellular', 'chromatin']);
+    expect(scalesToMount(0.14)).toEqual(['approach', 'tissue']);
+    expect(scalesToMount(0.28)).toEqual(['tissue', 'cellular']);
   });
 
   it('pre-mounts the next scene within the margin, before the boundary', () => {
-    // 0.12 is within MOUNT_MARGIN (0.06) of the 0.17 boundary.
-    expect(scalesToMount(0.12)).toEqual(['tissue', 'cellular']);
+    // 0.09 is within MOUNT_MARGIN (0.06) of the 0.14 boundary.
+    expect(scalesToMount(0.09)).toEqual(['approach', 'tissue']);
   });
 
   it('never mounts more than two scenes anywhere in [0,1] (the ≤2 budget)', () => {
@@ -30,13 +30,13 @@ describe('scalesToMount', () => {
     }
   });
 
-  it('mounts tissue at the very top and expression at the very bottom', () => {
-    expect(scalesToMount(0)).toContain('tissue');
+  it('mounts the approach at the very top and expression at the very bottom', () => {
+    expect(scalesToMount(0)).toContain('approach');
     expect(scalesToMount(1)).toContain('expression');
   });
 
   it('exposes a margin small enough to preserve the ≤2 budget', () => {
-    // Bands are ≥0.16 wide; a margin >0.08 could mount three at a boundary.
-    expect(MOUNT_MARGIN).toBeLessThanOrEqual(0.08);
+    // Bands are ≥0.14 wide; a margin ≥0.07 could mount three at once.
+    expect(MOUNT_MARGIN).toBeLessThan(0.07);
   });
 });

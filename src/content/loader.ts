@@ -59,7 +59,8 @@ function buildSectionCache() {
   }
 }
 
-const scaleToFile: Record<ScaleName, string> = {
+// Partial: the 'approach' journey band carries no prose content by design.
+const scaleToFile: Partial<Record<ScaleName, string>> = {
   tissue: 'brain',
   cellular: 'cellular',
   chromatin: 'chromatin',
@@ -70,7 +71,8 @@ const scaleToFile: Record<ScaleName, string> = {
 
 export function getSection(scale: ScaleName): ParsedSection | undefined {
   buildSectionCache();
-  return sectionCache.get(scaleToFile[scale]);
+  const file = scaleToFile[scale];
+  return file ? sectionCache.get(file) : undefined;
 }
 
 export function getProjects(): ProjectsData {

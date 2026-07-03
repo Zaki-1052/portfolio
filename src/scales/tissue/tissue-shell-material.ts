@@ -12,7 +12,7 @@
 // this only in a type position, so esbuild would elide the import and the
 // extend side-effect would never run ("not part of the THREE namespace").
 import { shaderMaterial } from '@react-three/drei';
-import { Color, DataTexture, RGBAFormat, type Texture } from 'three';
+import { Color, DataTexture, RGBAFormat, Vector3, type Texture } from 'three';
 import noise from '@/shaders/noise.glsl?raw';
 import shellShape from '@/shaders/shell-shape.glsl?raw';
 import vert from './shaders/tissue-shell.vert.glsl?raw';
@@ -41,7 +41,8 @@ export const SurfaceShellMaterial = shaderMaterial(
     uRDBlend: 0,
     uDissolve: 0,
     uDissolveRadius: 12,
-    uDissolveEdgeColor: new Color('#f2a65a'), // warm→magenta burning edge
+    uDissolveEdgeColor: new Color('#f2a65a'), // warm burning edge
+    uApertureDir: new Vector3(0, 0, 1), // which cap the dissolve opens; set from PLUNGE_APERTURE_DIR
   },
   vertexShader,
   fragmentShader,

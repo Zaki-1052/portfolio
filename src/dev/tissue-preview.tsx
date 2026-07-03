@@ -18,8 +18,10 @@ const params = new URLSearchParams(window.location.search);
 const RX = MathUtils.degToRad(Number(params.get('rx') ?? '0'));
 const RY = MathUtils.degToRad(Number(params.get('ry') ?? '0'));
 const SPIN = params.get('spin') === '1';
-// ?z=<dist>&fov=<deg> match the site camera (establishing shot is z=26, fov 50)
-// to review the shell at its real on-site framing, not just the wide preview.
+// ?z=<dist>&fov=<deg> set the camera. The site camera now travels a spiral
+// (camera-keyframes.ts: establish ~120 units out, arrival within ~15), so
+// review the form at several rx/ry/z combos simulating those beats rather
+// than one fixed framing.
 const CAM_Z = Number(params.get('z') ?? '40');
 const CAM_FOV = Number(params.get('fov') ?? '45');
 // Pixel ratio. Defaults to 2 (retina-honest): a 1× render aliases coarse

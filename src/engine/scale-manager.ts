@@ -4,9 +4,14 @@
 // document-scroll progress (from unequal-height sections) onto those boundaries.
 // Everything here is pure except measureSectionBoundaries (the single DOM read).
 
-export type ScaleName = 'tissue' | 'cellular' | 'chromatin' | 'protein' | 'code' | 'expression';
+export type ScaleName =
+  'approach' | 'tissue' | 'cellular' | 'chromatin' | 'protein' | 'code' | 'expression';
 
+// 'approach' is the pre-descent journey band: pure 3D (the lonely form in the
+// void, the spiral flight, the plunge through its surface), no portfolio
+// content. The six CONTENT_SCALES that follow are the descent proper.
 export const SCALES: readonly ScaleName[] = [
+  'approach',
   'tissue',
   'cellular',
   'chromatin',
@@ -15,9 +20,12 @@ export const SCALES: readonly ScaleName[] = [
   'expression',
 ] as const;
 
+// The scales that carry portfolio content — what the depth indicator maps.
+export const CONTENT_SCALES: readonly ScaleName[] = SCALES.slice(1);
+
 // Canonical depth bands: each scale owns [SCALE_BOUNDARIES[i], SCALE_BOUNDARIES[i+1]).
 // These are fixed constants so Phase 3+ camera keyframes stay valid across copy edits.
-export const SCALE_BOUNDARIES = [0, 0.17, 0.33, 0.5, 0.67, 0.83, 1.0] as const;
+export const SCALE_BOUNDARIES = [0, 0.14, 0.28, 0.43, 0.57, 0.71, 0.86, 1.0] as const;
 
 // Canonical width of the color-blend zone straddling each internal boundary.
 export const TRANSITION_ZONE = 0.03;

@@ -97,10 +97,6 @@ export function TissueContent() {
               {status.status}
             </div>
           </div>
-
-          <div className="scroll-hint">
-            descend <span aria-hidden="true">↓</span>
-          </div>
         </div>
 
         <div
@@ -129,6 +125,10 @@ export function TissueContent() {
           />
         </div>
       </div>
+      {/* Post-hero runway: the camera hovers near the central groove while the
+          hero scrolls off through this space, then the plunge fires in the
+          band's last third and lands inside before the next scale begins. */}
+      <div aria-hidden="true" style={{ height: '90vh' }} />
     </ScaleSection>
   );
 }

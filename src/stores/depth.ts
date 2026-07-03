@@ -19,7 +19,7 @@ interface DepthStore {
 export const useDepthStore = create<DepthStore>()(
   subscribeWithSelector((set, get) => ({
     depth: 0,
-    currentScale: 'tissue',
+    currentScale: 'approach',
     previousScale: null,
     isTransitioning: false,
     scaleProgress: 0,

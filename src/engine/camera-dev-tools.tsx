@@ -23,9 +23,33 @@ export function CameraDevTools() {
           value: { x: kf.position[0], y: kf.position[1], z: kf.position[2] },
           step: 0.5,
           onChange: (v: { x: number; y: number; z: number }) => {
-            const target = liveCameraKeyframes[i];
-            if (target) {
-              target.position = [v.x, v.y, v.z] as [number, number, number];
+            const knot = liveCameraKeyframes[i];
+            if (knot) {
+              knot.position = [v.x, v.y, v.z] as [number, number, number];
+              invalidate();
+            }
+          },
+        },
+        [`target${i}`]: {
+          value: { x: kf.target[0], y: kf.target[1], z: kf.target[2] },
+          step: 0.5,
+          onChange: (v: { x: number; y: number; z: number }) => {
+            const knot = liveCameraKeyframes[i];
+            if (knot) {
+              knot.target = [v.x, v.y, v.z] as [number, number, number];
+              invalidate();
+            }
+          },
+        },
+        [`roll${i}`]: {
+          value: (kf.roll * 180) / Math.PI, // degrees in the panel, radians in the table
+          min: -30,
+          max: 30,
+          step: 0.5,
+          onChange: (deg: number) => {
+            const knot = liveCameraKeyframes[i];
+            if (knot) {
+              knot.roll = (deg * Math.PI) / 180;
               invalidate();
             }
           },
@@ -36,9 +60,9 @@ export function CameraDevTools() {
           max: 100,
           step: 1,
           onChange: (v: number) => {
-            const target = liveCameraKeyframes[i];
-            if (target) {
-              target.fov = v;
+            const knot = liveCameraKeyframes[i];
+            if (knot) {
+              knot.fov = v;
               invalidate();
             }
           },

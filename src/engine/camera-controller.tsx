@@ -9,14 +9,21 @@ import { useFrame } from '@react-three/fiber';
 import { PerspectiveCamera } from 'three';
 import { useDepthStore } from '@/stores/depth';
 import { useMotionStore } from '@/stores/motion';
-import { liveCameraKeyframes, sampleCamera, sampleNearestKeyframe } from './camera-keyframes';
+import {
+  liveCameraKeyframes,
+  liveReducedAnchorKeyframes,
+  sampleCamera,
+  sampleNearestKeyframe,
+} from './camera-keyframes';
 
 export function CameraController(): null {
   useFrame(({ camera }) => {
     const depth = useDepthStore.getState().depth;
     const reduced = useMotionStore.getState().reduced;
+    // Reduced motion snaps between the anchor beats only — cutting through all
+    // ~9 spiral knots would read as a slideshow.
     const s = reduced
-      ? sampleNearestKeyframe(depth, liveCameraKeyframes)
+      ? sampleNearestKeyframe(depth, liveReducedAnchorKeyframes)
       : sampleCamera(depth, liveCameraKeyframes);
 
     camera.position.set(s.position[0], s.position[1], s.position[2]);

@@ -1,11 +1,13 @@
 // src/engine/camera-keyframes.ts
 // The scroll-driven camera path as a table of per-depth keyframes plus a pure
-// sampler. Position uses a non-uniform cubic Hermite spline (Catmull-Rom
-// tangents in the depth domain) so velocity is continuous across keyframes —
-// piecewise-linear lerp pops at every knot, which reads badly through the
-// breakthrough fly-through. Orientation slerps; FOV eases. No three import, so
-// the whole module is node-testable; camera-controller.tsx applies the result
-// to the live camera.
+// sampler. Keyframes are authored as position + look-at target + roll (banking)
+// — far easier to reason about than raw quaternions — and the sampler derives
+// the orientation each sample via lookAtQuaternion. Position AND target both
+// run through a non-uniform cubic Hermite spline (Catmull-Rom tangents in the
+// depth domain) so velocity is continuous across keyframes; roll/fov ease with
+// a smootherstep whose end slopes are zero, so they are C1 at knots too. No
+// three import, so the whole module is node-testable; camera-controller.tsx
+// applies the result to the live camera.
 
 export type Vec3 = readonly [number, number, number];
 export type Quat = readonly [number, number, number, number];
@@ -13,8 +15,15 @@ export type Quat = readonly [number, number, number, number];
 export interface CameraKeyframe {
   depth: number; // canonical 0..1, strictly increasing across the table
   position: Vec3;
-  quaternion: Quat; // [x, y, z, w]
+  target: Vec3; // world point the camera looks at
+  roll: number; // radians, rotation about the view axis (positive = clockwise)
   fov: number;
+  /**
+   * Marks the knots the reduced-motion path snaps between. The full spiral
+   * table (~9 knots) would read as a rapid slideshow under nearest-keyframe
+   * cuts; the anchors are the handful of story beats that stand alone.
+   */
+  reducedAnchor?: boolean;
 }
 
 export interface CameraSample {
@@ -24,17 +33,55 @@ export interface CameraSample {
 }
 
 // Starter table — PLACEHOLDER values, tuned live in leva (camera-dev-tools.tsx)
-// then baked back here. Anchors: establishing dolly, arrival→content push, the
-// aperture line-up, and continued descent through the (Phase-3 empty) void so
-// scrolling past the first scale keeps moving rather than freezing. Quaternions start at
-// identity (looking down -z toward the shell at the origin); tilt is added in
-// leva. See camera-keyframes.test.ts for the invariants this table must hold.
+// then baked back here. The arc lives in the 'approach' band [0, 0.14]: a
+// spiral descent around the shell (long axis = Z) — far, elevated establish
+// on the lonely form; orbit ~120° while closing with roughly geometric
+// (~0.65×/knot) distance decay so approach speed reads as decaying
+// magnification; profile beat broadside to the long axis; off-axis arrival;
+// immersive finale skimming the ridge field above the central groove; plunge
+// down through the dissolved cap exactly at the band boundary (the
+// breakthrough window is derived from SCALE_BOUNDARIES[1]); then a slow
+// interior drift behind the first content scale, and the long void tail.
+// See camera-keyframes.test.ts for the invariants this table must hold.
 export const CAMERA_KEYFRAMES: readonly CameraKeyframe[] = [
-  { depth: 0.0, position: [0, 0, 33], quaternion: [0, 0, 0, 1], fov: 60 }, // establishing (shell radius ≈13); pulled back so the form is a framed hero, not filling the frame — better UX behind the hero text and crisper (fewer px/tri)
-  { depth: 0.08, position: [0, 0.5, 24], quaternion: [0, 0, 0, 1], fov: 50 }, // arrival→content push
-  { depth: 0.15, position: [0, 0, 14], quaternion: [0, 0, 0, 1], fov: 52 }, // lined up, just outside the shell
-  { depth: 0.19, position: [0, 0, 3], quaternion: [0, 0, 0, 1], fov: 60 }, // punched through the aperture
-  { depth: 1.0, position: [0, 0, -34], quaternion: [0, 0, 0, 1], fov: 55 }, // continued descent through the void
+  { depth: 0.0, position: [62, 53, 88], target: [0, 2, 0], roll: 0, fov: 55, reducedAnchor: true }, // establish — form ≈15% of frame height, veiled in fog
+  { depth: 0.035, position: [58, 26, 33], target: [0, 1, 0], roll: -0.035, fov: 52 }, // orbit begins — lateral sweep, descending
+  { depth: 0.07, position: [40, 12, 7], target: [0, 0, 0], roll: -0.052, fov: 50 }, // closing — banking through the turn
+  { depth: 0.105, position: [13, 9, -11], target: [0, 2, -2], roll: -0.035, fov: 51 }, // far quarter — the pan completes inside the approach band
+  {
+    depth: 0.14,
+    position: [0.8, 13, -8.5],
+    target: [0, 5, -3.5],
+    roll: -0.01,
+    fov: 54,
+    reducedAnchor: true,
+  }, // swinging overhead as the hero enters — camera offset ALONG the groove so the slot reads top-to-bottom in frame (band boundary)
+  {
+    depth: 0.175,
+    position: [0.5, 13.5, -6.5],
+    target: [0, 2, -4],
+    roll: 0.006,
+    fov: 56,
+    reducedAnchor: true,
+  }, // hero center — squarely above, the slot a vertical line down the screen, cap starting to fade open (= BREAKTHROUGH_START)
+  { depth: 0.2, position: [0.3, 10, -5.8], target: [0, -1, -4.8], roll: 0, fov: 58 }, // zooming straight down into the widening opening — no lateral drift
+  {
+    depth: 0.231,
+    position: [0, 2, -5],
+    target: [0, -5, -6.5],
+    roll: 0,
+    fov: 62,
+    reducedAnchor: true,
+  }, // through the opening, inside the shell (= BREAKTHROUGH_END)
+  { depth: 0.31, position: [0, -1, -6], target: [0, -4, -15], roll: 0, fov: 58 }, // interior glide along the long axis, walls receding into the next scale
+  {
+    depth: 1.0,
+    position: [0, -46, -14],
+    target: [0, -56, -18],
+    roll: 0,
+    fov: 55,
+    reducedAnchor: true,
+  }, // continued descent through the void
 ];
 
 // Mutable working copy the dev panel writes into; production reads the frozen
@@ -42,9 +89,124 @@ export const CAMERA_KEYFRAMES: readonly CameraKeyframe[] = [
 export const liveCameraKeyframes: CameraKeyframe[] = CAMERA_KEYFRAMES.map((k) => ({
   depth: k.depth,
   position: [...k.position] as Vec3,
-  quaternion: [...k.quaternion] as Quat,
+  target: [...k.target] as Vec3,
+  roll: k.roll,
   fov: k.fov,
+  reducedAnchor: k.reducedAnchor,
 }));
+
+/** The reduced-motion snap track: anchor beats only. */
+export const REDUCED_ANCHOR_KEYFRAMES: readonly CameraKeyframe[] = CAMERA_KEYFRAMES.filter(
+  (k) => k.reducedAnchor,
+);
+
+// Shares knot objects with liveCameraKeyframes, so leva edits stay in sync.
+export const liveReducedAnchorKeyframes: readonly CameraKeyframe[] = liveCameraKeyframes.filter(
+  (k) => k.reducedAnchor,
+);
+
+/**
+ * Orientation looking from `position` toward `target`, banked by `roll` about
+ * the view axis. Pure (no three import). Guards: a view direction parallel to
+ * worldUp swaps to a secondary up axis (the establish shot looks steeply down);
+ * a zero-length view direction holds the -Z default rather than emitting NaN,
+ * so a transient degenerate leva edit can't wedge the camera.
+ */
+export function lookAtQuaternion(
+  position: Vec3,
+  target: Vec3,
+  roll: number,
+  worldUp: Vec3 = [0, 1, 0],
+): [number, number, number, number] {
+  // Camera-space +Z points from target back toward the eye (three convention:
+  // the camera looks down its local -Z).
+  let zx = position[0] - target[0];
+  let zy = position[1] - target[1];
+  let zz = position[2] - target[2];
+  const zLen = Math.hypot(zx, zy, zz);
+  if (zLen < 1e-8) {
+    zx = 0;
+    zy = 0;
+    zz = 1;
+  } else {
+    zx /= zLen;
+    zy /= zLen;
+    zz /= zLen;
+  }
+
+  let [ux, uy, uz] = worldUp;
+  if (Math.abs(zx * ux + zy * uy + zz * uz) > 0.999) {
+    // View axis parallel to up — fall back to a secondary up so the basis
+    // cross products stay well-conditioned.
+    [ux, uy, uz] = [0, 0, 1];
+    if (Math.abs(zz) > 0.999) [ux, uy, uz] = [1, 0, 0];
+  }
+
+  // x = up × z, y = z × x — right-handed orthonormal camera basis.
+  let xx = uy * zz - uz * zy;
+  let xy = uz * zx - ux * zz;
+  let xz = ux * zy - uy * zx;
+  const xLen = Math.hypot(xx, xy, xz) || 1;
+  xx /= xLen;
+  xy /= xLen;
+  xz /= xLen;
+  const yx = zy * xz - zz * xy;
+  const yy = zz * xx - zx * xz;
+  const yz = zx * xy - zy * xx;
+
+  // Basis (columns x, y, z) → quaternion, Shepperd's method.
+  const m00 = xx;
+  const m01 = yx;
+  const m02 = zx;
+  const m10 = xy;
+  const m11 = yy;
+  const m12 = zy;
+  const m20 = xz;
+  const m21 = yz;
+  const m22 = zz;
+  const trace = m00 + m11 + m22;
+  let qx: number;
+  let qy: number;
+  let qz: number;
+  let qw: number;
+  if (trace > 0) {
+    const s = 0.5 / Math.sqrt(trace + 1);
+    qw = 0.25 / s;
+    qx = (m21 - m12) * s;
+    qy = (m02 - m20) * s;
+    qz = (m10 - m01) * s;
+  } else if (m00 > m11 && m00 > m22) {
+    const s = 2 * Math.sqrt(1 + m00 - m11 - m22);
+    qw = (m21 - m12) / s;
+    qx = 0.25 * s;
+    qy = (m01 + m10) / s;
+    qz = (m02 + m20) / s;
+  } else if (m11 > m22) {
+    const s = 2 * Math.sqrt(1 + m11 - m00 - m22);
+    qw = (m02 - m20) / s;
+    qx = (m01 + m10) / s;
+    qy = 0.25 * s;
+    qz = (m12 + m21) / s;
+  } else {
+    const s = 2 * Math.sqrt(1 + m22 - m00 - m11);
+    qw = (m10 - m01) / s;
+    qx = (m02 + m20) / s;
+    qy = (m12 + m21) / s;
+    qz = 0.25 * s;
+  }
+
+  // Bank: post-multiply a rotation about the camera's local Z (the view axis).
+  const half = roll * 0.5;
+  const rs = Math.sin(half);
+  const rc = Math.cos(half);
+  const fx = qx * rc + qy * rs;
+  const fy = qy * rc - qx * rs;
+  const fz = qz * rc + qw * rs;
+  const fw = qw * rc - qz * rs;
+
+  const len = Math.hypot(fx, fy, fz, fw) || 1;
+  return [fx / len, fy / len, fz / len, fw / len];
+}
 
 /** Segment index i such that kfs[i].depth ≤ depth ≤ kfs[i+1].depth (clamped). */
 function findSegment(depth: number, kfs: readonly CameraKeyframe[]): number {
@@ -57,14 +219,21 @@ function findSegment(depth: number, kfs: readonly CameraKeyframe[]): number {
   return last - 1;
 }
 
+type Vec3Field = (k: CameraKeyframe) => Vec3;
+
 /** Catmull-Rom tangent (depth-domain finite difference) for one axis at knot i. */
-function tangent(kfs: readonly CameraKeyframe[], i: number, axis: number): number {
+function tangent(
+  kfs: readonly CameraKeyframe[],
+  i: number,
+  axis: number,
+  field: Vec3Field,
+): number {
   const n = kfs.length;
-  const pos = (k: number): number => kfs[k]!.position[axis]!;
+  const val = (k: number): number => field(kfs[k]!)[axis]!;
   const dep = (k: number): number => kfs[k]!.depth;
-  if (i === 0) return (pos(1) - pos(0)) / (dep(1) - dep(0));
-  if (i === n - 1) return (pos(n - 1) - pos(n - 2)) / (dep(n - 1) - dep(n - 2));
-  return (pos(i + 1) - pos(i - 1)) / (dep(i + 1) - dep(i - 1));
+  if (i === 0) return (val(1) - val(0)) / (dep(1) - dep(0));
+  if (i === n - 1) return (val(n - 1) - val(n - 2)) / (dep(n - 1) - dep(n - 2));
+  return (val(i + 1) - val(i - 1)) / (dep(i + 1) - dep(i - 1));
 }
 
 function hermiteAxis(
@@ -72,18 +241,19 @@ function hermiteAxis(
   i: number,
   depth: number,
   axis: number,
+  field: Vec3Field,
 ): number {
   const d0 = kfs[i]!.depth;
   const d1 = kfs[i + 1]!.depth;
   const h = d1 - d0;
-  if (h <= 0) return kfs[i]!.position[axis]!;
+  if (h <= 0) return field(kfs[i]!)[axis]!;
   const t = (depth - d0) / h;
   const t2 = t * t;
   const t3 = t2 * t;
-  const p0 = kfs[i]!.position[axis]!;
-  const p1 = kfs[i + 1]!.position[axis]!;
-  const m0 = tangent(kfs, i, axis) * h; // scale depth-domain tangent to local t
-  const m1 = tangent(kfs, i + 1, axis) * h;
+  const p0 = field(kfs[i]!)[axis]!;
+  const p1 = field(kfs[i + 1]!)[axis]!;
+  const m0 = tangent(kfs, i, axis, field) * h; // scale depth-domain tangent to local t
+  const m1 = tangent(kfs, i + 1, axis, field) * h;
   const h00 = 2 * t3 - 3 * t2 + 1;
   const h10 = t3 - 2 * t2 + t;
   const h01 = -2 * t3 + 3 * t2;
@@ -91,35 +261,17 @@ function hermiteAxis(
   return h00 * p0 + h10 * m0 + h01 * p1 + h11 * m1;
 }
 
-/** Shortest-arc quaternion slerp with a lerp fallback for near-parallel inputs. */
-function slerp(a: Quat, b: Quat, t: number): [number, number, number, number] {
-  let [bx, by, bz, bw] = b;
-  const [ax, ay, az, aw] = a;
-  let cos = ax * bx + ay * by + az * bz + aw * bw;
-  if (cos < 0) {
-    bx = -bx;
-    by = -by;
-    bz = -bz;
-    bw = -bw;
-    cos = -cos;
-  }
-  let wa: number;
-  let wb: number;
-  if (cos > 0.9995) {
-    wa = 1 - t;
-    wb = t;
-  } else {
-    const theta = Math.acos(cos);
-    const sin = Math.sin(theta);
-    wa = Math.sin((1 - t) * theta) / sin;
-    wb = Math.sin(t * theta) / sin;
-  }
-  const x = ax * wa + bx * wb;
-  const y = ay * wa + by * wb;
-  const z = az * wa + bz * wb;
-  const w = aw * wa + bw * wb;
-  const len = Math.hypot(x, y, z, w) || 1;
-  return [x / len, y / len, z / len, w / len];
+function hermiteVec3(
+  kfs: readonly CameraKeyframe[],
+  i: number,
+  depth: number,
+  field: Vec3Field,
+): [number, number, number] {
+  return [
+    hermiteAxis(kfs, i, depth, 0, field),
+    hermiteAxis(kfs, i, depth, 1, field),
+    hermiteAxis(kfs, i, depth, 2, field),
+  ];
 }
 
 function smootherLocalT(depth: number, d0: number, d1: number): number {
@@ -128,9 +280,13 @@ function smootherLocalT(depth: number, d0: number, d1: number): number {
   return t * t * (3 - 2 * t);
 }
 
+const positionOf: Vec3Field = (k) => k.position;
+const targetOf: Vec3Field = (k) => k.target;
+
 /**
- * Sample the full camera state (position/quaternion/fov) at a depth. Position
- * is C1 across keyframes; orientation and fov ease per segment. Depths outside
+ * Sample the full camera state at a depth. Position and target are C1 across
+ * keyframes; roll and fov ease per segment (zero end-slope, so C1 at knots);
+ * the quaternion is derived from the sampled look-at each call. Depths outside
  * the table clamp to the end keyframes.
  */
 export function sampleCamera(
@@ -142,7 +298,7 @@ export function sampleCamera(
     const only = kfs[0]!;
     return {
       position: [...only.position] as [number, number, number],
-      quaternion: [...only.quaternion] as [number, number, number, number],
+      quaternion: lookAtQuaternion(only.position, only.target, only.roll),
       fov: only.fov,
     };
   }
@@ -153,9 +309,12 @@ export function sampleCamera(
   const k0 = kfs[i]!;
   const k1 = kfs[i + 1]!;
   const tEase = smootherLocalT(dd, k0.depth, k1.depth);
+  const position = hermiteVec3(kfs, i, dd, positionOf);
+  const target = hermiteVec3(kfs, i, dd, targetOf);
+  const roll = k0.roll + (k1.roll - k0.roll) * tEase;
   return {
-    position: [hermiteAxis(kfs, i, dd, 0), hermiteAxis(kfs, i, dd, 1), hermiteAxis(kfs, i, dd, 2)],
-    quaternion: slerp(k0.quaternion, k1.quaternion, tEase),
+    position,
+    quaternion: lookAtQuaternion(position, target, roll),
     fov: k0.fov + (k1.fov - k0.fov) * tEase,
   };
 }
@@ -176,7 +335,7 @@ export function sampleNearestKeyframe(
   }
   return {
     position: [...best.position] as [number, number, number],
-    quaternion: [...best.quaternion] as [number, number, number, number],
+    quaternion: lookAtQuaternion(best.position, best.target, best.roll),
     fov: best.fov,
   };
 }

@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 import {
   BREAKTHROUGH_START,
   BREAKTHROUGH_END,
+  PLUNGE_APERTURE_DIR,
   breakthroughProgress,
   dissolveAmountFor,
   fogBlendT,
@@ -10,10 +11,10 @@ import {
 
 describe('breakthroughProgress', () => {
   it('is 0 before the window and 1 after', () => {
-    expect(breakthroughProgress(0.1)).toBe(0);
+    expect(breakthroughProgress(BREAKTHROUGH_START - 0.05)).toBe(0);
     expect(breakthroughProgress(BREAKTHROUGH_START)).toBe(0);
     expect(breakthroughProgress(BREAKTHROUGH_END)).toBe(1);
-    expect(breakthroughProgress(0.25)).toBe(1);
+    expect(breakthroughProgress(BREAKTHROUGH_END + 0.05)).toBe(1);
   });
   it('rises linearly across the window', () => {
     const mid = (BREAKTHROUGH_START + BREAKTHROUGH_END) / 2;
@@ -39,7 +40,15 @@ describe('dissolveAmountFor', () => {
 
 describe('fogBlendT', () => {
   it('runs 0 → 1 across the window', () => {
-    expect(fogBlendT(0.1)).toBe(0);
-    expect(fogBlendT(0.25)).toBe(1);
+    expect(fogBlendT(BREAKTHROUGH_START - 0.05)).toBe(0);
+    expect(fogBlendT(BREAKTHROUGH_END + 0.05)).toBe(1);
+  });
+});
+
+describe('PLUNGE_APERTURE_DIR', () => {
+  it('is a unit vector facing the crown (the camera plunges from above)', () => {
+    const len = Math.hypot(...PLUNGE_APERTURE_DIR);
+    expect(len).toBeCloseTo(1, 10);
+    expect(PLUNGE_APERTURE_DIR[1]).toBeGreaterThan(0.6);
   });
 });

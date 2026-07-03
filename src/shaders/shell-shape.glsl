@@ -1,145 +1,210 @@
 // src/shaders/shell-shape.glsl
 // Shared height-field for the first-scale shell — the ONE source of truth for
-// the sculpted form (broad domed top, tapered base, deep central cleft, paired
-// lower lobes, bottom notch) and the flow-aligned rope ridges. Prepended to
-// BOTH shader stages (after noise.glsl, which provides snoise/fbm/fbm2) so
-// vertex displacement and per-pixel shading always evaluate the same surface.
+// the sculpted form (oblong domed mass on a wide flat base, deep central
+// groove running front-to-back along the long axis, two subtly asymmetric
+// halves) and the coiled rope ridges (a wandering, looping flow field — never
+// straight pole-to-pole stripes). Prepended to BOTH shader stages (after
+// noise.glsl, which provides snoise/fbm/fbm2) so vertex displacement and
+// per-pixel shading always evaluate the same surface.
 // Conventions: `dir` is the unit direction of a point on the base sphere; `p`
-// is the raw sphere-space position (|p| ≈ 12). Heights are world units.
+// is the raw sphere-space position (|p| ≈ 12). Heights are world units. The
+// long axis is Z (set by SHAPE in the vertex stage); the groove lies in the
+// X=0 plane, so it crosses the crown front-to-back and splits left/right
+// halves.
 
 uniform float uTime;
 
 // -- sculpted form --
-const float TAPER = 0.84; // base-radius multiplier at the bottom (broad top, narrower low waist)
-const float CLEFT_WIDTH = 0.055; // half-width of the central cleft valley, |dir.x| units — a SEAM, not a canyon
-const float CLEFT_DEPTH = 1.6; // deep slot: pulls the center in so each half reads as a slim vertical lobe (front view is the shipping camera)
-const float NOTCH_EXTRA = 1.1; // additional cleft depth at the bottom notch
-const float MOUND_HEIGHT = 0.9; // how far each half swells beside the cleft
-const float LOBE_HEIGHT = 2.8; // paired lower-lobe bulge amplitude
-const float LOBE_K = 9.0; // lobe compactness (higher = smaller, rounder bulge)
-const vec3 LOBE_DIR_L = vec3(-0.301, -0.941, 0.150); // ≈unit; ~18° off straight-down → two bumps flanking the bottom notch
-const vec3 LOBE_DIR_R = vec3(0.301, -0.941, 0.150);
+const float TAPER = 0.94; // base-radius multiplier low on the form — broad, no narrow foot
+const float BOTTOM_FLAT = 0.72; // extra radial squash at the underside → wide, level base
+const float CLEFT_WIDTH = 0.07; // half-width of the central groove, |dir.x| units
+const float CLEFT_DEPTH = 1.9; // groove depth — a deep narrow slot between the halves
+const float MOUND_HEIGHT = 0.8; // how far each half swells beside the groove
+const float ASYM_HEIGHT = 0.35; // per-half low-frequency height offset — breaks the perfect mirror
 
-// -- rope ridges --
-const float RIDGE_N = 34.0; // stripe count over the mirrored longitude → a few dozen ropes
-const float RIDGE_RELIEF = 0.78; // peak-to-valley ridge displacement, world units — deep enough to hold at z=26
+// -- coiled rope ridges --
+const float RIDGE_N = 44.0; // stripe count over the flow coordinate — dense, intricate packed coils (picked by eye)
+const float RIDGE_RELIEF = 0.85; // peak-to-valley ridge displacement, world units
 const float RIDGE_MEAN = 0.55; // profile mean; displacement is centred on this
 const float FINE_MULT = 3.3; // sub-striation frequency vs the main ropes
-const float FINE_AMP = 0.06; // sub-striation height in profile units (bump-only, no displacement)
+const float FINE_AMP = 0.035; // sub-striation height in profile units (bump-only, no displacement)
 
-// Broad domed top tapering to a narrower base. Applied to the BASE radius (in
-// the vertex map), not to the additive height, so it scales the silhouette.
+// Broad domed top over a wide base. Applied to the BASE radius (in the vertex
+// map), not to the additive height, so it scales the silhouette. The lower
+// hemisphere squashes toward a level underside instead of tapering to a point.
 float radialTaper(float y) {
-  return mix(TAPER, 1.0, smoothstep(-0.3, 0.5, y));
+  float t = mix(TAPER, 1.0, smoothstep(-0.3, 0.5, y));
+  return t * mix(1.0, BOTTOM_FLAT, smoothstep(0.45, 0.95, -y));
 }
 
-// Large-scale sculpted height: paired swell pressing against a deep cleft
-// (continuous over the crown — no apex fade), extra notch depth at the bottom,
-// two lower lobes, and a whisper of broad undulation. No random mounds —
-// nothing competes with the cleft.
+// Groove envelope shared by the height field and the cavity shadow: widest and
+// deepest along the crown (where the plunge enters), gone on the underside so
+// the flat base stays unbroken.
+float grooveCrown(vec3 dir) {
+  return smoothstep(0.15, 0.85, dir.y);
+}
+float grooveUnderFade(vec3 dir) {
+  return 1.0 - smoothstep(0.15, 0.6, -dir.y);
+}
+
+// Large-scale sculpted height: paired swell pressing against the deep central
+// groove, per-half asymmetry, and a whisper of broad undulation. No random
+// mounds — nothing competes with the groove.
 float baseForm(vec3 p) {
   vec3 dir = normalize(p);
 
   float undulate = fbm2(p * 0.09 + vec3(0.0, 0.0, uTime * 0.015)) * 0.15;
 
-  float wobble = fbm2(dir * 1.3 + 40.0) * 0.03;
+  float crown = grooveCrown(dir);
+  // The edge wobble is character at a distance but reads as jagged jitter on
+  // the slot rim at the close crack-hover framing — calm it over the crown.
+  float wobble = fbm2(dir * 1.3 + 40.0) * 0.03 * (1.0 - 0.75 * crown);
   float ax = abs(dir.x + wobble);
 
-  // Widen the cleft slot toward the top/bottom poles, where the icosphere
-  // vertices are sparse and a razor-narrow valley facets into hard blocks. The
-  // wider slot there spans enough vertices to stay smooth; the mid-body slot
-  // (poleProx≈0) keeps its tight, deep seam.
-  float poleProx = smoothstep(0.5, 0.95, abs(dir.y));
-  float cleftW = CLEFT_WIDTH * (1.0 + 4.0 * poleProx);
-  float valley = 1.0 - smoothstep(0.0, cleftW, ax);
-  // Swell tight to the seam: concentrates each half's mass beside the cleft so
-  // the two halves read as slim vertical lobes pressed together (the front
-  // view — the shipping camera) and bulges the silhouette shoulders.
-  float mound = smoothstep(cleftW, 0.22, ax) * (1.0 - smoothstep(0.5, 0.9, ax));
-  float notch = smoothstep(0.3, 0.82, -dir.y);
+  float underFade = grooveUnderFade(dir);
+  float cleftW = CLEFT_WIDTH * (1.0 + 2.5 * crown);
+  // pow > 1 rounds the SHOULDER of the slot (gentle entry into the wall)
+  // while leaving the deep center untouched — the rim crease stays smooth
+  // instead of aliasing across the mesh.
+  float valley = pow(1.0 - smoothstep(0.0, cleftW, ax), 1.35);
+  // Swell tight to the groove: concentrates each half's mass beside the slot
+  // so the two halves read as full rounded lobes pressed together.
+  float mound = smoothstep(cleftW, 0.3, ax) * (1.0 - smoothstep(0.55, 0.95, ax));
 
-  float lobeL = pow(max(dot(dir, LOBE_DIR_L), 0.0), LOBE_K);
-  float lobeR = pow(max(dot(dir, LOBE_DIR_R), 0.0), LOBE_K);
+  // Per-half asymmetry, gated to zero at the groove so the field stays
+  // continuous across the mirror plane.
+  float side = step(0.0, dir.x);
+  float sideGate = smoothstep(cleftW, 0.35, ax);
+  float asym = mix(snoise(dir * 1.1 + 23.0), snoise(dir * 1.1 + 57.0), side) * ASYM_HEIGHT * sideGate;
 
-  // Ease the cleft's DEPTH into both poles so neither the crown dip nor the
-  // bottom notch cuts a hard slot into the sparse polar vertices — the crown
-  // rounds into one dome and the two lobes carry the notch shape themselves.
-  float crownEase = 1.0 - 0.7 * smoothstep(0.7, 0.96, dir.y);
-  float notchEase = 1.0 - 0.7 * smoothstep(0.7, 0.97, -dir.y);
-  float poleEase = crownEase * notchEase;
-
-  return undulate + mound * MOUND_HEIGHT
-    - valley * (CLEFT_DEPTH * poleEase + NOTCH_EXTRA * notch * notchEase)
-    + (lobeL + lobeR) * LOBE_HEIGHT;
+  return undulate + asym + mound * MOUND_HEIGHT
+    - valley * CLEFT_DEPTH * (1.0 + 0.5 * crown) * underFade;
 }
 
-// Deep-shadow factor for the cleft/notch (0 = open surface → 1 = cavity floor).
+// Deep-shadow factor for the groove (0 = open surface → 1 = cavity floor).
 // Slightly wider than the geometric valley so shadow climbs the walls.
 float cleftCavity(vec3 dir) {
-  float v = 1.0 - smoothstep(0.0, CLEFT_WIDTH * 1.3, abs(dir.x));
-  float notch = smoothstep(0.3, 0.85, -dir.y);
-  return clamp(v * (0.8 + 0.4 * notch), 0.0, 1.0);
+  float w = CLEFT_WIDTH * (1.0 + 2.5 * grooveCrown(dir)) * 1.45;
+  float v = 1.0 - smoothstep(0.0, w, abs(dir.x));
+  return clamp(v * grooveUnderFade(dir), 0.0, 1.0);
 }
 
-// Flow data for the rope ridges: x = phase warp (long arcs low on the form,
-// tighter coils toward the crown), y = dual-density blend (genuine
-// branch/merge, not just wiggle). This is the expensive part — evaluate ONCE
-// per pixel/vertex and reuse across finite-difference taps, where it is
-// locally constant.
-vec2 ridgeFlow(vec3 dir, vec3 p) {
-  float top = smoothstep(0.25, 0.85, dir.y);
-  float warp = fbm2(p * 0.13 + 4.0) * mix(2.2, 4.5, top) + snoise(p * 0.5 + 14.0) * 0.7;
-  // Blend capped low: past ~0.5 the two sine systems interfere and dissolve
-  // the rope structure into mush instead of branching it.
-  float branch = smoothstep(-0.1, 0.2, fbm2(p * 0.09 + 31.0)) * 0.35;
-  return vec2(warp, branch);
+// Flow data for the rope ridges — the ONE place the stripe coordinate is
+// defined, consumed identically by the vertex displacement, the per-pixel
+// normal, and the fine sub-striations. Returns:
+//   x = theta — the blended flow coordinate. Near the groove its isolines run
+//       parallel to the groove (front-to-back); out on the flanks they wrap
+//       laterally around the form. The blend of the two fields is what makes
+//       the ropes turn and pack instead of running straight.
+//   y = warp — multi-scale phase warp; large amplitude so ropes meander and
+//       fold back rather than merely wiggling.
+//   z = branch — dual-density blend (genuine branch/merge, not just wiggle).
+//       Capped low: past ~0.5 the two sine systems interfere and dissolve the
+//       rope structure into mush instead of branching it.
+// This is the expensive part — evaluate ONCE per pixel/vertex and reuse across
+// finite-difference taps, where it is locally constant.
+const vec3 LAT_AXIS = vec3(0.316, 0.837, -0.446); // pre-normalized tilted latitude axis
+
+vec3 ridgeFlow(vec3 dir, vec3 p) {
+  // Vector domain warp: bend the direction the coordinate fields are read at,
+  // so the coils turn, loop, and pack while stripe frequency stays bounded.
+  // Two-octave warp, chosen BY EYE over the calmer single-octave variant: the
+  // fine jitter it adds reads as intricate coil texture. Known tradeoff: its
+  // high-octave gradient can push local stripe frequency into light sawtooth
+  // in a few compression pockets at grazing angles.
+  float n1 = fbm2(p * 0.16 + 51.0);
+  float n2 = fbm2(p * 0.16 + 87.0);
+  vec3 dirW = normalize(dir + vec3(n1, n2, 0.7 * (n1 - n2)) * 0.3);
+
+  // Two LINEAR coordinates — angular coordinates (atan/asin) densify toward
+  // their axes and alias into fingerprint patches, so both fields are plain
+  // projections with bounded gradients everywhere. u: distance from the groove
+  // plane — isolines run front-to-back, groove-parallel. v: height along a
+  // tilted axis — isolines arc diagonally around the flanks.
+  float u = dirW.x * 2.2;
+  // Higher lateral scale than u: v's gradient sags toward the flank centers,
+  // and without the boost the flank ropes stretch into wide flat plates with
+  // thin drawn-on separations instead of packed tubes.
+  float v = dot(dirW, LAT_AXIS) * 3.5;
+  // Handover where u's own gradient fades (flank centers, |dir.x| → 1),
+  // capped so a floor of u survives where v's gradient fades in turn.
+  float flankT = smoothstep(0.15, 0.6, abs(dir.x)) * 0.8;
+  // Interlock fold: stripes periodically hook back along the cross coordinate
+  // (the classic sin(u + K·sin(v)) fold), which packs neighboring coils into
+  // each other instead of stacking them in parallel. Reuses n2 — no new noise.
+  float fold = sin(v * 3.0 + n2 * 2.0) * 0.22;
+  float theta = mix(u, v, flankT) + fold;
+
+  float warp = snoise(p * 0.19 + 14.0) * 1.8;
+  float branch = smoothstep(-0.1, 0.2, fbm2(p * 0.09 + 31.0)) * 0.4;
+  return vec3(theta, warp, branch);
 }
 
-// Fade the ropes AND their sub-striations into smooth polar caps: the broad
-// domed top and the rounded lobe underside. This dissolves the longitude
-// starburst (all ropes converge at the poles) into clean shading. Both the
-// coarse profile and the fine strands must share this or the fine layer alone
-// keeps radiating from the pole.
+// Damp the RD texture near both poles, where its equirect UV degenerates.
 float poleCapFade(vec3 dir) {
   return 1.0 - smoothstep(0.82, 0.965, abs(dir.y));
 }
 
-// Rounded rope cross-profile at a direction, given precomputed flow: 0 =
-// groove floor → 1 = crest. Trig-only, cheap enough to re-run per
-// finite-difference tap. The mirrored longitude keeps the pattern bilaterally
-// symmetric with its phase kink hidden inside the cleft; the epsilon avoids
-// the undefined atan(0, 0) at the poles. Fat domed crests, narrow grooves.
-float ridgeProfile(vec3 dir, vec2 flow) {
-  float theta = atan(dir.z, abs(dir.x) + 1e-4);
-  float s = mix(
-    sin(RIDGE_N * theta + flow.x),
-    sin(RIDGE_N * 0.5 * theta + flow.x * 1.1),
-    flow.y
-  );
-  // Packed-tube profile: each cycle is one softly-domed rope. `t^0.45` gives
-  // the broad rounded crest; the extra smoothstep carves the bottom of the
-  // cycle into a thin deep crevice so ropes stay defined (not melted together)
-  // even at the close z=26 framing under heavy bloom.
-  float t = 0.5 + 0.5 * s;
-  float ridge = pow(t, 0.45) * smoothstep(0.0, 0.14, t);
+// Fade the ropes AND their sub-striations out at the underside only, so the
+// flat base reads as smooth material. The crown KEEPS its ridges — the camera
+// skims them during the arrival finale.
+float ridgeCapFade(vec3 dir) {
+  return 1.0 - smoothstep(0.7, 0.92, -dir.y);
+}
 
-  float cleftGap = smoothstep(0.015, 0.05, abs(dir.x)); // ropes run up to the seam
-  return mix(RIDGE_MEAN, ridge, cleftGap * poleCapFade(dir));
+// Shared stripe field (dual-density branch/merge blend) for both profiles.
+float ridgeStripe(vec3 flow) {
+  return mix(
+    sin(RIDGE_N * flow.x + flow.y),
+    sin(RIDGE_N * 0.5 * flow.x + flow.y * 1.1),
+    flow.z
+  );
+}
+
+// Shared gating: ropes run right up to the groove edge at mid-body, but stand
+// back from the steepened crown walls — their terminations would otherwise
+// castellate the slot rim into a jagged silhouette at the crack-hover framing
+// — and fade out at the flat underside.
+float ridgeGate(vec3 dir) {
+  float gapW = 0.05 + 0.11 * grooveCrown(dir);
+  return smoothstep(0.02, gapW, abs(dir.x)) * ridgeCapFade(dir);
+}
+
+// SHADING cross-profile (per-pixel normal only): 0 = groove floor → 1 =
+// crest. `t^0.45` gives the broad rounded crest; the extra smoothstep carves
+// the bottom of the cycle into a thin deep crevice so ropes stay defined (not
+// melted together) at close framing under heavy bloom.
+float ridgeProfile(vec3 dir, vec3 flow) {
+  float t = 0.5 + 0.5 * ridgeStripe(flow);
+  float ridge = pow(t, 0.45) * smoothstep(0.0, 0.18, t);
+  return mix(RIDGE_MEAN, ridge, ridgeGate(dir));
+}
+
+// DISPLACEMENT cross-profile: the same stripe field shaped as a C1 smoothstep
+// bump, whose slope is bounded by the stripe frequency. The sharp shading
+// profile must NEVER displace vertices — pow's slope is unbounded at the
+// crevice floor, so adjacent vertices leap between floor and crest and the
+// mesh tears into triangle shards at grazing angles that no subdivision can
+// fix. Geometry carries smooth rounded waves; the crisp crevices live in the
+// per-pixel normal above.
+float ridgeProfileSmooth(vec3 dir, vec3 flow) {
+  float t = 0.5 + 0.5 * ridgeStripe(flow);
+  float ridge = t * t * (3.0 - 2.0 * t);
+  return mix(RIDGE_MEAN, ridge, ridgeGate(dir));
 }
 
 // Main ropes + fine sub-striations riding their flanks (strands within each
 // coil). Fragment-only detail height for the per-pixel normal: `finePhase` is
-// the slow per-position phase jitter and `fineScale` the anti-alias fade —
-// both precomputed once per pixel and held constant across the FD taps.
-float detailHeight(vec3 dir, vec2 flow, float finePhase, float fineScale) {
+// the slow per-position phase jitter, `fineScale` the anti-alias fade, and
+// `rdMod` the reaction-diffusion micro-relief modulation — all precomputed
+// once per pixel and held constant across the FD taps.
+float detailHeight(vec3 dir, vec3 flow, float finePhase, float fineScale, float rdMod) {
   float main = ridgeProfile(dir, flow);
-  float theta = atan(dir.z, abs(dir.x) + 1e-4);
-  float fine = sin(RIDGE_N * FINE_MULT * theta + flow.x * 2.2 + finePhase);
-  return main + fine * (FINE_AMP * fineScale) * smoothstep(0.15, 0.5, main) * poleCapFade(dir);
+  float fine = sin(RIDGE_N * FINE_MULT * flow.x + flow.y * 2.2 + finePhase);
+  // Crest-top mask (0.45→0.72): strands ride the tops of the ropes only.
+  // A wall-inclusive mask paints hairline onion-ring echoes around every
+  // channel and clutters the side read.
+  return main
+    + fine * (FINE_AMP * fineScale * rdMod) * smoothstep(0.45, 0.72, main) * ridgeCapFade(dir);
 }
 
-// Total additive height over the tapered base ellipsoid at sphere point p.
-float shellHeight(vec3 p) {
-  vec3 dir = normalize(p);
-  return baseForm(p) + (ridgeProfile(dir, ridgeFlow(dir, p)) - RIDGE_MEAN) * RIDGE_RELIEF;
-}

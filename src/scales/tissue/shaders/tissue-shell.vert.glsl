@@ -1,8 +1,9 @@
 // src/scales/tissue/shaders/tissue-shell.vert.glsl
 // Shell SHAPE stage. Displaces the base icosphere by the shared height-field
-// (shell-shape.glsl): a near-1:1 tapered ellipsoid carrying the sculpted form
-// (cleft, lobes, notch) plus GEOMETRIC rope-ridge relief — the ridges are real
-// displacement, visible in the silhouette. The shading normal is
+// (shell-shape.glsl): an oblong tapered ellipsoid carrying the sculpted form
+// (central groove, two swelled halves, flat underside) plus GEOMETRIC
+// rope-ridge relief — the ridges are real displacement, visible in the
+// silhouette. The shading normal is
 // finite-differenced from the SMOOTH base map only (form without ridges); the
 // fragment stage re-tilts it per pixel with the exact ridge gradient, so the
 // coarse and fine scales never double-count. noise.glsl + shell-shape.glsl are
@@ -19,7 +20,10 @@ varying vec3 vObjPos; // sphere-space position (pre-displacement, |p| ≈ 12)
 varying vec2 vUv;
 
 const float EPS = 0.12; // tangent-plane step for the finite-difference normal
-const vec3 SHAPE = vec3(1.0, 0.94, 0.98); // near-1:1 ellipsoid radii
+// Oblong proportions: long axis Z, squashed Y — a horizontal loaf-like dome
+// over a wide base, never a vertical teardrop. The central groove (X=0 plane,
+// shell-shape.glsl) therefore runs front-to-back along the long axis.
+const vec3 SHAPE = vec3(1.02, 0.78, 1.32);
 
 // Smooth base surface (no ridges): tapered ellipsoid + sculpted form. The
 // finite-difference of this map gives the coarse shading normal.
@@ -29,20 +33,47 @@ vec3 toBase(vec3 sp) {
   return sp * SHAPE * radialTaper(u.y) + nrm * baseForm(sp);
 }
 
+// One icosphere(detail 64) edge, in unit-direction space — the sampling step
+// the displacement must respect.
+const float EDGE = 0.0158;
+
 void main() {
   vUv = uv;
   vec3 u = normalize(position);
   vDir = u;
   vObjPos = position;
 
-  vec3 nrm = normalize(u / SHAPE);
-  vec3 base0 = toBase(position);
-  float ridge = (ridgeProfile(u, ridgeFlow(u, position)) - RIDGE_MEAN) * RIDGE_RELIEF;
-  vec3 displaced = base0 + nrm * ridge;
-
   vec3 refAxis = abs(u.y) < 0.99 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
   vec3 tangent = normalize(cross(u, refAxis));
   vec3 bitangent = normalize(cross(u, tangent));
+
+  vec3 nrm = normalize(u / SHAPE);
+  vec3 base0 = toBase(position);
+
+  // Frequency-clamped, band-limited ridge displacement. Two defenses, both
+  // required: the SHAPE must be band-limited (ridgeProfileSmooth — a sharp
+  // crevice has unbounded slope and shreds the mesh), and the PHASE must stay
+  // under the mesh Nyquist — the flow field's warp locally compresses stripe
+  // frequency ~3×, so we measure the actual phase step across one mesh edge
+  // and fade the relief out wherever the field is genuinely unrepresentable.
+  // The per-pixel shading normal keeps full detail there (it has fwidth AA);
+  // only the geometry yields.
+  vec3 flow0 = ridgeFlow(u, position);
+  vec3 dirT = normalize(u + tangent * EDGE);
+  vec3 dirB = normalize(u + bitangent * EDGE);
+  vec3 flowT = ridgeFlow(dirT, dirT * 12.0);
+  vec3 flowB = ridgeFlow(dirB, dirB * 12.0);
+  float phase0 = RIDGE_N * flow0.x + flow0.y;
+  float stepT = RIDGE_N * flowT.x + flowT.y - phase0;
+  float stepB = RIDGE_N * flowB.x + flowB.y - phase0;
+  // Radians per mesh edge. The field's TYPICAL step is ~1.5–2.7, so the
+  // attenuation window must sit just under the π hard limit — starting it
+  // lower flattens healthy relief across the whole form (painted-flat look).
+  float phaseStep = length(vec2(stepT, stepB));
+  float nyqAtt = 1.0 - smoothstep(2.35, 2.95, phaseStep);
+  float ridge = (ridgeProfileSmooth(u, flow0) - RIDGE_MEAN) * RIDGE_RELIEF * nyqAtt;
+  vec3 displaced = base0 + nrm * ridge;
+
   vec3 baseT = toBase(position + tangent * EPS);
   vec3 baseB = toBase(position + bitangent * EPS);
   vec3 baseNormal = normalize(cross(baseT - base0, baseB - base0));

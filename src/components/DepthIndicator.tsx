@@ -3,7 +3,13 @@ import { useEffect, useRef, useCallback } from 'react';
 import { useDepthStore } from '@/stores/depth';
 import { useMotionStore } from '@/stores/motion';
 import { useCurrentScale } from '@/hooks/useCurrentScale';
-import { SCALES, scaleFromDepth, scaleProgressFor, type ScaleName } from '@/engine/scale-manager';
+import {
+  CONTENT_SCALES,
+  SCALES,
+  scaleFromDepth,
+  scaleProgressFor,
+  type ScaleName,
+} from '@/engine/scale-manager';
 import { getLenis } from '@/engine/scroll-engine';
 
 interface ScaleInfo {
@@ -49,12 +55,15 @@ export function DepthIndicator() {
       useDepthStore.subscribe(
         (s) => s.depth,
         (depth) => {
+          // Fill maps the six CONTENT scales only — the 'approach' journey band
+          // is pre-descent (indexOf -1 clamps the fill to 0 while inside it).
           const scale = scaleFromDepth(depth);
           const frac = Math.max(
             0,
             Math.min(
               1,
-              (SCALES.indexOf(scale) + scaleProgressFor(depth, scale)) / (SCALES.length - 1),
+              (CONTENT_SCALES.indexOf(scale) + scaleProgressFor(depth, scale)) /
+                (CONTENT_SCALES.length - 1),
             ),
           );
           fillRef.current?.style.setProperty(
@@ -94,8 +103,21 @@ export function DepthIndicator() {
     jumpToScale(id);
   }, []);
 
+  // The indicator is a map of the content descent — it stays hidden through
+  // the pre-descent journey band and fades in as you breach the surface.
+  const inApproach = currentScale === 'approach';
+
   return (
-    <nav className="depth-indicator" aria-label="Scale depth">
+    <nav
+      className="depth-indicator"
+      aria-label="Scale depth"
+      aria-hidden={inApproach || undefined}
+      style={{
+        opacity: inApproach ? 0 : undefined,
+        pointerEvents: inApproach ? 'none' : undefined,
+        transition: 'opacity var(--dur-slow) var(--ease-in-out)',
+      }}
+    >
       <div className="depth-indicator__inner">
         <span className="depth-indicator__track" aria-hidden="true" />
         <span ref={fillRef} className="depth-indicator__fill" aria-hidden="true" />

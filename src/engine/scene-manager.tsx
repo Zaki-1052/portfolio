@@ -13,19 +13,32 @@ import { scalesToMount } from '@/engine/scene-registry';
 import { SurfaceScene } from '@/scales/tissue/TissueScene';
 import { CellularVoidStub } from '@/scales/cellular/CellularVoidStub';
 
+// The shell spans TWO bands on purpose: the whole approach journey outside it,
+// then — after the plunge — its interior walls linger behind the first content
+// scale's hero and recede into the fog. SceneManager dedupes by component with
+// a STABLE per-component key, so crossing from one of its bands to the other
+// never remounts it (a remount would re-run the RD warmup and visibly pop).
 const SCENE_REGISTRY: Partial<Record<ScaleName, ComponentType>> = {
+  approach: SurfaceScene,
   tissue: SurfaceScene,
   cellular: CellularVoidStub,
 };
 
+const SCENE_KEYS = new Map<ComponentType, string>([
+  [SurfaceScene, 'shell'],
+  [CellularVoidStub, 'cellular-void'],
+]);
+
 export function SceneManager() {
   const mounted = useDepthStore(useShallow((s) => scalesToMount(s.depth)));
+  const scenes = [
+    ...new Set(mounted.map((scale) => SCENE_REGISTRY[scale]).filter((c) => c !== undefined)),
+  ];
   return (
     <>
-      {mounted.map((scale) => {
-        const Scene = SCENE_REGISTRY[scale];
-        return Scene ? <Scene key={scale} /> : null;
-      })}
+      {scenes.map((Scene) => (
+        <Scene key={SCENE_KEYS.get(Scene) ?? 'unkeyed'} />
+      ))}
     </>
   );
 }

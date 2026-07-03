@@ -12,6 +12,7 @@ import { SceneAtmosphere } from '@/engine/scene-atmosphere';
 import { SceneManager } from '@/engine/scene-manager';
 import { CameraController } from '@/engine/camera-controller';
 import { PostFX } from '@/engine/post-fx';
+import { ApproachContent } from '@/scales/approach/ApproachContent';
 import { TissueContent } from '@/scales/tissue/TissueContent';
 import { CellularContent } from '@/scales/cellular/CellularContent';
 import { ChromatinContent } from '@/scales/chromatin/ChromatinContent';
@@ -129,6 +130,7 @@ export function App() {
         </WebGLErrorBoundary>
       )}
       <main>
+        <ApproachContent />
         <TissueContent />
         <CellularContent />
         <ChromatinContent />
