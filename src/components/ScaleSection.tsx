@@ -36,7 +36,10 @@ export function ScaleSection({
       className={className}
       style={{
         position: 'relative',
-        background: 'var(--bg)',
+        // --section-bg lets the WebGL reveal (globals.css) turn a section
+        // transparent to show the Canvas, while --bg stays a real color for
+        // scrims/surfaces. Defaults to --bg when the reveal isn't active.
+        background: 'var(--section-bg, var(--bg))',
         color: 'var(--text-body)',
         minHeight: full ? '100vh' : 'auto',
         padding: 'var(--section-pad-y) var(--gutter)',

@@ -374,6 +374,48 @@
 }
 
 /* ============================================================
+   WEBGL REVEAL (Phase 3)
+   When the 3D Canvas is active (<html data-webgl="active">), scales that have a
+   registered scene go transparent so the fixed Canvas shows through, and their
+   CSS atmospherics yield to the 3D (which supplies fog/bloom/grain). Scales
+   without a scene keep the full Phase 1/2 CSS look — extend this selector list
+   as Phase 4/5 register their scenes. Overrides only --section-bg, so --bg stays
+   a real color for the content scrim + surfaces.
+   ============================================================ */
+[data-webgl='active'] [data-scale='tissue'],
+[data-webgl='active'] [data-scale='cellular'] {
+  --section-bg: transparent;
+}
+[data-webgl='active'] [data-scale='tissue']::before,
+[data-webgl='active'] [data-scale='tissue']::after,
+[data-webgl='active'] [data-scale='cellular']::before,
+[data-webgl='active'] [data-scale='cellular']::after {
+  display: none;
+}
+[data-webgl='active'] [data-scale='tissue'] + [data-scale],
+[data-webgl='active'] [data-scale='cellular'] + [data-scale] {
+  border-top: none;
+}
+
+/* Content-phase legibility: a soft radial halo of the scale's own --bg behind a
+   text column, keeping WCAG contrast over the dimmed 3D. Opt-in via class; a
+   no-op when WebGL is inactive (the section background is already opaque). The
+   ::before paints behind the column's content in normal flow order. */
+[data-webgl='active'] .content-scrim {
+  position: relative;
+}
+[data-webgl='active'] .content-scrim::before {
+  content: '';
+  position: absolute;
+  inset: -28px -36px;
+  z-index: -1;
+  border-radius: var(--radius-organic, 16px);
+  background: radial-gradient(ellipse 80% 92% at 28% 50%, var(--bg) 0%, rgba(0, 0, 0, 0) 78%);
+  opacity: 0.82;
+  pointer-events: none;
+}
+
+/* ============================================================
    BASE STYLES
    ============================================================ */
 

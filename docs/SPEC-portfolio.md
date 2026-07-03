@@ -223,21 +223,26 @@ GSAP ticker → lenis.raf(time * 1000)
 gsap.ticker.lagSmoothing(0)
 ```
 
-A single master ScrollTrigger instance maps total document scroll progress to a `depth` value (0 to 1) stored in Zustand. Individual scale components read `depth` and compute their own local visibility, opacity, and animation state.
+A single master ScrollTrigger instance maps total document scroll progress to a `depth` value (0 to 1) stored in Zustand via `onUpdate` (not `scrub` — no tween is attached; depth is set directly). Individual scale components read `depth` and compute their own local visibility, opacity, and animation state.
+
+### Piecewise-canonical depth
+
+Sections have content-driven unequal heights, so raw document-scroll progress doesn't map evenly to the 6 canonical depth bands. `scale-manager.ts` measures real section positions from the DOM (`measureSectionBoundaries`) and the scroll engine remaps raw ScrollTrigger progress onto the fixed canonical bands (tissue → [0, 0.17), cellular → [0.17, 0.33), etc.) via piecewise-linear interpolation (`rawProgressToDepth`). This keeps depth stable for Phase 3+ camera keyframe authoring even when copy changes section heights. A `ResizeObserver` on `<main>` and `document.fonts.ready` re-measure on reflow so depth stays aligned after web font swap or image load.
 
 ### The depth store
 
 ```typescript
 interface DepthStore {
-  depth: number;              // 0 (top) to 1 (bottom)
+  depth: number;              // canonical 0 (top) to 1 (bottom)
   currentScale: ScaleName;    // derived from depth
   previousScale: ScaleName | null;
   isTransitioning: boolean;   // true during scale boundary crossings
+  scaleProgress: number;      // local progress through currentScale's band
   setDepth: (d: number) => void;
 }
 ```
 
-Scale boundaries are defined as depth thresholds. The exact values will be tuned during prototyping, but the initial split is roughly even (each of 6 scales gets ~16.7% of the scroll range, with transition zones overlapping by ~2-3%).
+Scale boundaries are fixed canonical constants: `[0, 0.17, 0.33, 0.5, 0.67, 0.83, 1.0]`. Each scale owns `[SCALE_BOUNDARIES[i], SCALE_BOUNDARIES[i+1])`. A transition zone of 0.03 canonical units straddles each internal boundary for color blending.
 
 ### Scale lifecycle
 
@@ -314,7 +319,7 @@ Each scale has a hash route: `#tissue`, `#cellular`, `#chromatin`, `#protein`, `
 
 ### Keyboard navigation
 
-Arrow keys and Page Up/Down advance between scales. The depth indicator dots are focusable and keyboard-navigable. Tab order follows the document flow of the HTML sections.
+Arrow keys and Page Up/Down advance between scales via a global `keydown` listener (guards against firing in form fields: INPUT, TEXTAREA, SELECT, contentEditable). This is a site-wide capture, not scoped to the depth indicator — it means bare arrow keys are intercepted even when the indicator doesn't have focus. The depth indicator dots are focusable and keyboard-navigable via Tab. Tab order follows the document flow of the HTML sections. **Open a11y concern:** the global arrow-key hijack removes fine-grained keyboard scroll; revisit in the Phase 7 a11y re-audit (consider softening to PageUp/Down only).
 
 ---
 
@@ -340,7 +345,7 @@ This is non-negotiable and built from day one, not bolted on.
 
 **On-page motion toggle.** A small button (probably near the depth indicator) lets users disable motion without knowing about the OS setting. State persisted in `localStorage`.
 
-**Keyboard navigation.** Arrow keys, Tab, Enter all work. Focus indicators are visible. Focus follows logical document order.
+**Keyboard navigation.** Arrow keys and Page Up/Down advance between scales via a global `keydown` listener (guards form fields). Tab and Enter navigate the depth indicator dots and document flow. Focus indicators are visible. **Open concern:** the global arrow-key capture removes fine-grained keyboard scroll; softening to PageUp/Down only is a Phase 7 a11y re-audit item.
 
 **WCAG color contrast.** All text meets AA (4.5:1 for body text, 3:1 for large text) across every scale's palette. The warm-to-cool gradient must maintain contrast against the dark backgrounds at every point.
 

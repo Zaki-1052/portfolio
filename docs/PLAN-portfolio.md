@@ -218,63 +218,77 @@ Test the complete HTML site with:
 
 ### 2.1 Scroll engine
 
-Build `src/engine/scroll-engine.ts`. Initialize Lenis, sync to GSAP ticker:
+Build `src/engine/scroll-engine.ts`. Singleton (module-level `initialized` flag for StrictMode safety, `import.meta.hot.dispose` teardown for HMR). Initialize Lenis, sync to GSAP ticker:
 
 ```typescript
-const lenis = new Lenis();
+const lenis = new Lenis({ lerp: 0.1, smoothWheel: true, anchors: true, autoRaf: false });
 lenis.on('scroll', ScrollTrigger.update);
 gsap.ticker.add((time) => { lenis.raf(time * 1000); });
 gsap.ticker.lagSmoothing(0);
 ```
 
-Create a master ScrollTrigger that maps total scroll progress to the depth store:
+Create a master ScrollTrigger that maps total scroll progress to the depth store. No `scrub` — depth is set directly via `onUpdate`, not through a tween. `onRefresh` re-measures section boundaries:
 
 ```typescript
 ScrollTrigger.create({
   trigger: 'main',
   start: 'top top',
   end: 'bottom bottom',
-  scrub: true,
-  onUpdate: (self) => useDepthStore.getState().setDepth(self.progress)
+  onRefresh: remeasure,
+  onUpdate: (self) => {
+    useDepthStore.getState().setDepth(rawProgressToDepth(self.progress, rawBoundaries));
+  },
 });
 ```
 
+A `ResizeObserver` on `<main>` and `document.fonts.ready` trigger `ScrollTrigger.refresh()` to keep section measurements current after web font swap or image load.
+
 ### 2.2 Scale manager
 
-Build `src/engine/scale-manager.ts`. Defines scale boundaries (depth thresholds), computes `currentScale` from depth, and manages transition state. Wire this into the Zustand store so `currentScale` updates automatically when `depth` crosses a boundary.
+Build `src/engine/scale-manager.ts`. Defines fixed canonical scale boundaries (`[0, 0.17, 0.33, 0.5, 0.67, 0.83, 1.0]`), computes `currentScale` from depth, manages transition state and blend zones. Wire into the Zustand store so `currentScale`, `previousScale`, `isTransitioning`, and `scaleProgress` update automatically when `depth` crosses a boundary.
+
+**Piecewise-canonical depth remap:** Sections have content-driven unequal heights, so `measureSectionBoundaries` reads real section positions from the DOM. `rawProgressToDepth` performs a piecewise-linear remap so each section lands exactly on its canonical band. `depthToRawProgress` is the inverse (for round-trip tests and Phase 3 camera tooling). This keeps depth stable for camera keyframe authoring even when copy changes section heights.
+
+**Hash mapping:** `hashForScale`/`scaleFromHash` live here (not in `url-scale-sync.ts`) so the node test suite never transitively imports gsap/lenis.
 
 ### 2.3 CSS theming from scroll
 
-When `currentScale` changes, update the `data-scale` attribute on the document root (or `<main>`). This triggers the CSS custom property overrides defined in Phase 0. The background color, accent color, text color, and fog color all shift.
+Build `src/engine/theme-bridge.ts`. When `currentScale` changes, update `data-current-scale` on `<html>` (NOT `data-scale` — that would fire the existing `[data-scale]::before/::after` atmospheric pseudo-elements on the root element). This attribute drives fixed chrome (depth indicator, motion toggle, html background).
 
-For smooth in-between transitions (not just snapping at boundaries), use GSAP to tween the CSS custom property values during the transition zone (~2-3% of scroll range at each boundary).
+For smooth cross-boundary color blending: `theme-bridge` reads each scale's resolved channel colors once from its `<section>` (via `getComputedStyle` — single source of truth is globals.css, no duplicated JS color table). During the transition zone (0.03 canonical units straddling each internal boundary), `gsap.utils.interpolate` writes blended channel values onto `<html>` inline style every tick (stateless, scroll-scrubbed, not time-tweened). Under reduced motion, blend snaps to the nearest scale (rounds `t`).
 
 **Verify:** Scroll through the page. The background color shifts smoothly from warm (#2c2a28) at the top to cool (#21252b) at the bottom. Typography headings shift from Lora to Inter to Fira Code at the correct boundaries.
 
 ### 2.4 Depth indicator (animated)
 
-Upgrade the Phase 1 depth indicator to read from the depth store. The active dot glows with the current scale's accent color. The intra-level progress line fills as scroll advances through a scale. The magnification label crossfades on scale transition.
+Upgrade the Phase 1 depth indicator to read from the depth store. The active dot glows with the current scale's accent color. The intra-level fill height is driven imperatively via a store subscription (no React re-render per tick). The magnification label crossfades on scale transition (remounted via `key={currentScale}`). Click-to-jump uses Lenis (`lenis.scrollTo`), instant under reduced motion.
+
+**Keyboard scale navigation:** Global `keydown` listener on `window` — Arrow keys and Page Up/Down jump between scales. Guards against firing in form fields (INPUT, TEXTAREA, SELECT, contentEditable). **Open a11y concern:** bare arrow-key hijack removes fine-grained keyboard scroll; revisit in Phase 7 a11y re-audit (consider softening to PageUp/Down only).
 
 ### 2.5 Reduced motion support
 
-Build `src/hooks/useReducedMotion.ts`. Reads `prefers-reduced-motion`, merges with the on-page toggle state (persisted in `localStorage`). When active: Lenis lerp set to 1 (instant), GSAP scrub disabled, CSS transitions set to 0s.
+Build `src/stores/motion.ts`. Centralized reduced-motion state: `osReduced` (from `prefers-reduced-motion` media query, live-tracked) OR `userReduced` (on-page toggle, persisted to `localStorage`). `reduced = osReduced || userReduced` — the toggle only adds reduction, never overrides an OS preference. App reflects `reduced` onto `<html data-motion="reduced"|"full">` and sets Lenis lerp to 1 (instant). The depth pipeline keeps running (theming depends on it); only smoothing and color interpolation are disabled. CSS `[data-motion='reduced']` mirror blocks parallel the existing `@media (prefers-reduced-motion)` no-JS floor.
+
+Build `src/hooks/useReducedMotion.ts` — thin store selector. Existing hooks (`useReveal`, `useGlitchCycle`) absorb the centralized `useReducedMotion` (live toggle, not mount-only `matchMedia`).
 
 Build `src/components/MotionToggle.tsx`. Small button near the depth indicator.
 
 ### 2.6 URL fragment sync
 
-Wire depth changes to URL fragments via `history.replaceState`. Loading with a fragment scrolls to the correct depth.
+Build `src/engine/url-scale-sync.ts`. `replaceState` on scale change (not `pushState` — no history pollution). `hashchange` listener handles manual hash edits. `jumpToInitialHash` at page load scrolls to the matching scale (instant, forced). Kept separate from `scroll-engine.ts` to avoid import cycles.
 
 **Verify:** Scroll slowly through the entire page. Colors shift, typography shifts, depth indicator tracks correctly, URL updates. Enable reduced motion; scroll is instant, no animations. Reload with `#protein` in the URL; page loads at the protein section.
 
 ### Phase 2 done criteria
 
-- Lenis + GSAP ScrollTrigger driving depth store (0 to 1)
-- CSS custom properties animate per scale (colors, fog, accent)
+- Lenis + GSAP ScrollTrigger driving depth store (0 to 1) via piecewise-canonical remap
+- CSS custom properties animate per scale (colors, fog, accent) via stateless per-tick interpolation
+- `data-current-scale` on `<html>` for fixed chrome
 - Typography shifts at scale boundaries (serif, sans, mono)
-- Depth indicator animated with intra-level progress
-- Reduced motion toggle works and persists
+- Depth indicator animated with intra-level progress, keyboard scale nav
+- Reduced motion toggle works, persists, and is live (mid-session flip)
 - URL fragments sync bidirectionally
+- Unit tests (scale-manager, depth store) and CI `npm test -- --run` step
 
 ---
 

@@ -34,7 +34,7 @@ export function TissueContent() {
           width: '100%',
         }}
       >
-        <div style={{ maxWidth: 760, flex: 1 }}>
+        <div className="content-scrim" style={{ maxWidth: 760, flex: 1 }}>
           <p
             style={{
               margin: '0 0 var(--space-3)',

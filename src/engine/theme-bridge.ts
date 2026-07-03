@@ -13,6 +13,22 @@ type Theme = Record<(typeof CHANNELS)[number], string>;
 
 let themeCache: Record<ScaleName, Theme> | null = null;
 
+export interface BlendedTheme {
+  bg: string; // resolved --bg at the current depth
+  fogColor: string; // resolved --fog-color at the current depth
+  accent: string; // resolved --accent at the current depth
+}
+
+// Latest blended root colors, refreshed every depth tick. The WebGL layer
+// (SceneAtmosphere) reads this so the Canvas clear color + fog stay identical
+// to the CSS gradient — globals.css remains the single source of color truth.
+let blendedTheme: BlendedTheme | null = null;
+
+/** The current blended root colors, or null before the bridge has started. */
+export function getBlendedTheme(): BlendedTheme | null {
+  return blendedTheme;
+}
+
 function readSectionTheme(scale: ScaleName): Theme {
   const el = document.getElementById(scale);
   if (!el) throw new Error(`theme-bridge: section #${scale} not in DOM`);
@@ -48,19 +64,19 @@ export function startThemeBridge(isReducedMotion: () => boolean): () => void {
 
   const applyDepth = (depth: number): void => {
     const zone = blendZoneFor(depth);
+    const out = {} as Theme;
     if (zone.from === zone.to) {
       const theme = cache[zone.to];
-      for (const c of CHANNELS) root.style.setProperty(c, theme[c]);
-      return;
-    }
-    const from = cache[zone.from];
-    const to = cache[zone.to];
-    const t = isReducedMotion() ? Math.round(zone.t) : zone.t;
-    for (const c of CHANNELS) {
+      for (const c of CHANNELS) out[c] = theme[c];
+    } else {
+      const from = cache[zone.from];
+      const to = cache[zone.to];
+      const t = isReducedMotion() ? Math.round(zone.t) : zone.t;
       // Stateless per-tick interpolation (scroll-scrubbed, not time-tweened).
-      const value: string = gsap.utils.interpolate(from[c], to[c], t);
-      root.style.setProperty(c, value);
+      for (const c of CHANNELS) out[c] = gsap.utils.interpolate(from[c], to[c], t);
     }
+    for (const c of CHANNELS) root.style.setProperty(c, out[c]);
+    blendedTheme = { bg: out['--bg'], fogColor: out['--fog-color'], accent: out['--accent'] };
   };
 
   const unsubDepth = useDepthStore.subscribe((s) => s.depth, applyDepth, { fireImmediately: true });

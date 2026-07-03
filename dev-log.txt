@@ -1,0 +1,12 @@
+
+> zalibhai-portfolio@0.0.0 dev
+> vite
+
+
+  VITE v6.4.3  ready in 253 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+  ➜  press h + enter to show help
+3:13:41 PM [vite] (client) ✨ new dependencies optimized: r3f-perf, three, zustand/react/shallow, @react-three/postprocessing, postprocessing, three/examples/jsm/misc/GPUComputationRenderer.js
+3:13:41 PM [vite] (client) ✨ optimized dependencies changed. reloading
