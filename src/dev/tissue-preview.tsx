@@ -26,6 +26,8 @@ const CAM_FOV = Number(params.get('fov') ?? '45');
 // shader detail into FAKE crispness, so always review at 2×. Override with
 // ?dpr=1 only to see the aliased low-res look.
 const DPR = Number(params.get('dpr') ?? '2');
+// ?look=0 crisp matte sculpture (ship default) … ?look=1 dreamy golden bloom-glow
+const LOOK = Number(params.get('look') ?? '0');
 
 // eslint-disable-next-line react-refresh/only-export-components -- dev-only entry, not a fast-refresh module
 function Shell() {
@@ -36,6 +38,7 @@ function Shell() {
     m.side = DoubleSide;
     m.uOpacity = 1;
     m.uDissolve = 0;
+    m.uLook = LOOK;
     m.uRDBlend = 0; // skip the reaction-diffusion warmup dependency for the preview
     return m;
   }, []);

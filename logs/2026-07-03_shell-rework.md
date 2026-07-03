@@ -68,6 +68,32 @@ Corrected back toward the docs:
   than filling the frame — better UX and crisper (fewer px/tri). Breakthrough keyframes
   (0.19 z=3, 1.0 z=−34) unchanged.
 
+## Look dial: crisp-vs-dreamy A/B, then locked to crisp (later same day)
+
+The "spec realignment" pass above landed on a single fixed midpoint between "crisp
+matte sculpture" and DESIGN §4's "dreamy golden bloom-glow" — but that tradeoff is
+subjective, and describing it in prose ("heavy bloom" etc.) wasn't a fair way to make
+the user choose. Replaced the fixed compromise with a **`uLook` uniform (0–1)** that
+scales the whole shading register between the two extremes, so both ends could be
+rendered and shown directly instead of argued about in words:
+
+- Added `uniform float uLook` to `tissue-shell.frag.glsl`. It drives, all via `mix()`
+  keyed on `look = clamp(uLook, 0, 1)`: groove-shadow floor/ramp (`gFloor`/`gLo` —
+  near-black tight line at 0 → soft at 1), key-light brightness (`kBright`), ambient
+  fill (`ambK`), damp-sheen strength (`sheenK`), crest liquid-light streak (`streakK`),
+  and golden rim strength (`rimK`). The geometry (detail 64) and albedo are identical
+  at both ends — only light/shadow/bloom balance moves.
+- `tissue-shell-material.ts` — new default uniform `uLook: 0`.
+- `tissue-preview.tsx` — new `?look=` param (default `0`, matching the material) so
+  either end (or anything between) can be reviewed via URL without touching code.
+- Rendered both extremes at the real ship framing (z=33, fov 60) and dpr 2
+  (`look-0-crisp.png`, `look-1-dreamy.png`) for a direct side-by-side instead of
+  prose. User picked **look 0 (crisp matte sculpture)** as the better read.
+- **Locked in `uLook: 0` as the shipping default** (`tissue-shell-material.ts` and the
+  `tissue-preview.tsx` fallback). The dial itself was deliberately left in place (not
+  ripped out) at the user's request, in case the dreamier end is wanted later — flip
+  the material default back toward 1, or pass `?look=1` in the dev preview, to revisit.
+
 ## Open items
 
 - **Breakthrough dissolve** not yet re-verified against the deeper cleft + detail-64
@@ -77,7 +103,8 @@ Corrected back toward the docs:
   non-indexed verts) at dpr 2 — fine on Apple Silicon; confirm 60fps on a real scroll
   and dial detail toward ~48 if a weaker GPU struggles.
 - Comparison PNGs (`shell-*.png`, `preview-*.png`, `site-*.png`, `website.png`,
-  `melty.png`, `panel.png`) left in repo root — safe to delete.
+  `melty.png`, `panel.png`, `look-*.png`, `ship-default-confirm.png`) left in repo
+  root — safe to delete.
 
 ## Key files
 
@@ -85,3 +112,4 @@ Corrected back toward the docs:
 - `src/scales/tissue/shaders/tissue-shell.vert.glsl`, `tissue-shell.frag.glsl`
 - `src/scales/tissue/tissue-shell-material.ts`, `TissueScene.tsx`
 - `src/dev/tissue-preview.tsx`
+- `src/engine/camera-keyframes.ts` (establishing/push-in z pulled back)

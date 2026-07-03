@@ -19,6 +19,7 @@ uniform float uRDBlend;
 uniform float uDissolve;
 uniform float uDissolveRadius;
 uniform vec3 uDissolveEdgeColor;
+uniform float uLook; // 0 = crisp matte sculpture … 1 = soft dreamy bloom-glow
 
 varying vec3 vWorldPos;
 varying vec3 vWorldNormal;
@@ -80,13 +81,24 @@ void main() {
   if (!gl_FrontFacing) smoothN = -smoothN;
   N = normalize(mix(N, smoothN, cavity * 0.85));
 
+  // --- Look dial (uLook): interpolates the whole shading register between a
+  // crisp matte sculpture (0) and the DESIGN §4 dreamy golden bloom-glow (1).
+  // The geometry (detail 64) is identical either way; only the light/shadow/
+  // bloom balance moves. ---
+  float look = clamp(uLook, 0.0, 1.0);
+  float gFloor = mix(0.05, 0.22, look); // groove shadow floor: near-black → soft
+  float gLo = mix(0.14, 0.05, look); // groove ramp onset: tight line → gentle
+  float kBright = mix(0.50, 0.98, look); // key brightness: only crests bloom → whole surface glows
+  float ambK = mix(0.82, 1.34, look); // ambient fill scale
+  float sheenK = mix(0.10, 0.18, look); // broad damp sheen
+  float streakK = mix(0.58, 0.92, look); // crest liquid-light streak
+  float rimK = mix(0.20, 0.50, look); // golden silhouette rim / bloom halo
+
   float hAA = mix(RIDGE_MEAN, h0, aaFade);
   float ao = mix(1.0, 0.07, cavity);
-  // Groove shadow: dark, defined floor keeps the ropes separated (crispness now
-  // comes mainly from the high-detail geometry, so this can be a touch softer
-  // than a hard black line and let the warm bloom breathe — DESIGN §4's
-  // "heavy bloom, golden light" register).
-  ao *= mix(0.12, 1.0, smoothstep(0.1, 0.6, hAA));
+  // Groove shadow: floor + ramp move with the look dial (crisp → dark tight
+  // line; dreamy → softer, letting the warm bloom breathe).
+  ao *= mix(gFloor, 1.0, smoothstep(gLo, 0.6, hAA));
 
   // Occlusion with hue-in-shadow: same VALUE structure as plain gray AO (the
   // shadow floor is never lifted), but shadows roll warm — crevices sink
@@ -100,12 +112,11 @@ void main() {
   float wrap = dot(N, key) * 0.5 + 0.5;
   float diff = wrap * wrap;
   float hemi = 0.5 + 0.5 * N.y;
-  vec3 ambient = mix(vec3(0.16, 0.13, 0.10), vec3(0.30, 0.25, 0.19), hemi);
-  // Golden key, brought back up toward the DESIGN "golden light + heavy bloom"
-  // register: the lit rope flanks now glow (much of the warm-lit surface
-  // crosses the 0.6 bloom threshold), while the dark grooves + high-detail
-  // geometry keep the form reading sculptural rather than a flat melty wash.
-  vec3 keyCol = vec3(1.0, 0.86, 0.62) * 0.74;
+  vec3 ambient = mix(vec3(0.16, 0.13, 0.10), vec3(0.30, 0.25, 0.19), hemi) * ambK;
+  // Golden key; brightness rides the look dial. Dreamy end pushes most of the
+  // warm-lit surface across the 0.6 bloom threshold so it glows; crisp end
+  // keeps bloom to the crests only.
+  vec3 keyCol = vec3(1.0, 0.86, 0.62) * kBright;
 
   // Clay micro-grain — keeps open surfaces alive without touching albedo.
   float micro = 0.94 + 0.06 * snoise(vObjPos * 2.3);
@@ -115,14 +126,14 @@ void main() {
   // Damp sheen: one broad low lobe over the whole form…
   vec3 H = normalize(key + V);
   float ndh = max(dot(N, H), 0.0);
-  float sheen = pow(ndh, 20.0) * 0.12;
+  float sheen = pow(ndh, 20.0) * sheenK;
   color += vec3(1.0, 0.97, 0.90) * sheen * ao;
 
   // …plus liquid-light streaks: a tight golden lobe masked to rope crests,
   // broken into runs by the micro-grain — bright enough to feed the depth-0
   // bloom so the ridges themselves glow.
   float streak = pow(ndh, 60.0) * smoothstep(0.55, 0.85, h0) * (0.55 + 0.45 * micro);
-  color += vec3(1.0, 0.92, 0.70) * streak * 0.7 * ao;
+  color += vec3(1.0, 0.92, 0.70) * streak * streakK * ao;
 
   // Reaction-diffusion mottle — subtle organic tonal variation (SPEC §9 /
   // DESIGN: procedural RD surface texture), restored to a visible but gentle
@@ -133,8 +144,8 @@ void main() {
   }
 
   // Golden silhouette rim — a warm bloom halo separating the form from the
-  // dark bg; broader now for the dreamier register.
-  color += uFresnelColor * fresnel * 0.34;
+  // dark bg; strength rides the look dial.
+  color += uFresnelColor * fresnel * rimK;
 
   // --- Breakthrough dissolve aperture ---
   // Opens a central hole on the camera-facing cap as uDissolve rises 0→1.

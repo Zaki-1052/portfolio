@@ -31,6 +31,7 @@ export const SurfaceShellMaterial = shaderMaterial(
   {
     uTime: 0,
     uOpacity: 1,
+    uLook: 0, // 0 = crisp matte sculpture (shipping default) … 1 = soft dreamy bloom-glow
     uBaseColor: new Color('#e2c288'), // warm gold-amber (DESIGN §4 tissue register), not ivory
     uFresnelColor: new Color('#e6c47d'), // golden silhouette rim → bloom halo
     uFresnelPower: 3.5, // broad golden rim for the warm, bloomy register
