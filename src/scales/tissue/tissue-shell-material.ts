@@ -31,9 +31,9 @@ export const SurfaceShellMaterial = shaderMaterial(
   {
     uTime: 0,
     uOpacity: 1,
-    uBaseColor: new Color('#e9dfc8'), // pale uniform cream; depth carried by warm-shadow occlusion
-    uFresnelColor: new Color('#e5c07b'), // golden silhouette rim → bloom halo
-    uFresnelPower: 4.0, // tight to the edge; the surface itself stays matte
+    uBaseColor: new Color('#e2c288'), // warm gold-amber (DESIGN §4 tissue register), not ivory
+    uFresnelColor: new Color('#e6c47d'), // golden silhouette rim → bloom halo
+    uFresnelPower: 3.5, // broad golden rim for the warm, bloomy register
     uFogColor: new Color('#34302b'),
     uFogDensity: 0.01,
     uRDTexture: placeholderRD as Texture,

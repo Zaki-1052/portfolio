@@ -2,8 +2,10 @@
 
 ## What was done
 
-Replaced the first-scale hero shell's blobby bronze look with a sculpted, cream,
-matte form covered in flow-aligned rope ridges.
+Replaced the first-scale hero shell's blobby bronze look with a sculpted, warm
+gold-amber form covered in flow-aligned rope ridges. (An intermediate pass drifted
+to pale-cream/matte; see "Spec realignment" below for the correction back to the
+DESIGN doc's warm register.)
 
 - **New shared GLSL chunk** `src/shaders/shell-shape.glsl` — one source of truth for
   the surface, prepended to both shader stages (after `noise.glsl`). Holds `uTime`,
@@ -40,11 +42,31 @@ RD mottle cut to ±3%.
 
 ## Decisions
 
-- Ship-framing is straight-on at z=26 (all camera keyframes are head-on at x=0), so the
-  front view is the primary review target; always review at **dpr 2**.
+- Ship-framing is straight-on at x=0 (all camera keyframes are head-on), so the front
+  view is the primary review target; always review at **dpr 2**.
 - Cleft is deep in the mid-body, faded toward both poles (`crownEase`/`notchEase` +
   pole-widened slot) so the crown is a smooth dome and the lobes carry the notch —
   removes the pole starburst and the hard notch facets.
+
+## Spec realignment (later same day)
+
+An audit against DESIGN §4 / SPEC §5 found the shell had drifted from the doc's tissue
+register. **This drift was autonomous (my own tuning), NOT a deliberate user choice** —
+the earlier "pale cream / matte" framing in this log was wrong to imply otherwise.
+Corrected back toward the docs:
+
+- **Albedo warm gold-amber**, not ivory: `uBaseColor #e9dfc8 → #e2c288`, fresnel
+  `#e5c07b → #e6c47d` (DESIGN §4 "warm gold-amber, pushed warmer").
+- **Dreamier "golden light + heavy bloom"** finish: key light lifted (`keyCol ×0.55 →
+  ×0.74`) + ambient up + broader rim (`×0.25 → ×0.34`) so the warm-lit surface glows,
+  while the dark grooves + detail-64 geometry keep it sculptural (not the old melty
+  wash). A middle point between the doc's dreaminess and the crispness fix.
+- **RD mottle restored** to a visible ~±5% (`0.97+rd·0.06 → 0.9+rd·0.2`) — SPEC §9's
+  procedural reaction-diffusion surface texture, which had been dialed to near-nil.
+- **Camera pulled back** (`camera-keyframes.ts` establishing `z 26 → 33`, `0.08` push
+  `19 → 24`, `0.15` `13.5 → 14`): the form is a framed hero behind the hero text rather
+  than filling the frame — better UX and crisper (fewer px/tri). Breakthrough keyframes
+  (0.19 z=3, 1.0 z=−34) unchanged.
 
 ## Open items
 

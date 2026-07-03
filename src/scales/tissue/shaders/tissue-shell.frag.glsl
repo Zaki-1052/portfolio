@@ -81,12 +81,12 @@ void main() {
   N = normalize(mix(N, smoothN, cavity * 0.85));
 
   float hAA = mix(RIDGE_MEAN, h0, aaFade);
-  float ao = mix(1.0, 0.06, cavity);
-  // Deep, crisp groove shadow: near-black floor + a tight ramp so the crevice
-  // between ropes reads as a defined dark LINE, not a soft gradient. This is
-  // the primary crispness lever at retina resolution — the local
-  // bright-crest → dark-groove contrast is what reads as "sharp".
-  ao *= mix(0.08, 1.0, smoothstep(0.12, 0.62, hAA));
+  float ao = mix(1.0, 0.07, cavity);
+  // Groove shadow: dark, defined floor keeps the ropes separated (crispness now
+  // comes mainly from the high-detail geometry, so this can be a touch softer
+  // than a hard black line and let the warm bloom breathe — DESIGN §4's
+  // "heavy bloom, golden light" register).
+  ao *= mix(0.12, 1.0, smoothstep(0.1, 0.6, hAA));
 
   // Occlusion with hue-in-shadow: same VALUE structure as plain gray AO (the
   // shadow floor is never lifted), but shadows roll warm — crevices sink
@@ -100,11 +100,12 @@ void main() {
   float wrap = dot(N, key) * 0.5 + 0.5;
   float diff = wrap * wrap;
   float hemi = 0.5 + 0.5 * N.y;
-  vec3 ambient = mix(vec3(0.13, 0.11, 0.09), vec3(0.23, 0.20, 0.17), hemi);
-  // Key held so the fully-lit flat rope FLANK sits under the 0.6 bloom
-  // threshold — bloom then catches only the crest highlights/sheen/rim (the
-  // glow), instead of the whole bright body blooming into a flat melty wash.
-  vec3 keyCol = vec3(1.0, 0.88, 0.70) * 0.55;
+  vec3 ambient = mix(vec3(0.16, 0.13, 0.10), vec3(0.30, 0.25, 0.19), hemi);
+  // Golden key, brought back up toward the DESIGN "golden light + heavy bloom"
+  // register: the lit rope flanks now glow (much of the warm-lit surface
+  // crosses the 0.6 bloom threshold), while the dark grooves + high-detail
+  // geometry keep the form reading sculptural rather than a flat melty wash.
+  vec3 keyCol = vec3(1.0, 0.86, 0.62) * 0.74;
 
   // Clay micro-grain — keeps open surfaces alive without touching albedo.
   float micro = 0.94 + 0.06 * snoise(vObjPos * 2.3);
@@ -123,15 +124,17 @@ void main() {
   float streak = pow(ndh, 60.0) * smoothstep(0.55, 0.85, h0) * (0.55 + 0.45 * micro);
   color += vec3(1.0, 0.92, 0.70) * streak * 0.7 * ao;
 
-  // RD mottle — a whisper of tonal variety (±3%); the surface stays one tone.
+  // Reaction-diffusion mottle — subtle organic tonal variation (SPEC §9 /
+  // DESIGN: procedural RD surface texture), restored to a visible but gentle
+  // ~±5% so the warm surface has organic life without turning noisy.
   if (uRDBlend > 0.0) {
     float rd = texture2D(uRDTexture, vWorldPos.xy * 0.04 + 0.5).g;
-    color *= mix(1.0, 0.97 + rd * 0.06, uRDBlend);
+    color *= mix(1.0, 0.9 + rd * 0.2, uRDBlend);
   }
 
-  // Golden silhouette rim — tight to the edge (high power, no interior wash),
-  // a bloom halo separating the form from the dark bg.
-  color += uFresnelColor * fresnel * 0.25;
+  // Golden silhouette rim — a warm bloom halo separating the form from the
+  // dark bg; broader now for the dreamier register.
+  color += uFresnelColor * fresnel * 0.34;
 
   // --- Breakthrough dissolve aperture ---
   // Opens a central hole on the camera-facing cap as uDissolve rises 0→1.
