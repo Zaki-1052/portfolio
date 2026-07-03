@@ -21,9 +21,9 @@ const vec3 LOBE_DIR_L = vec3(-0.301, -0.941, 0.150); // ≈unit; ~18° off strai
 const vec3 LOBE_DIR_R = vec3(0.301, -0.941, 0.150);
 
 // -- rope ridges --
-const float RIDGE_N = 36.0; // stripe count over the mirrored longitude → a few dozen ropes
-const float RIDGE_RELIEF = 0.6; // peak-to-valley ridge displacement, world units
-const float RIDGE_MEAN = 0.6; // profile mean; displacement is centred on this
+const float RIDGE_N = 34.0; // stripe count over the mirrored longitude → a few dozen ropes
+const float RIDGE_RELIEF = 0.78; // peak-to-valley ridge displacement, world units — deep enough to hold at z=26
+const float RIDGE_MEAN = 0.55; // profile mean; displacement is centred on this
 const float FINE_MULT = 3.3; // sub-striation frequency vs the main ropes
 const float FINE_AMP = 0.06; // sub-striation height in profile units (bump-only, no displacement)
 
@@ -44,21 +44,32 @@ float baseForm(vec3 p) {
 
   float wobble = fbm2(dir * 1.3 + 40.0) * 0.03;
   float ax = abs(dir.x + wobble);
-  float valley = 1.0 - smoothstep(0.0, CLEFT_WIDTH, ax);
+
+  // Widen the cleft slot toward the top/bottom poles, where the icosphere
+  // vertices are sparse and a razor-narrow valley facets into hard blocks. The
+  // wider slot there spans enough vertices to stay smooth; the mid-body slot
+  // (poleProx≈0) keeps its tight, deep seam.
+  float poleProx = smoothstep(0.5, 0.95, abs(dir.y));
+  float cleftW = CLEFT_WIDTH * (1.0 + 4.0 * poleProx);
+  float valley = 1.0 - smoothstep(0.0, cleftW, ax);
   // Swell tight to the seam: concentrates each half's mass beside the cleft so
   // the two halves read as slim vertical lobes pressed together (the front
   // view — the shipping camera) and bulges the silhouette shoulders.
-  float mound = smoothstep(CLEFT_WIDTH, 0.22, ax) * (1.0 - smoothstep(0.5, 0.9, ax));
-  float notch = smoothstep(0.3, 0.85, -dir.y);
+  float mound = smoothstep(cleftW, 0.22, ax) * (1.0 - smoothstep(0.5, 0.9, ax));
+  float notch = smoothstep(0.3, 0.82, -dir.y);
 
   float lobeL = pow(max(dot(dir, LOBE_DIR_L), 0.0), LOBE_K);
   float lobeR = pow(max(dot(dir, LOBE_DIR_R), 0.0), LOBE_K);
 
-  // Slightly shallower over the crown: keeps the top-of-silhouette dip but
-  // stops the narrow slot from reading jagged at the sparse pole sampling.
-  float crownEase = 1.0 - 0.45 * smoothstep(0.75, 0.97, dir.y);
+  // Ease the cleft's DEPTH into both poles so neither the crown dip nor the
+  // bottom notch cuts a hard slot into the sparse polar vertices — the crown
+  // rounds into one dome and the two lobes carry the notch shape themselves.
+  float crownEase = 1.0 - 0.7 * smoothstep(0.7, 0.96, dir.y);
+  float notchEase = 1.0 - 0.7 * smoothstep(0.7, 0.97, -dir.y);
+  float poleEase = crownEase * notchEase;
 
-  return undulate + mound * MOUND_HEIGHT - valley * (CLEFT_DEPTH * crownEase + NOTCH_EXTRA * notch)
+  return undulate + mound * MOUND_HEIGHT
+    - valley * (CLEFT_DEPTH * poleEase + NOTCH_EXTRA * notch * notchEase)
     + (lobeL + lobeR) * LOBE_HEIGHT;
 }
 
@@ -84,6 +95,15 @@ vec2 ridgeFlow(vec3 dir, vec3 p) {
   return vec2(warp, branch);
 }
 
+// Fade the ropes AND their sub-striations into smooth polar caps: the broad
+// domed top and the rounded lobe underside. This dissolves the longitude
+// starburst (all ropes converge at the poles) into clean shading. Both the
+// coarse profile and the fine strands must share this or the fine layer alone
+// keeps radiating from the pole.
+float poleCapFade(vec3 dir) {
+  return 1.0 - smoothstep(0.82, 0.965, abs(dir.y));
+}
+
 // Rounded rope cross-profile at a direction, given precomputed flow: 0 =
 // groove floor → 1 = crest. Trig-only, cheap enough to re-run per
 // finite-difference tap. The mirrored longitude keeps the pattern bilaterally
@@ -96,13 +116,15 @@ float ridgeProfile(vec3 dir, vec2 flow) {
     sin(RIDGE_N * 0.5 * theta + flow.x * 1.1),
     flow.y
   );
-  // Packed-tube profile: each cycle is one full softly-domed rope — steep out
-  // of the groove (thin crevice), broad rounded crest. No plateaus.
-  float ridge = pow(0.5 + 0.5 * s, 0.42);
+  // Packed-tube profile: each cycle is one softly-domed rope. `t^0.45` gives
+  // the broad rounded crest; the extra smoothstep carves the bottom of the
+  // cycle into a thin deep crevice so ropes stay defined (not melted together)
+  // even at the close z=26 framing under heavy bloom.
+  float t = 0.5 + 0.5 * s;
+  float ridge = pow(t, 0.45) * smoothstep(0.0, 0.14, t);
 
   float cleftGap = smoothstep(0.015, 0.05, abs(dir.x)); // ropes run up to the seam
-  float poleFade = 1.0 - smoothstep(0.955, 0.985, abs(dir.y)); // anti-singularity cone only
-  return mix(RIDGE_MEAN, ridge, cleftGap * poleFade);
+  return mix(RIDGE_MEAN, ridge, cleftGap * poleCapFade(dir));
 }
 
 // Main ropes + fine sub-striations riding their flanks (strands within each
@@ -113,7 +135,7 @@ float detailHeight(vec3 dir, vec2 flow, float finePhase, float fineScale) {
   float main = ridgeProfile(dir, flow);
   float theta = atan(dir.z, abs(dir.x) + 1e-4);
   float fine = sin(RIDGE_N * FINE_MULT * theta + flow.x * 2.2 + finePhase);
-  return main + fine * (FINE_AMP * fineScale) * smoothstep(0.15, 0.5, main);
+  return main + fine * (FINE_AMP * fineScale) * smoothstep(0.15, 0.5, main) * poleCapFade(dir);
 }
 
 // Total additive height over the tapered base ellipsoid at sphere point p.

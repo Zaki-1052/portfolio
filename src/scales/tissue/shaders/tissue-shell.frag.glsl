@@ -58,9 +58,10 @@ void main() {
   float hD0 = detailHeight(dir, flow, finePhase, fineScale);
   float hDT = detailHeight(normalize(dir + T * GRAD_EPS), flow, finePhase, fineScale);
   float hDB = detailHeight(normalize(dir + B * GRAD_EPS), flow, finePhase, fineScale);
-  // ×1.4: mildly exaggerated tilt so each rope shades as a rounded tube under
-  // the soft light (physically-exact tilt reads nearly flat at this softness).
-  vec3 grad = (T * (hDT - hD0) + B * (hDB - hD0)) * (1.4 * RIDGE_RELIEF / (GRAD_EPS * RADIUS));
+  // ×1.7: exaggerated tilt so each rope shades as a rounded tube under the soft
+  // light (physically-exact tilt reads nearly flat at this softness), and holds
+  // its rounded read at the close z=26 framing.
+  vec3 grad = (T * (hDT - hD0) + B * (hDB - hD0)) * (1.7 * RIDGE_RELIEF / (GRAD_EPS * RADIUS));
   grad -= N * dot(grad, N); // keep the tilt tangent to the surface
   N = normalize(N - grad * aaFade);
 
@@ -80,8 +81,12 @@ void main() {
   N = normalize(mix(N, smoothN, cavity * 0.85));
 
   float hAA = mix(RIDGE_MEAN, h0, aaFade);
-  float ao = mix(1.0, 0.1, cavity);
-  ao *= mix(0.35, 1.0, smoothstep(0.02, 0.5, hAA));
+  float ao = mix(1.0, 0.06, cavity);
+  // Deep, crisp groove shadow: near-black floor + a tight ramp so the crevice
+  // between ropes reads as a defined dark LINE, not a soft gradient. This is
+  // the primary crispness lever at retina resolution — the local
+  // bright-crest → dark-groove contrast is what reads as "sharp".
+  ao *= mix(0.08, 1.0, smoothstep(0.12, 0.62, hAA));
 
   // Occlusion with hue-in-shadow: same VALUE structure as plain gray AO (the
   // shadow floor is never lifted), but shadows roll warm — crevices sink
@@ -95,8 +100,11 @@ void main() {
   float wrap = dot(N, key) * 0.5 + 0.5;
   float diff = wrap * wrap;
   float hemi = 0.5 + 0.5 * N.y;
-  vec3 ambient = mix(vec3(0.15, 0.12, 0.10), vec3(0.30, 0.27, 0.23), hemi);
-  vec3 keyCol = vec3(1.0, 0.88, 0.70) * 0.78;
+  vec3 ambient = mix(vec3(0.13, 0.11, 0.09), vec3(0.23, 0.20, 0.17), hemi);
+  // Key held so the fully-lit flat rope FLANK sits under the 0.6 bloom
+  // threshold — bloom then catches only the crest highlights/sheen/rim (the
+  // glow), instead of the whole bright body blooming into a flat melty wash.
+  vec3 keyCol = vec3(1.0, 0.88, 0.70) * 0.55;
 
   // Clay micro-grain — keeps open surfaces alive without touching albedo.
   float micro = 0.94 + 0.06 * snoise(vObjPos * 2.3);
@@ -113,12 +121,12 @@ void main() {
   // broken into runs by the micro-grain — bright enough to feed the depth-0
   // bloom so the ridges themselves glow.
   float streak = pow(ndh, 60.0) * smoothstep(0.55, 0.85, h0) * (0.55 + 0.45 * micro);
-  color += vec3(1.0, 0.92, 0.70) * streak * 0.5 * ao;
+  color += vec3(1.0, 0.92, 0.70) * streak * 0.7 * ao;
 
-  // RD mottle — gentle organic tonal variety (±8%).
+  // RD mottle — a whisper of tonal variety (±3%); the surface stays one tone.
   if (uRDBlend > 0.0) {
     float rd = texture2D(uRDTexture, vWorldPos.xy * 0.04 + 0.5).g;
-    color *= mix(1.0, 0.94 + rd * 0.16, uRDBlend);
+    color *= mix(1.0, 0.97 + rd * 0.06, uRDBlend);
   }
 
   // Golden silhouette rim — tight to the edge (high power, no interior wash),

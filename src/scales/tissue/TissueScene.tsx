@@ -59,8 +59,11 @@ export function SurfaceScene() {
   return (
     <group>
       <mesh material={material}>
-        {/* detail 7: the geometric rope-ridge relief facets at 6; still 1 draw call. */}
-        <icosahedronGeometry args={[12, 7]} />
+        {/* IcosahedronGeometry detail is LINEAR: tris = 20·(detail+1)². detail 64
+            ≈ 84.5k tris (edge ≈0.19u) — enough to resolve the ~2.2u rope ridges
+            the vertex shader displaces. Low detail (6/7 ≈ 1k tris) smears them
+            into a melty blur once the object fills the frame. Still 1 draw call. */}
+        <icosahedronGeometry args={[12, 64]} />
       </mesh>
       {!reduced && <BreakthroughParticles />}
     </group>

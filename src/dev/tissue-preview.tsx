@@ -22,6 +22,10 @@ const SPIN = params.get('spin') === '1';
 // to review the shell at its real on-site framing, not just the wide preview.
 const CAM_Z = Number(params.get('z') ?? '40');
 const CAM_FOV = Number(params.get('fov') ?? '45');
+// Pixel ratio. Defaults to 2 (retina-honest): a 1× render aliases coarse
+// shader detail into FAKE crispness, so always review at 2×. Override with
+// ?dpr=1 only to see the aliased low-res look.
+const DPR = Number(params.get('dpr') ?? '2');
 
 // eslint-disable-next-line react-refresh/only-export-components -- dev-only entry, not a fast-refresh module
 function Shell() {
@@ -48,7 +52,9 @@ function Shell() {
 
   return (
     <mesh ref={meshRef} material={material}>
-      <icosahedronGeometry args={[12, 7]} />
+      {/* Match TissueScene: high subdivision so the vertex-displaced ridges
+          resolve. detail is LINEAR (tris = 20·(detail+1)²). */}
+      <icosahedronGeometry args={[12, 64]} />
     </mesh>
   );
 }
@@ -59,7 +65,7 @@ if (root) {
     <Canvas
       style={{ position: 'fixed', inset: 0, background: '#141210' }}
       camera={{ fov: CAM_FOV, near: 0.1, far: 1000, position: [0, 0, CAM_Z] }}
-      dpr={[1, 2]}
+      dpr={DPR}
       gl={{ antialias: false }}
     >
       <Shell />
