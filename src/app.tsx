@@ -33,6 +33,9 @@ const Perf = import.meta.env.DEV
 const CameraDevTools = import.meta.env.DEV
   ? lazy(() => import('@/engine/camera-dev-tools').then((m) => ({ default: m.CameraDevTools })))
   : null;
+const ShellDevTools = import.meta.env.DEV
+  ? lazy(() => import('@/dev/shell-dev-tools').then((m) => ({ default: m.ShellDevTools })))
+  : null;
 const CameraTheatreSpike = theatreEnabled
   ? lazy(() =>
       import('@/engine/camera-theatre-spike').then((m) => ({ default: m.CameraTheatreSpike })),
@@ -144,6 +147,13 @@ export function App() {
       {CameraDevTools && (
         <Suspense fallback={null}>
           <CameraDevTools />
+        </Suspense>
+      )}
+      {/* Shell macro-form sliders (shared 'shell form' folder in the same
+          leva panel; CameraDevTools provides the panel root). */}
+      {ShellDevTools && (
+        <Suspense fallback={null}>
+          <ShellDevTools />
         </Suspense>
       )}
     </>

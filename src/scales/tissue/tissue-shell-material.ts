@@ -51,6 +51,7 @@ export const SurfaceShellMaterial = shaderMaterial(
     uSubMassHeight: P.subMassHeight,
     uSepFold: P.sepFold,
     uFrontLift: P.frontLift,
+    uProfileFlip: P.profileFlip,
     uFineAmp: P.fineAmp,
     uPleatAmp: P.pleatAmp,
     uPleatFreq: P.pleatFreq,

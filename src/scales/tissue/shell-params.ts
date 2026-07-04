@@ -39,6 +39,9 @@ export interface ShellParams {
   sepFold: number;
   // Front-lower lift — blunter, slightly raised front end.
   frontLift: number;
+  // 0 = flat face down (egg on a table) … 1 = flat plateau up (reference read:
+  // broad flattened crown, rounded tucked underside).
+  profileFlip: number;
   // Fine detail: crest strand amplitude, groove-wall pleat amplitude/frequency.
   fineAmp: number;
   pleatAmp: number;
@@ -69,23 +72,24 @@ export const SHELL_PRESETS: Record<'loaf' | 'crown' | 'bluff', ShellParams> = {
     subMassHeight: 0.0,
     sepFold: 0.0,
     frontLift: 0.0,
+    profileFlip: 0.0,
     fineAmp: 0.13,
     pleatAmp: 0.22,
     pleatFreq: 60,
   },
   crown: {
     dimX: 1.0,
-    dimY: 0.98,
+    dimY: 1.02,
     dimZ: 1.28,
-    boxiness: 2.55,
+    boxiness: 2.7,
     shoulderY: 0.3,
-    shoulderBulge: 0.1,
-    baseTuck: 0.24,
+    shoulderBulge: 0.14,
+    baseTuck: 0.3,
     bottomFlat: 0.82,
-    cleftWidth: 0.075,
-    cleftDepth: 2.1,
-    moundHeight: 0.9,
-    grooveRearFade: 0.55,
+    cleftWidth: 0.05,
+    cleftDepth: 0.85,
+    moundHeight: 0.5,
+    grooveRearFade: 0.8,
     overhang: 1.1,
     subMassY: -0.52,
     subMassZ: -0.86,
@@ -93,30 +97,32 @@ export const SHELL_PRESETS: Record<'loaf' | 'crown' | 'bluff', ShellParams> = {
     subMassHeight: 2.1,
     sepFold: 1.15,
     frontLift: 0.5,
+    profileFlip: 1.0,
     fineAmp: 0.13,
     pleatAmp: 0.22,
     pleatFreq: 60,
   },
   bluff: {
     dimX: 1.0,
-    dimY: 1.05,
+    dimY: 1.08,
     dimZ: 1.22,
-    boxiness: 2.8,
+    boxiness: 2.9,
     shoulderY: 0.35,
-    shoulderBulge: 0.12,
-    baseTuck: 0.3,
+    shoulderBulge: 0.16,
+    baseTuck: 0.34,
     bottomFlat: 0.85,
-    cleftWidth: 0.075,
-    cleftDepth: 2.2,
-    moundHeight: 0.95,
-    grooveRearFade: 0.75,
-    overhang: 1.8,
+    cleftWidth: 0.045,
+    cleftDepth: 0.9,
+    moundHeight: 0.45,
+    grooveRearFade: 0.9,
+    overhang: 2.0,
     subMassY: -0.5,
     subMassZ: -0.87,
     subMassRadius: 36,
     subMassHeight: 2.8,
     sepFold: 1.4,
     frontLift: 0.6,
+    profileFlip: 1.0,
     fineAmp: 0.13,
     pleatAmp: 0.22,
     pleatFreq: 60,
@@ -145,6 +151,7 @@ export interface ShellParamUniforms {
   uSubMassHeight: number;
   uSepFold: number;
   uFrontLift: number;
+  uProfileFlip: number;
   uFineAmp: number;
   uPleatAmp: number;
   uPleatFreq: number;
@@ -168,6 +175,7 @@ export function applyShellParams(m: ShellParamUniforms, p: ShellParams): void {
   m.uSubMassHeight = p.subMassHeight;
   m.uSepFold = p.sepFold;
   m.uFrontLift = p.frontLift;
+  m.uProfileFlip = p.profileFlip;
   m.uFineAmp = p.fineAmp;
   m.uPleatAmp = p.pleatAmp;
   m.uPleatFreq = p.pleatFreq;

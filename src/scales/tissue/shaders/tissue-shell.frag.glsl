@@ -38,11 +38,35 @@ const float RADIUS = 12.0; // base sphere radius (dir-space → world slope)
 // crest tops (fineK is pre-scaled by the grazing damp, constant across the FD
 // taps) + pleat corrugations filling the groove walls — so the crack never
 // reads as an unrendered blank.
-float shellDetail(vec3 dir, float fineK) {
+// capK (interior pole caps only): the equirect pinches at ±Y — seen from
+// inside, that's the blurry smear on the ceiling strip and the radial spider
+// on the floor. Swap those zones to a planar projection, which is
+// distortion-free exactly where the equirect degenerates. The planar
+// coordinate derives from dir (not the fixed fragment position), so the FD
+// taps still see a real gradient and the caps shade as modeled coils.
+float shellDetail(vec3 dir, float fineK, float capK) {
   vec4 t = coilTap(dir);
   float gate = ridgeGate(dir);
   float h = mix(COIL_MEAN, t.r, gate);
   h += (t.a - 0.5) * fineK * smoothstep(0.55, 0.78, h) * gate;
+  if (capK > 0.001) {
+    // 0.32 ≈ (12 texel wavelength / 512) · π⁻¹-matched: planar tube width equals
+    // the equirect's equator tube width, so the blend zone stays scale-continuous.
+    // The planar register still respects the groove stand-off (grooveGate) —
+    // coils must never run across the crease.
+    vec4 tc = texture2D(uCoilTex, dir.xz * 0.32 + 0.5);
+    float gGate = grooveGate(dir);
+    float hc = mix(COIL_MEAN, tc.r, gGate);
+    hc += (tc.a - 0.5) * fineK * smoothstep(0.55, 0.78, hc) * gGate;
+    // Interlock blend: crest-weighted, so the two registers WEAVE through the
+    // transition band (junctions read as natural coil merges) instead of
+    // linearly averaging into the mid-tone mush ring around the cap.
+    float wPl = capK * (0.02 + hc * hc * hc);
+    float wEq = (1.0 - capK) * (0.02 + h * h * h);
+    h = (h * wEq + hc * wPl) / (wEq + wPl);
+  }
+  // Pleats last: they live in the crease apron, where both coil registers are
+  // gated out — the cap blend must not erase them.
   h += pleats(dir) * uPleatAmp * grooveWall(dir);
   return h;
 }
@@ -66,9 +90,12 @@ void main() {
   vec3 T = normalize(cross(dir, refAxis));
   vec3 B = cross(dir, T);
   float fineK = uFineAmp * grazeK;
-  float h0 = shellDetail(dir, fineK);
-  float hT = shellDetail(normalize(dir + T * GRAD_EPS), fineK);
-  float hB = shellDetail(normalize(dir + B * GRAD_EPS), fineK);
+  // Pole caps get the planar-projected coils: exterior crown + both interior
+  // caps (locally constant across the FD taps, like fineK).
+  float capK = capBlendK(dir, interior);
+  float h0 = shellDetail(dir, fineK, capK);
+  float hT = shellDetail(normalize(dir + T * GRAD_EPS), fineK, capK);
+  float hB = shellDetail(normalize(dir + B * GRAD_EPS), fineK, capK);
   // ×1.7: exaggerated tilt so each coil shades as a rounded tube under the soft
   // light (physically-exact tilt reads nearly flat at this softness), and holds
   // its rounded read at the close crack-hover framing.
@@ -76,9 +103,12 @@ void main() {
   grad -= N * dot(grad, N); // keep the tilt tangent to the surface
   N = normalize(N - grad);
 
-  // Tonal mottle from the raw chem channel, damped where the equirect pinches.
-  float mottle = coilTap(dir).b;
-  float rdK = uRDBlend * poleCapFade(dir);
+  // Tonal mottle from the raw chem channel — same register as the height
+  // (planar on the caps). A mismatched register paints a brown halo around
+  // the cap blend: the equirect's pinched .b smears near the poles while
+  // poleCapFade only partially damps it across the blend band.
+  float mottle = mix(coilTap(dir).b, texture2D(uCoilTex, dir.xz * 0.32 + 0.5).b, capK);
+  float rdK = uRDBlend * mix(poleCapFade(dir), 1.0, capK);
 
   vec3 V = normalize(vViewDir);
   float ndv = max(dot(N, V), 0.0);

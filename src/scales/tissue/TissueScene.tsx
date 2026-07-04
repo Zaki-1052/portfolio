@@ -15,6 +15,8 @@ import { getSceneFog } from '@/engine/scene-fog';
 import { lerp, smoothstep } from '@/utils/math';
 import { SurfaceShellMaterial } from './tissue-shell-material';
 import { useCoilTexture } from './reaction-diffusion';
+import { applyShellParams } from './shell-params';
+import { getShellParamsOverride } from './shell-live-params';
 import { PLUNGE_APERTURE_DIR, breakthroughProgress, dissolveAmountFor } from './breakthrough';
 import { BreakthroughParticles } from './breakthrough-particles';
 
@@ -51,6 +53,11 @@ export function SurfaceScene() {
 
   useFrame((state) => {
     const depth = useDepthStore.getState().depth;
+
+    // Dev-only macro-form override (shell-dev-tools leva panel). Null in
+    // production — one check per frame.
+    const shellOverride = getShellParamsOverride();
+    if (shellOverride) applyShellParams(material, shellOverride);
 
     // Fully vivid through the approach journey; dimmed while the hero text
     // plays in front of the still-outside form; restored to full vividness

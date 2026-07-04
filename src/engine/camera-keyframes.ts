@@ -47,24 +47,24 @@ export const CAMERA_KEYFRAMES: readonly CameraKeyframe[] = [
   { depth: 0.0, position: [62, 53, 88], target: [0, 2, 0], roll: 0, fov: 55, reducedAnchor: true }, // establish — form ≈15% of frame height, veiled in fog
   { depth: 0.035, position: [58, 26, 33], target: [0, 1, 0], roll: -0.035, fov: 52 }, // orbit begins — lateral sweep, descending
   { depth: 0.07, position: [40, 12, 7], target: [0, 0, 0], roll: -0.052, fov: 50 }, // closing — banking through the turn
-  { depth: 0.105, position: [13, 9, -11], target: [0, 2, -2], roll: -0.035, fov: 51 }, // far quarter — the pan completes inside the approach band
+  { depth: 0.105, position: [15, 15, -11.5], target: [0, 2, -3], roll: -0.035, fov: 51 }, // far quarter — the pan completes inside the approach band
   {
     depth: 0.14,
-    position: [0.8, 13, -8.5],
-    target: [0, 5, -3.5],
+    position: [0.8, 22, -8.5],
+    target: [0, 4, -6.5],
     roll: -0.01,
     fov: 54,
     reducedAnchor: true,
-  }, // swinging overhead as the hero enters — camera offset ALONG the groove so the slot reads top-to-bottom in frame (band boundary)
+  }, // hero enters ALREADY straight overhead — target nearly beneath the camera so the crease is viewed head-on (not foreshortened down the slot), several coils + the crease in frame (band boundary)
   {
     depth: 0.175,
-    position: [0.5, 13.5, -6.5],
-    target: [0, 2, -4],
+    position: [0.5, 22.5, -6.5],
+    target: [0, 2, -5.5],
     roll: 0.006,
     fov: 56,
     reducedAnchor: true,
-  }, // hero center — squarely above, the slot a vertical line down the screen, cap starting to fade open (= BREAKTHROUGH_START)
-  { depth: 0.2, position: [0.3, 10, -5.8], target: [0, -1, -4.8], roll: 0, fov: 58 }, // zooming straight down into the widening opening — no lateral drift
+  }, // hero center — squarely above, looking straight down, the slot a vertical line down the screen, cap starting to fade open (= BREAKTHROUGH_START)
+  { depth: 0.2, position: [0.3, 16.8, -5.8], target: [0, -1, -4.8], roll: 0, fov: 58 }, // zooming straight down into the widening opening — no lateral drift; closes toward the rim as the dissolve opens
   {
     depth: 0.231,
     position: [0, 2, -5],

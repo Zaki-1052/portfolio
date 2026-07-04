@@ -37,6 +37,7 @@ uniform float uSubMassCos; // cos(angular radius) of the sub-mass footprint
 uniform float uSubMassHeight; // sub-mass height, world units
 uniform float uSepFold; // depth of the fold separating sub-mass from main mass
 uniform float uFrontLift; // front-lower lift — blunter, slightly raised front
+uniform float uProfileFlip; // 0 = flat face DOWN (egg on a table) … 1 = flat plateau UP (the reference read)
 uniform float uFineAmp; // crest strand amplitude (fragment-only bump)
 uniform float uPleatAmp; // groove-wall pleat amplitude (fragment-only bump)
 uniform float uPleatFreq; // pleat corrugation frequency along the groove
@@ -46,13 +47,16 @@ const float COIL_MEAN = 0.5; // shaped-field mean; displacement is centred on th
 const float RIDGE_RELIEF = 0.7; // peak-to-valley coil displacement, world units
 
 // Vertical mass profile applied to the BASE radius: widest at the shoulders,
-// tucking in toward the underside, with the flat-base squash low down. The
-// top-heavy distribution is what keeps the form from reading as a
-// bottom-heavy pill.
+// tucking in toward the underside — the top-heavy distribution that keeps the
+// form from reading as a bottom-heavy pill. uProfileFlip moves the flat-face
+// squash between the two ends: at 0 it flattens the BOTTOM (egg on a table);
+// at 1 it flattens the TOP into the broad crown plateau of the reference
+// read, leaving the underside rounded and tucked. The groove, coils, and
+// sub-mass are keyed on dir independently, so they stay put either way.
 float radialProfile(float y) {
   float shoulder = 1.0 + uShoulderBulge * exp(-pow((y - uShoulderY) / 0.55, 2.0));
   float tuck = mix(1.0 - uBaseTuck, 1.0, smoothstep(-0.95, uShoulderY, y));
-  float flatB = mix(1.0, uBottomFlat, smoothstep(0.45, 0.95, -y));
+  float flatB = mix(1.0, uBottomFlat, smoothstep(0.45, 0.95, mix(-y, y, uProfileFlip)));
   return shoulder * tuck * flatB;
 }
 
@@ -66,10 +70,12 @@ float grooveUnderFade(vec3 dir) {
   return 1.0 - smoothstep(0.15, 0.6, -dir.y);
 }
 // Rear close-over: the halves converge over the sub-mass, so the groove
-// shallows toward −Z. Kept gentle ahead of z≈−0.5 so the plunge entry zone
-// (aperture ≈ rear-of-center crown) stays open.
+// shallows toward −Z — strongly, from mid-body back, so the rear genuinely
+// reads as ONE merged mass with a fading surface crease (a full-length open
+// split is the UNDERSIDE's signature, not the crown's). The plunge entry
+// (aperture ≈ z −0.4 crown) keeps ~3/4 of the groove depth.
 float grooveAmp(vec3 dir) {
-  return 1.0 - uGrooveRearFade * smoothstep(0.5, 0.95, -dir.z);
+  return 1.0 - uGrooveRearFade * smoothstep(0.15, 0.9, -dir.z);
 }
 
 vec3 subMassDir() {
@@ -106,14 +112,18 @@ float baseForm(vec3 p) {
 
   float underFade = grooveUnderFade(dir);
   float gAmp = grooveAmp(dir);
-  float cleftW = uCleftWidth * (1.0 + 2.5 * crown * gAmp);
+  // 1.4 crown widening (was 2.5): the crown split is a narrow crease pressed
+  // between the halves — a GROOVE, not a gaping crack.
+  float cleftW = uCleftWidth * (1.0 + 1.4 * crown * gAmp);
   // pow > 1 rounds the SHOULDER of the slot (gentle entry into the wall)
   // while leaving the deep center untouched — the rim crease stays smooth
   // instead of aliasing across the mesh.
   float valley = pow(1.0 - smoothstep(0.0, cleftW, ax), 1.35);
   // Swell tight to the groove: concentrates each half's mass beside the slot
-  // so the two halves read as full rounded lobes pressed together.
-  float mound = smoothstep(cleftW, 0.3, ax) * (1.0 - smoothstep(0.55, 0.95, ax));
+  // so the two halves read as full rounded lobes pressed together. Fades with
+  // the rear close-over — merged halves have no canyon lips.
+  float mound = smoothstep(cleftW, 0.3, ax) * (1.0 - smoothstep(0.55, 0.95, ax))
+    * (0.45 + 0.55 * gAmp);
 
   // Per-half asymmetry, gated to zero at the groove so the field stays
   // continuous across the mirror plane.
@@ -141,7 +151,7 @@ float baseForm(vec3 p) {
 // Slightly wider than the geometric valley so shadow climbs the walls.
 float cleftCavity(vec3 dir) {
   float gAmp = grooveAmp(dir);
-  float w = uCleftWidth * (1.0 + 2.5 * grooveCrown(dir) * gAmp) * 1.45;
+  float w = uCleftWidth * (1.0 + 1.4 * grooveCrown(dir) * gAmp) * 1.45;
   float v = 1.0 - smoothstep(0.0, w, abs(dir.x));
   return clamp(v * grooveUnderFade(dir) * gAmp, 0.0, 1.0);
 }
@@ -157,12 +167,16 @@ float cleftCavity(vec3 dir) {
 vec2 coilUv(vec3 dir) {
   return vec2(atan(dir.x, dir.z) / 3.14159265 + 1.0, dir.y * 0.5 + 0.5);
 }
-// The sub-mass's texture register: the same field compressed vertically and
-// stretched laterally → fine bands running around the mass. The u scale keeps
-// an integer total repeat count (0.5 × 2 turns = 1) so the wrap seam stays
-// seamless inside the sub-mass region, which straddles it.
+// The sub-mass's texture register: the same field in a LOCAL planar frame
+// centered on the sub-mass (the equirect pinches near the −Y pole, which the
+// sub-mass straddles — mapping it through coilUv paints a radial fan).
+// T1 points from the sub-mass toward the main mass, T2 runs laterally; the
+// stack axis (T1) is compressed so fine bands run AROUND the mass.
 vec2 coilUvBand(vec3 dir) {
-  return coilUv(dir) * vec2(0.5, 3.0) + vec2(0.13, 0.31);
+  vec3 c = subMassDir();
+  vec3 t1 = normalize(vec3(0.0, c.z, -c.y)); // ⊥ c, in the YZ plane — toward the main mass
+  vec3 t2 = cross(c, t1); // lateral (±X)
+  return vec2(dot(dir, t2), dot(dir, t1) * 2.6) * 0.35 + vec2(0.5, 0.5);
 }
 
 // Damp the coil field near both poles, where the equirect UV degenerates.
@@ -177,18 +191,30 @@ float ridgeCapFade(vec3 dir) {
   return 1.0 - smoothstep(0.7, 0.92, -dir.y);
 }
 
-// Shared gating: coils run right up to the groove edge at mid-body, but stand
-// back from the steepened crown walls — their terminations would otherwise
-// castellate the slot rim into a jagged silhouette at the crack-hover framing
-// — and fade out at the underside. Where the groove closes over (rear), the
-// stand-off closes with it.
+// Groove-only gating: coils crowd right up against the crease (a dark line
+// WITHIN the coil field, not a bald canyon) and stand off the separation
+// fold. This part applies to EVERY coil register, including the planar caps.
+float grooveGate(vec3 dir) {
+  float gapW = 0.035 + 0.06 * grooveCrown(dir) * grooveAmp(dir);
+  return smoothstep(0.015, gapW, abs(dir.x)) * (1.0 - 0.85 * sepFoldMask(dir));
+}
+
+// Full gating for the EQUIRECT register: groove stand-off + underside fade
+// (the sub-mass punches through — its banded register IS its identity) + the
+// pole damp where the equirect UV degenerates.
 float ridgeGate(vec3 dir) {
-  float gapW = 0.05 + 0.11 * grooveCrown(dir) * grooveAmp(dir);
-  // The sub-mass punches through the underside fade — its banded register IS
-  // its identity, so it keeps texture where the base would otherwise go bald.
   float capFade = mix(ridgeCapFade(dir), 1.0, 0.85 * subMassMask(dir));
-  return smoothstep(0.02, gapW, abs(dir.x)) * capFade * poleCapFade(dir)
-    * (1.0 - 0.85 * sepFoldMask(dir));
+  return grooveGate(dir) * capFade * poleCapFade(dir);
+}
+
+// Planar-cap blend: the equirect pinches at both ±Y poles (kaleidoscope
+// streaks on the exterior crown, blurry smear/spider on the interior caps).
+// Those zones swap to a planar XZ projection — distortion-free exactly where
+// the equirect degenerates. Exterior crown: yes. Interior (pass 1): both
+// caps. Exterior underside stays bald (flat clean base by design).
+float capBlendK(vec3 dir, float interior) {
+  float capBase = smoothstep(0.5, 0.78, abs(dir.y));
+  return capBase * max(interior, smoothstep(0.05, 0.25, dir.y));
 }
 
 // One blended tap of the coil texture: main register crossfaded to the
@@ -217,16 +243,24 @@ float coilHeight(vec3 dir) {
 // MAIN register only: the sub-mass's banded register compresses v 3×, which
 // puts its wavelength under the mesh edge — geometry there calms toward the
 // mean and the fragment normal carries the fine banding instead.
+// The exterior crown cap blends to the planar register (same blur-limited
+// channel at matched world scale, so it is equally mesh-safe) — the crown
+// silhouette keeps real scallops instead of going smooth at the pole.
 float coilHeightSmooth(vec3 dir) {
-  float h = mix(COIL_MEAN, texture2D(uCoilTex, coilUv(dir)).g, ridgeGate(dir));
-  return mix(h, COIL_MEAN + (h - COIL_MEAN) * 0.35, subMassMask(dir));
+  float hEq = mix(COIL_MEAN, texture2D(uCoilTex, coilUv(dir)).g, ridgeGate(dir));
+  float capK = capBlendK(dir, 0.0); // vertices have no facing — exterior rule
+  if (capK > 0.001) {
+    float hPl = mix(COIL_MEAN, texture2D(uCoilTex, dir.xz * 0.32 + 0.5).g, grooveGate(dir));
+    hEq = mix(hEq, hPl, capK);
+  }
+  return mix(hEq, COIL_MEAN + (hEq - COIL_MEAN) * 0.35, subMassMask(dir));
 }
 
 // Groove-wall zone (the apron between the coil stand-off and the slot floor)
 // — carries the pleat corrugations so the crack never reads unrendered.
 float grooveWall(vec3 dir) {
   float crown = grooveCrown(dir) * grooveAmp(dir);
-  float w = uCleftWidth * (1.0 + 2.5 * crown);
+  float w = uCleftWidth * (1.0 + 1.4 * crown);
   return smoothstep(w * 3.2, w * 1.1, abs(dir.x)) * crown * grooveUnderFade(dir);
 }
 

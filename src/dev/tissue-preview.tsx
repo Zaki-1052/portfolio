@@ -14,7 +14,7 @@ import { useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { DoubleSide, MathUtils, type Mesh } from 'three';
-import { Leva, button, useControls } from 'leva';
+import { Leva } from 'leva';
 import { SurfaceShellMaterial } from '@/scales/tissue/tissue-shell-material';
 import { useCoilTexture } from '@/scales/tissue/reaction-diffusion';
 import {
@@ -23,6 +23,7 @@ import {
   applyShellParams,
   type ShellParams,
 } from '@/scales/tissue/shell-params';
+import { useShellControls } from '@/dev/shell-dev-tools';
 import { PostFX } from '@/engine/post-fx';
 
 const params = new URLSearchParams(window.location.search);
@@ -59,36 +60,10 @@ applyShellParams(material, initialParams);
 
 // eslint-disable-next-line react-refresh/only-export-components -- dev-only entry, not a fast-refresh module
 function ShapePanel() {
-  const [values, set] = useControls(() => ({
-    dimX: { value: initialParams.dimX, min: 0.6, max: 1.4, step: 0.01 },
-    dimY: { value: initialParams.dimY, min: 0.5, max: 1.4, step: 0.01 },
-    dimZ: { value: initialParams.dimZ, min: 0.8, max: 1.7, step: 0.01 },
-    boxiness: { value: initialParams.boxiness, min: 1.6, max: 3.5, step: 0.05 },
-    shoulderY: { value: initialParams.shoulderY, min: -0.5, max: 0.8, step: 0.01 },
-    shoulderBulge: { value: initialParams.shoulderBulge, min: 0, max: 0.3, step: 0.005 },
-    baseTuck: { value: initialParams.baseTuck, min: 0, max: 0.5, step: 0.01 },
-    bottomFlat: { value: initialParams.bottomFlat, min: 0.5, max: 1, step: 0.01 },
-    cleftWidth: { value: initialParams.cleftWidth, min: 0.02, max: 0.2, step: 0.005 },
-    cleftDepth: { value: initialParams.cleftDepth, min: 0, max: 4, step: 0.05 },
-    moundHeight: { value: initialParams.moundHeight, min: 0, max: 2, step: 0.05 },
-    grooveRearFade: { value: initialParams.grooveRearFade, min: 0, max: 1, step: 0.01 },
-    overhang: { value: initialParams.overhang, min: 0, max: 3, step: 0.05 },
-    subMassY: { value: initialParams.subMassY, min: -1, max: 0, step: 0.01 },
-    subMassZ: { value: initialParams.subMassZ, min: -1, max: 0, step: 0.01 },
-    subMassRadius: { value: initialParams.subMassRadius, min: 10, max: 60, step: 1 },
-    subMassHeight: { value: initialParams.subMassHeight, min: 0, max: 4, step: 0.05 },
-    sepFold: { value: initialParams.sepFold, min: 0, max: 3, step: 0.05 },
-    frontLift: { value: initialParams.frontLift, min: -1, max: 2, step: 0.05 },
-    fineAmp: { value: initialParams.fineAmp, min: 0, max: 0.3, step: 0.005 },
-    pleatAmp: { value: initialParams.pleatAmp, min: 0, max: 0.6, step: 0.01 },
-    pleatFreq: { value: initialParams.pleatFreq, min: 10, max: 200, step: 1 },
-    'preset: loaf': button(() => set({ ...SHELL_PRESETS.loaf })),
-    'preset: crown': button(() => set({ ...SHELL_PRESETS.crown })),
-    'preset: bluff': button(() => set({ ...SHELL_PRESETS.bluff })),
-  }));
+  const values = useShellControls(initialParams, false);
 
   useEffect(() => {
-    applyShellParams(material, values as ShellParams);
+    applyShellParams(material, values);
   }, [values]);
 
   // Explicit <Leva/> — leva 0.9's implicit root uses the removed React 17
