@@ -2,13 +2,15 @@
 // Shell SHAPE stage. Displaces the base icosphere by the shared height-field
 // (shell-shape.glsl): an oblong tapered ellipsoid carrying the sculpted form
 // (central groove, two swelled halves, flat underside) plus GEOMETRIC
-// rope-ridge relief — the ridges are real displacement, visible in the
-// silhouette. The shading normal is
-// finite-differenced from the SMOOTH base map only (form without ridges); the
-// fragment stage re-tilts it per pixel with the exact ridge gradient, so the
-// coarse and fine scales never double-count. noise.glsl + shell-shape.glsl are
-// prepended by tissue-shell-material.ts; three's ShaderMaterial supplies
-// position/normal/uv + matrices/cameraPosition.
+// coil-ridge relief — the ridges are real displacement, visible in the
+// silhouette. The displacement channel is pre-blurred in the bake (C1,
+// band-limited in texel space), so it can never out-run the mesh — the old
+// runtime Nyquist clamp is gone with the warped-sine field that needed it.
+// The shading normal is finite-differenced from the SMOOTH base map only
+// (form without ridges); the fragment stage re-tilts it per pixel with the
+// exact coil gradient, so the coarse and fine scales never double-count.
+// noise.glsl + shell-shape.glsl are prepended by tissue-shell-material.ts;
+// three's ShaderMaterial supplies position/normal/uv + matrices/cameraPosition.
 
 varying vec3 vWorldPos;
 varying vec3 vWorldNormal;
@@ -20,22 +22,22 @@ varying vec3 vObjPos; // sphere-space position (pre-displacement, |p| ≈ 12)
 varying vec2 vUv;
 
 const float EPS = 0.12; // tangent-plane step for the finite-difference normal
-// Oblong proportions: long axis Z, squashed Y — a horizontal loaf-like dome
-// over a wide base, never a vertical teardrop. The central groove (X=0 plane,
-// shell-shape.glsl) therefore runs front-to-back along the long axis.
-const vec3 SHAPE = vec3(1.02, 0.78, 1.32);
 
-// Smooth base surface (no ridges): tapered ellipsoid + sculpted form. The
+// Smooth base surface (no ridges): parameterized superellipsoid + vertical
+// mass profile + sculpted form (uShapeDims/uBoxiness/radialProfile — see
+// shell-params.ts). The boxiness factor is a radial correction relative to
+// the ellipsoid (identity at exponent 2), pushing diagonal directions outward
+// so each half reads as a slab with steeper walls instead of an ovoid. The
 // finite-difference of this map gives the coarse shading normal.
 vec3 toBase(vec3 sp) {
   vec3 u = normalize(sp);
-  vec3 nrm = normalize(u / SHAPE);
-  return sp * SHAPE * radialTaper(u.y) + nrm * baseForm(sp);
+  vec3 P = sp * uShapeDims * radialProfile(u.y);
+  vec3 d = max(abs(normalize(P)), vec3(1e-4));
+  float n = uBoxiness;
+  float f = pow(pow(d.x, n) + pow(d.y, n) + pow(d.z, n), -1.0 / n);
+  vec3 nrm = normalize(u / uShapeDims);
+  return P * f + nrm * baseForm(sp);
 }
-
-// One icosphere(detail 64) edge, in unit-direction space — the sampling step
-// the displacement must respect.
-const float EDGE = 0.0158;
 
 void main() {
   vUv = uv;
@@ -47,31 +49,13 @@ void main() {
   vec3 tangent = normalize(cross(u, refAxis));
   vec3 bitangent = normalize(cross(u, tangent));
 
-  vec3 nrm = normalize(u / SHAPE);
+  vec3 nrm = normalize(u / uShapeDims);
   vec3 base0 = toBase(position);
 
-  // Frequency-clamped, band-limited ridge displacement. Two defenses, both
-  // required: the SHAPE must be band-limited (ridgeProfileSmooth — a sharp
-  // crevice has unbounded slope and shreds the mesh), and the PHASE must stay
-  // under the mesh Nyquist — the flow field's warp locally compresses stripe
-  // frequency ~3×, so we measure the actual phase step across one mesh edge
-  // and fade the relief out wherever the field is genuinely unrepresentable.
-  // The per-pixel shading normal keeps full detail there (it has fwidth AA);
-  // only the geometry yields.
-  vec3 flow0 = ridgeFlow(u, position);
-  vec3 dirT = normalize(u + tangent * EDGE);
-  vec3 dirB = normalize(u + bitangent * EDGE);
-  vec3 flowT = ridgeFlow(dirT, dirT * 12.0);
-  vec3 flowB = ridgeFlow(dirB, dirB * 12.0);
-  float phase0 = RIDGE_N * flow0.x + flow0.y;
-  float stepT = RIDGE_N * flowT.x + flowT.y - phase0;
-  float stepB = RIDGE_N * flowB.x + flowB.y - phase0;
-  // Radians per mesh edge. The field's TYPICAL step is ~1.5–2.7, so the
-  // attenuation window must sit just under the π hard limit — starting it
-  // lower flattens healthy relief across the whole form (painted-flat look).
-  float phaseStep = length(vec2(stepT, stepB));
-  float nyqAtt = 1.0 - smoothstep(2.35, 2.95, phaseStep);
-  float ridge = (ridgeProfileSmooth(u, flow0) - RIDGE_MEAN) * RIDGE_RELIEF * nyqAtt;
+  // Coil relief from the pre-blurred displacement channel (vertex texture
+  // fetch samples the base mip — the channel is already band-limited, so no
+  // explicit lod juggling is needed).
+  float ridge = (coilHeightSmooth(u) - COIL_MEAN) * RIDGE_RELIEF;
   vec3 displaced = base0 + nrm * ridge;
 
   vec3 baseT = toBase(position + tangent * EPS);

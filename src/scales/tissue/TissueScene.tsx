@@ -14,13 +14,13 @@ import { setAmbientRendering } from '@/engine/render-loop';
 import { getSceneFog } from '@/engine/scene-fog';
 import { lerp, smoothstep } from '@/utils/math';
 import { SurfaceShellMaterial } from './tissue-shell-material';
-import { useReactionDiffusionWarmup } from './reaction-diffusion';
+import { useCoilTexture } from './reaction-diffusion';
 import { PLUNGE_APERTURE_DIR, breakthroughProgress, dissolveAmountFor } from './breakthrough';
 import { BreakthroughParticles } from './breakthrough-particles';
 
 export function SurfaceScene() {
   const reduced = useReducedMotion();
-  const rdTexture = useReactionDiffusionWarmup(reduced);
+  const coilTexture = useCoilTexture();
 
   // Instantiate the material directly (uniforms are settable instance fields);
   // dispose it when the scene unmounts.
@@ -40,13 +40,14 @@ export function SurfaceScene() {
     return () => setAmbientRendering(false);
   }, [reduced]);
 
-  // Wire the RD texture in once it exists.
+  // Wire the baked coil texture in once it exists (until then the shell
+  // renders smooth on the mid-gray placeholder).
   useEffect(() => {
-    if (rdTexture) {
-      material.uRDTexture = rdTexture;
+    if (coilTexture) {
+      material.uCoilTex = coilTexture;
       material.uRDBlend = 0.5;
     }
-  }, [material, rdTexture]);
+  }, [material, coilTexture]);
 
   useFrame((state) => {
     const depth = useDepthStore.getState().depth;
