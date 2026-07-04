@@ -37,6 +37,12 @@ export interface ShellParams {
   subMassRadius: number;
   subMassHeight: number;
   sepFold: number;
+  // The stalk: a rounded column stub from the underside (same y/z-direction +
+  // radius-degrees + height scheme as the sub-mass).
+  stalkY: number;
+  stalkZ: number;
+  stalkRadius: number;
+  stalkHeight: number;
   // Front-lower lift — blunter, slightly raised front end.
   frontLift: number;
   // 0 = flat face down (egg on a table) … 1 = flat plateau up (reference read:
@@ -73,12 +79,19 @@ export const SHELL_PRESETS: Record<'loaf' | 'crown' | 'bluff', ShellParams> = {
     sepFold: 0.0,
     frontLift: 0.0,
     profileFlip: 0.0,
+    stalkY: -0.92,
+    stalkZ: -0.2,
+    stalkRadius: 16,
+    stalkHeight: 0.0,
     fineAmp: 0.13,
     pleatAmp: 0.22,
     pleatFreq: 60,
   },
+  // crown = the user-blessed iteration values (2026-07-04 slider session):
+  // narrow slab halves, knife crease confined to the crown, fully merged
+  // rear, pronounced sub-mass + stalk, maxed fine detail.
   crown: {
-    dimX: 1.0,
+    dimX: 0.6,
     dimY: 1.02,
     dimZ: 1.28,
     boxiness: 2.7,
@@ -86,24 +99,28 @@ export const SHELL_PRESETS: Record<'loaf' | 'crown' | 'bluff', ShellParams> = {
     shoulderBulge: 0.14,
     baseTuck: 0.3,
     bottomFlat: 0.82,
-    cleftWidth: 0.05,
-    cleftDepth: 0.85,
-    moundHeight: 0.5,
-    grooveRearFade: 0.8,
+    cleftWidth: 0.02,
+    cleftDepth: 1.5,
+    moundHeight: 0.0,
+    grooveRearFade: 1.0,
     overhang: 1.1,
     subMassY: -0.52,
     subMassZ: -0.86,
     subMassRadius: 32,
-    subMassHeight: 2.1,
-    sepFold: 1.15,
-    frontLift: 0.5,
+    subMassHeight: 2.8,
+    sepFold: 0.0,
+    frontLift: -1.0,
     profileFlip: 1.0,
-    fineAmp: 0.13,
-    pleatAmp: 0.22,
+    stalkY: -0.92,
+    stalkZ: -0.2,
+    stalkRadius: 16,
+    stalkHeight: 3.5,
+    fineAmp: 0.3,
+    pleatAmp: 0.3,
     pleatFreq: 60,
   },
   bluff: {
-    dimX: 1.0,
+    dimX: 0.66,
     dimY: 1.08,
     dimZ: 1.22,
     boxiness: 2.9,
@@ -111,20 +128,24 @@ export const SHELL_PRESETS: Record<'loaf' | 'crown' | 'bluff', ShellParams> = {
     shoulderBulge: 0.16,
     baseTuck: 0.34,
     bottomFlat: 0.85,
-    cleftWidth: 0.045,
-    cleftDepth: 0.9,
-    moundHeight: 0.45,
-    grooveRearFade: 0.9,
+    cleftWidth: 0.02,
+    cleftDepth: 1.6,
+    moundHeight: 0.0,
+    grooveRearFade: 1.0,
     overhang: 2.0,
     subMassY: -0.5,
     subMassZ: -0.87,
     subMassRadius: 36,
-    subMassHeight: 2.8,
-    sepFold: 1.4,
-    frontLift: 0.6,
+    subMassHeight: 3.2,
+    sepFold: 0.0,
+    frontLift: -1.0,
     profileFlip: 1.0,
-    fineAmp: 0.13,
-    pleatAmp: 0.22,
+    stalkY: -0.92,
+    stalkZ: -0.2,
+    stalkRadius: 18,
+    stalkHeight: 3.8,
+    fineAmp: 0.3,
+    pleatAmp: 0.35,
     pleatFreq: 60,
   },
 };
@@ -150,6 +171,9 @@ export interface ShellParamUniforms {
   uSubMassCos: number;
   uSubMassHeight: number;
   uSepFold: number;
+  uStalkPos: Vector2;
+  uStalkCos: number;
+  uStalkHeight: number;
   uFrontLift: number;
   uProfileFlip: number;
   uFineAmp: number;
@@ -174,6 +198,9 @@ export function applyShellParams(m: ShellParamUniforms, p: ShellParams): void {
   m.uSubMassCos = Math.cos((p.subMassRadius * Math.PI) / 180);
   m.uSubMassHeight = p.subMassHeight;
   m.uSepFold = p.sepFold;
+  m.uStalkPos.set(p.stalkY, p.stalkZ);
+  m.uStalkCos = Math.cos((p.stalkRadius * Math.PI) / 180);
+  m.uStalkHeight = p.stalkHeight;
   m.uFrontLift = p.frontLift;
   m.uProfileFlip = p.profileFlip;
   m.uFineAmp = p.fineAmp;

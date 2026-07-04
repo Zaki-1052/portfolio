@@ -44,27 +44,43 @@ const float RADIUS = 12.0; // base sphere radius (dir-space → world slope)
 // distortion-free exactly where the equirect degenerates. The planar
 // coordinate derives from dir (not the fixed fragment position), so the FD
 // taps still see a real gradient and the caps shade as modeled coils.
-float shellDetail(vec3 dir, float fineK, float capK) {
-  vec4 t = coilTap(dir);
+float shellDetail(vec3 dir, float fineK, float capK, float interior) {
+  // Main + banded registers. The band is an EXTERIOR identity feature — on
+  // the interior it just fights the other registers into a chaotic weave on
+  // the rear wall, so it damps out on backfaces. ALL taps unconditional (an
+  // implicit-lod tap inside a divergent branch is ES3 undefined behavior and
+  // was the brown-ring bug; blend factors gate, never branches).
+  float bandW = bandMask(dir) * (1.0 - 0.75 * interior);
+  vec4 t = mix(
+    texture2D(uCoilTex, coilUv(dir)),
+    texture2D(uCoilTex, coilUvBand(dir)),
+    bandW
+  );
   float gate = ridgeGate(dir);
   float h = mix(COIL_MEAN, t.r, gate);
   h += (t.a - 0.5) * fineK * smoothstep(0.55, 0.78, h) * gate;
-  if (capK > 0.001) {
-    // 0.32 ≈ (12 texel wavelength / 512) · π⁻¹-matched: planar tube width equals
-    // the equirect's equator tube width, so the blend zone stays scale-continuous.
-    // The planar register still respects the groove stand-off (grooveGate) —
-    // coils must never run across the crease.
-    vec4 tc = texture2D(uCoilTex, dir.xz * 0.32 + 0.5);
-    float gGate = grooveGate(dir);
-    float hc = mix(COIL_MEAN, tc.r, gGate);
-    hc += (tc.a - 0.5) * fineK * smoothstep(0.55, 0.78, hc) * gGate;
-    // Interlock blend: crest-weighted, so the two registers WEAVE through the
-    // transition band (junctions read as natural coil merges) instead of
-    // linearly averaging into the mid-tone mush ring around the cap.
-    float wPl = capK * (0.02 + hc * hc * hc);
-    float wEq = (1.0 - capK) * (0.02 + h * h * h);
-    h = (h * wEq + hc * wPl) / (wEq + wPl);
-  }
+  // Planar cap register; the stalk swaps it for the cylindrical fiber
+  // register on the column WALLS only (fiberBlendK — fibers converge
+  // sub-sample toward the axis and would starburst at the tip/pit center).
+  // 0.32 ≈ (12 texel wavelength / 512) · π⁻¹-matched: planar tube width equals
+  // the equirect's equator tube width, so the blend zone stays scale-continuous.
+  // The cap register still respects the groove stand-off (grooveGate) —
+  // coils must never run across the crease.
+  float fiberK = fiberBlendK(dir);
+  vec4 tc = mix(
+    texture2D(uCoilTex, dir.xz * 0.32 + 0.5),
+    texture2D(uCoilTex, coilUvStalk(dir)),
+    fiberK
+  );
+  float gGate = grooveGate(dir);
+  float hc = mix(COIL_MEAN, tc.r, gGate);
+  hc += (tc.a - 0.5) * fineK * smoothstep(0.55, 0.78, hc) * gGate;
+  // Interlock blend: crest-weighted, so the two registers WEAVE through the
+  // transition band (junctions read as natural coil merges) instead of
+  // linearly averaging into a mid-tone mush.
+  float wPl = capK * (0.02 + hc * hc * hc);
+  float wEq = (1.0 - capK) * (0.02 + h * h * h);
+  h = (h * wEq + hc * wPl) / (wEq + wPl);
   // Pleats last: they live in the crease apron, where both coil registers are
   // gated out — the cap blend must not erase them.
   h += pleats(dir) * uPleatAmp * grooveWall(dir);
@@ -93,9 +109,9 @@ void main() {
   // Pole caps get the planar-projected coils: exterior crown + both interior
   // caps (locally constant across the FD taps, like fineK).
   float capK = capBlendK(dir, interior);
-  float h0 = shellDetail(dir, fineK, capK);
-  float hT = shellDetail(normalize(dir + T * GRAD_EPS), fineK, capK);
-  float hB = shellDetail(normalize(dir + B * GRAD_EPS), fineK, capK);
+  float h0 = shellDetail(dir, fineK, capK, interior);
+  float hT = shellDetail(normalize(dir + T * GRAD_EPS), fineK, capK, interior);
+  float hB = shellDetail(normalize(dir + B * GRAD_EPS), fineK, capK, interior);
   // ×1.7: exaggerated tilt so each coil shades as a rounded tube under the soft
   // light (physically-exact tilt reads nearly flat at this softness), and holds
   // its rounded read at the close crack-hover framing.
@@ -117,11 +133,15 @@ void main() {
 
   // Occlusion as SHADOW, not paint: deep ambient pool in the cleft AND in the
   // sub-mass separation fold, plus narrow dark crevices where adjacent coils
-  // meet (height → 0).
-  // Inside these recesses the vertex FD normal bands across the steep trench
-  // (sparse sampling of a deep valley) — swap toward the smooth ellipsoid
-  // normal there and let the cavity AO carry the recess instead.
-  float cavity = clamp(cleftCavity(dir) + sepFoldMask(dir) * 0.75, 0.0, 1.0);
+  // meet (height → 0). The stalk's interior pit gets only a WIDE, SOFT shade
+  // (onset well outside its footprint, gentle ceiling) — a tight strong mask
+  // here reads as a dark oval sticker stamped on the wall; the pit's surface
+  // itself now carries the same coil/fiber registers as its surroundings.
+  // Inside the deep recesses the vertex FD normal bands across the steep
+  // trench (sparse sampling of a deep valley) — swap toward the smooth
+  // ellipsoid normal there and let the cavity AO carry the recess instead.
+  float pitShade = smoothstep(uStalkCos - 0.2, 1.0, dot(dir, stalkDir())) * interior * 0.3;
+  float cavity = clamp(cleftCavity(dir) + sepFoldMask(dir) * 0.75 + pitShade, 0.0, 1.0);
   vec3 smoothN = normalize(vSmoothNormal);
   if (!gl_FrontFacing) smoothN = -smoothN;
   N = normalize(mix(N, smoothN, cavity * 0.85));

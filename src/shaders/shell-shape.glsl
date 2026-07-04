@@ -36,6 +36,9 @@ uniform vec2 uSubMassPos; // sub-mass center direction (y, z; normalized here)
 uniform float uSubMassCos; // cos(angular radius) of the sub-mass footprint
 uniform float uSubMassHeight; // sub-mass height, world units
 uniform float uSepFold; // depth of the fold separating sub-mass from main mass
+uniform vec2 uStalkPos; // stalk center direction (y, z; normalized here)
+uniform float uStalkCos; // cos(angular radius) of the stalk footprint
+uniform float uStalkHeight; // stalk protrusion height, world units
 uniform float uFrontLift; // front-lower lift — blunter, slightly raised front
 uniform float uProfileFlip; // 0 = flat face DOWN (egg on a table) … 1 = flat plateau UP (the reference read)
 uniform float uFineAmp; // crest strand amplitude (fragment-only bump)
@@ -66,8 +69,12 @@ float radialProfile(float y) {
 float grooveCrown(vec3 dir) {
   return smoothstep(0.15, 0.85, dir.y);
 }
+// The split is confined to the UPPER region: full above the shoulder line,
+// gone below the lower belt — so from the front/side the halves read as one
+// JOINED mass that a crease divides toward the crown, never as two bodies
+// diverging from the bottom up.
 float grooveUnderFade(vec3 dir) {
-  return 1.0 - smoothstep(0.15, 0.6, -dir.y);
+  return smoothstep(-0.25, 0.2, dir.y);
 }
 // Rear close-over: the halves converge over the sub-mass, so the groove
 // shallows toward −Z — strongly, from mid-body back, so the rear genuinely
@@ -94,6 +101,30 @@ float subMassMask(vec3 dir) {
 float sepFoldMask(vec3 dir) {
   float d = dot(dir, subMassDir());
   return exp(-pow((d - uSubMassCos) / 0.11, 2.0)) * clamp(uSepFold, 0.0, 1.0);
+}
+
+// The stalk: a rounded column stub protruding from the underside — with the
+// sub-mass, the structural pair that anchors the form's identity from the
+// side and below.
+vec3 stalkDir() {
+  return normalize(vec3(0.0, uStalkPos.x, uStalkPos.y));
+}
+float stalkMask(vec3 dir) {
+  float d = dot(dir, stalkDir());
+  return smoothstep(uStalkCos, mix(uStalkCos, 1.0, 0.5), d);
+}
+
+// Regions that carry the fine BANDED texture register instead of the main
+// coils: the sub-mass fully; the stalk only partially (0.45 → rings blended
+// with the main coil field, so the stalk reads textured like the rest of the
+// form with ring undertones rather than machine-turned).
+float bandMask(vec3 dir) {
+  return max(subMassMask(dir), stalkMask(dir) * 0.45);
+}
+// Full-strength footprint of both features — used where the feature must
+// punch through the underside fade regardless of its texture-register weight.
+float featureMask(vec3 dir) {
+  return max(subMassMask(dir), stalkMask(dir));
 }
 
 // Large-scale sculpted height: paired swell pressing against the deep central
@@ -143,7 +174,10 @@ float baseForm(vec3 p) {
   // Front-lower lift: the front end sits blunter and slightly raised.
   float lift = uFrontLift * smoothstep(0.15, 0.9, dir.z) * smoothstep(0.2, -0.4, dir.y) * 0.8;
 
-  return undulate + asym + mound * uMoundHeight + over + subm - ring + lift
+  // The stalk: rounded column stub from the underside (pow rounds the tip).
+  float stalk = pow(stalkMask(dir), 0.7) * uStalkHeight;
+
+  return undulate + asym + mound * uMoundHeight + over + subm - ring + lift + stalk
     - valley * uCleftDepth * (1.0 + 0.5 * crown) * underFade * gAmp;
 }
 
@@ -172,11 +206,37 @@ vec2 coilUv(vec3 dir) {
 // sub-mass straddles — mapping it through coilUv paints a radial fan).
 // T1 points from the sub-mass toward the main mass, T2 runs laterally; the
 // stack axis (T1) is compressed so fine bands run AROUND the mass.
+// Compression is capped so the band wavelength (~0.46 u) stays ABOVE the
+// per-pixel FD sampling limit (GRAD_EPS ≈ 0.14 u ≈ 3.3 taps/wavelength) —
+// finer bands undersample into shredded normals at close interior range (the
+// melty oval on the inner rear wall).
 vec2 coilUvBand(vec3 dir) {
   vec3 c = subMassDir();
   vec3 t1 = normalize(vec3(0.0, c.z, -c.y)); // ⊥ c, in the YZ plane — toward the main mass
   vec3 t2 = cross(c, t1); // lateral (±X)
-  return vec2(dot(dir, t2), dot(dir, t1) * 2.6) * 0.35 + vec2(0.5, 0.5);
+  return vec2(dot(dir, t2), dot(dir, t1) * 1.7) * 0.3 + vec2(0.5, 0.5);
+}
+// The stalk's register: cylindrical around the stalk axis — the worm field
+// stretched into long FIBERS running down the column (fast across the
+// azimuth, slow along the axis). The azimuth wraps 0↔1, seamless with the
+// toroidal texture; the degenerate axis center is faded back to the planar
+// register by the callers (tip fade).
+vec2 coilUvStalk(vec3 dir) {
+  vec3 a = stalkDir();
+  vec3 b1 = normalize(vec3(1.0, 0.0, 0.0) - a * a.x);
+  vec3 b2 = cross(a, b1);
+  vec3 q = dir - a * dot(dir, a);
+  float az = atan(dot(q, b2), dot(q, b1)) / 6.2831853 + 0.5;
+  return vec2(az, dot(dir, a) * 0.22 + 0.13);
+}
+// Fibers live on the column WALLS only. Toward the axis they converge like
+// meridians at a pole — width shrinks with sin(angle), dropping under the
+// FD sampling step within ~6° (a radial starburst fan at the tip face and
+// the interior pit center, which sits dead on the axis). Hand back to the
+// planar register well before that: gone inside ~8°, full outside ~13°.
+// Shared by BOTH stages so shading and displacement can never drift.
+float fiberBlendK(vec3 dir) {
+  return stalkMask(dir) * (1.0 - smoothstep(0.974, 0.990, dot(dir, stalkDir())));
 }
 
 // Damp the coil field near both poles, where the equirect UV degenerates.
@@ -203,30 +263,39 @@ float grooveGate(vec3 dir) {
 // (the sub-mass punches through — its banded register IS its identity) + the
 // pole damp where the equirect UV degenerates.
 float ridgeGate(vec3 dir) {
-  float capFade = mix(ridgeCapFade(dir), 1.0, 0.85 * subMassMask(dir));
-  return grooveGate(dir) * capFade * poleCapFade(dir);
+  float capFade = mix(ridgeCapFade(dir), 1.0, 0.85 * featureMask(dir));
+  // Features also punch through the pole damp — their texture comes from the
+  // pole-safe planar/banded registers, not the degenerate equirect.
+  float pole = mix(poleCapFade(dir), 1.0, featureMask(dir));
+  return grooveGate(dir) * capFade * pole;
 }
 
 // Planar-cap blend: the equirect pinches at both ±Y poles (kaleidoscope
 // streaks on the exterior crown, blurry smear/spider on the interior caps).
 // Those zones swap to a planar XZ projection — distortion-free exactly where
-// the equirect degenerates. Exterior crown: yes. Interior (pass 1): both
-// caps. Exterior underside stays bald (flat clean base by design).
+// the equirect degenerates. Exterior crown: yes. Interior: both caps. The
+// exterior underside stays bald (clean base by design) EXCEPT within the
+// stalk/sub-mass footprints — those surfaces need real coil texture, and the
+// planar register is pole-safe where the equirect would fan.
 float capBlendK(vec3 dir, float interior) {
   float capBase = smoothstep(0.5, 0.78, abs(dir.y));
-  return capBase * max(interior, smoothstep(0.05, 0.25, dir.y));
+  float side = max(interior, smoothstep(0.05, 0.25, dir.y));
+  return capBase * max(side, featureMask(dir));
 }
 
 // One blended tap of the coil texture: main register crossfaded to the
-// sub-mass's banded register by its footprint mask (two samples blended —
-// never a warped UV, which would smear the transition).
+// banded register by its footprint mask (two samples blended — never a warped
+// UV, which would smear the transition).
+// BOTH taps are UNCONDITIONAL: an implicit-lod texture2D inside a divergent
+// branch is undefined behavior in ES3 — on some GL backends the lod resolves
+// as garbage (deepest mip = flat brown) across the whole branch region, which
+// rendered the interior cap as a mushy brown bowl on retina while looking
+// fine under other backends. Every fragment-stage tap in this file must stay
+// in uniform control flow; blend FACTORS do the gating, never branches.
 vec4 coilTap(vec3 dir) {
   vec4 t = texture2D(uCoilTex, coilUv(dir));
-  float m = subMassMask(dir);
-  if (m > 0.001) {
-    t = mix(t, texture2D(uCoilTex, coilUvBand(dir)), m);
-  }
-  return t;
+  vec4 tBand = texture2D(uCoilTex, coilUvBand(dir));
+  return mix(t, tBand, bandMask(dir));
 }
 
 // SHADING height (per-pixel normal + crevice AO): the crisp baked channel —
@@ -250,10 +319,20 @@ float coilHeightSmooth(vec3 dir) {
   float hEq = mix(COIL_MEAN, texture2D(uCoilTex, coilUv(dir)).g, ridgeGate(dir));
   float capK = capBlendK(dir, 0.0); // vertices have no facing — exterior rule
   if (capK > 0.001) {
-    float hPl = mix(COIL_MEAN, texture2D(uCoilTex, dir.xz * 0.32 + 0.5).g, grooveGate(dir));
+    // Branching is safe HERE: vertex-stage taps have no derivatives (lod 0),
+    // so the fragment-side undefined-behavior rule doesn't apply.
+    // The stalk swaps the planar cap for its fiber register → real fluted
+    // relief down the column (walls only — see fiberBlendK).
+    float fiberK = fiberBlendK(dir);
+    float gPl = mix(
+      texture2D(uCoilTex, dir.xz * 0.32 + 0.5).g,
+      texture2D(uCoilTex, coilUvStalk(dir)).g,
+      fiberK
+    );
+    float hPl = mix(COIL_MEAN, gPl, grooveGate(dir));
     hEq = mix(hEq, hPl, capK);
   }
-  return mix(hEq, COIL_MEAN + (hEq - COIL_MEAN) * 0.35, subMassMask(dir));
+  return mix(hEq, COIL_MEAN + (hEq - COIL_MEAN) * 0.35, bandMask(dir));
 }
 
 // Groove-wall zone (the apron between the coil stand-off and the slot floor)
