@@ -50,9 +50,13 @@ export const SurfaceShellMaterial = shaderMaterial(
     uSubMassCos: Math.cos((P.subMassRadius * Math.PI) / 180),
     uSubMassHeight: P.subMassHeight,
     uSepFold: P.sepFold,
+    // Stalk field: ALWAYS 0 on the main shell (a displaced stalk digs a pit
+    // into the interior). The companion stalk mesh opts in via
+    // applyShellParams(m, p, true) + uStalkSolo = 1.
     uStalkPos: new Vector2(P.stalkY, P.stalkZ),
     uStalkCos: Math.cos((P.stalkRadius * Math.PI) / 180),
-    uStalkHeight: P.stalkHeight,
+    uStalkHeight: 0,
+    uStalkSolo: 0,
     uFrontLift: P.frontLift,
     uProfileFlip: P.profileFlip,
     uFineAmp: P.fineAmp,

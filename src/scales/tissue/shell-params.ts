@@ -37,8 +37,10 @@ export interface ShellParams {
   subMassRadius: number;
   subMassHeight: number;
   sepFold: number;
-  // The stalk: a rounded column stub from the underside (same y/z-direction +
-  // radius-degrees + height scheme as the sub-mass).
+  // The stalk: a rounded column stub from the underside — rendered by the
+  // COMPANION mesh only (stalk-mesh.tsx); the main shell always zeroes it (a
+  // displaced stalk digs a matching pit into the interior wall). Direction
+  // (unit y/z), footprint radius in degrees, protrusion height.
   stalkY: number;
   stalkZ: number;
   stalkRadius: number;
@@ -181,8 +183,13 @@ export interface ShellParamUniforms {
   uPleatFreq: number;
 }
 
-/** Write a ShellParams set onto a material's uniforms (degrees → cosine). */
-export function applyShellParams(m: ShellParamUniforms, p: ShellParams): void {
+/**
+ * Write a ShellParams set onto a material's uniforms (degrees → cosine).
+ * stalkOn defaults to FALSE: only the companion stalk mesh (stalk-mesh.tsx)
+ * opts in — a stalk displaced into the MAIN shell digs a matching pit into
+ * the interior wall (the interior-artifact family).
+ */
+export function applyShellParams(m: ShellParamUniforms, p: ShellParams, stalkOn = false): void {
   m.uShapeDims.set(p.dimX, p.dimY, p.dimZ);
   m.uBoxiness = p.boxiness;
   m.uShoulderY = p.shoulderY;
@@ -200,7 +207,7 @@ export function applyShellParams(m: ShellParamUniforms, p: ShellParams): void {
   m.uSepFold = p.sepFold;
   m.uStalkPos.set(p.stalkY, p.stalkZ);
   m.uStalkCos = Math.cos((p.stalkRadius * Math.PI) / 180);
-  m.uStalkHeight = p.stalkHeight;
+  m.uStalkHeight = stalkOn ? p.stalkHeight : 0;
   m.uFrontLift = p.frontLift;
   m.uProfileFlip = p.profileFlip;
   m.uFineAmp = p.fineAmp;

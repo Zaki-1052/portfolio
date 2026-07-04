@@ -36,6 +36,11 @@ const CameraDevTools = import.meta.env.DEV
 const ShellDevTools = import.meta.env.DEV
   ? lazy(() => import('@/dev/shell-dev-tools').then((m) => ({ default: m.ShellDevTools })))
   : null;
+const AtmosphereDevTools = import.meta.env.DEV
+  ? lazy(() =>
+      import('@/dev/atmosphere-dev-tools').then((m) => ({ default: m.AtmosphereDevTools })),
+    )
+  : null;
 const CameraTheatreSpike = theatreEnabled
   ? lazy(() =>
       import('@/engine/camera-theatre-spike').then((m) => ({ default: m.CameraTheatreSpike })),
@@ -154,6 +159,12 @@ export function App() {
       {ShellDevTools && (
         <Suspense fallback={null}>
           <ShellDevTools />
+        </Suspense>
+      )}
+      {/* Fog / look / post-fx sliders ('atmosphere / fx' folder, same panel). */}
+      {AtmosphereDevTools && (
+        <Suspense fallback={null}>
+          <AtmosphereDevTools />
         </Suspense>
       )}
     </>

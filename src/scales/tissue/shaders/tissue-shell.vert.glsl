@@ -58,6 +58,15 @@ void main() {
   float ridge = (coilHeightSmooth(u) - COIL_MEAN) * RIDGE_RELIEF;
   vec3 displaced = base0 + nrm * ridge;
 
+  // Stalk-solo companion mesh: everything outside the stalk footprint
+  // collapses into the column's interior (occluded by the column itself).
+  // vDir keeps the ORIGINAL direction, so any triangle straddling the
+  // collapse always lands wholly in the fragment discard zone — collapsed
+  // geometry can never shade.
+  if (uStalkSolo > 0.5 && stalkMask(u) < 0.002) {
+    displaced = stalkDir() * 9.5;
+  }
+
   vec3 baseT = toBase(position + tangent * EPS);
   vec3 baseB = toBase(position + bitangent * EPS);
   vec3 baseNormal = normalize(cross(baseT - base0, baseB - base0));

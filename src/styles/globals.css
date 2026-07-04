@@ -199,7 +199,7 @@
   --accent-soft: rgba(229, 192, 123, 0.16);
   --accent-line: rgba(229, 192, 123, 0.42);
   --bg: #26221e;
-  --fog-color: #2e2a25;
+  --fog-color: #443a2e; /* lifted warm haze — fog reads as atmosphere, not dimming */
   --font-heading: var(--font-serif);
   --radius: var(--radius-organic);
   --grain-opacity: 0.055;
@@ -220,7 +220,7 @@
   --accent-soft: rgba(229, 192, 123, 0.16);
   --accent-line: rgba(229, 192, 123, 0.42);
   --bg: var(--aod-bg-warm);
-  --fog-color: #34302b;
+  --fog-color: #4a3f33; /* lifted warm haze — fog reads as atmosphere, not dimming */
   --font-heading: var(--font-serif);
   --radius: var(--radius-organic);
   --grain-opacity: 0.055;

@@ -16,6 +16,7 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { DoubleSide, MathUtils, type Mesh } from 'three';
 import { Leva } from 'leva';
 import { SurfaceShellMaterial } from '@/scales/tissue/tissue-shell-material';
+import { StalkMesh } from '@/scales/tissue/stalk-mesh';
 import { useCoilTexture } from '@/scales/tissue/reaction-diffusion';
 import {
   SHELL_DEFAULTS,
@@ -23,6 +24,7 @@ import {
   applyShellParams,
   type ShellParams,
 } from '@/scales/tissue/shell-params';
+import { setShellParamsOverride } from '@/scales/tissue/shell-live-params';
 import { useShellControls } from '@/dev/shell-dev-tools';
 import { PostFX } from '@/engine/post-fx';
 
@@ -64,6 +66,8 @@ function ShapePanel() {
 
   useEffect(() => {
     applyShellParams(material, values);
+    // The stalk mesh derives its transform from the live override channel.
+    setShellParamsOverride(values);
   }, [values]);
 
   // Explicit <Leva/> — leva 0.9's implicit root uses the removed React 17
@@ -100,6 +104,8 @@ function Shell() {
       {/* Match TissueScene: high subdivision so the vertex-displaced ridges
           resolve. detail is LINEAR (tris = 20·(detail+1)²). */}
       <icosahedronGeometry args={[12, 64]} />
+      {/* The stalk rides as a child so it tracks the rx/ry preview rotation. */}
+      <StalkMesh shellMaterial={material} />
     </mesh>
   );
 }

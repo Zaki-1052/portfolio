@@ -59,18 +59,17 @@ float shellDetail(vec3 dir, float fineK, float capK, float interior) {
   float gate = ridgeGate(dir);
   float h = mix(COIL_MEAN, t.r, gate);
   h += (t.a - 0.5) * fineK * smoothstep(0.55, 0.78, h) * gate;
-  // Planar cap register; the stalk swaps it for the cylindrical fiber
-  // register on the column WALLS only (fiberBlendK — fibers converge
-  // sub-sample toward the axis and would starburst at the tip/pit center).
+  // Planar cap register — UNCONDITIONAL taps (see above: no divergent-branch
+  // taps, ever). The stalk swaps it for the cylindrical fiber register on the
+  // column WALLS only (fiberBlendK).
   // 0.32 ≈ (12 texel wavelength / 512) · π⁻¹-matched: planar tube width equals
   // the equirect's equator tube width, so the blend zone stays scale-continuous.
   // The cap register still respects the groove stand-off (grooveGate) —
   // coils must never run across the crease.
-  float fiberK = fiberBlendK(dir);
   vec4 tc = mix(
     texture2D(uCoilTex, dir.xz * 0.32 + 0.5),
     texture2D(uCoilTex, coilUvStalk(dir)),
-    fiberK
+    fiberBlendK(dir)
   );
   float gGate = grooveGate(dir);
   float hc = mix(COIL_MEAN, tc.r, gGate);
@@ -93,6 +92,10 @@ void main() {
 
   vec3 dir = normalize(vDir);
   float interior = gl_FrontFacing ? 0.0 : 1.0;
+
+  // Stalk-solo companion mesh: only the stalk footprint renders — the rest
+  // of the duplicate sphere was collapsed by the vertex stage and dies here.
+  if (uStalkSolo > 0.5 && stalkMask(dir) < 0.004) discard;
 
   // Grazing damp for the micro layers: at the silhouette, the fresnel rim and
   // wrapped key amplify per-pixel normal noise into bright speckle — fade the
@@ -133,15 +136,11 @@ void main() {
 
   // Occlusion as SHADOW, not paint: deep ambient pool in the cleft AND in the
   // sub-mass separation fold, plus narrow dark crevices where adjacent coils
-  // meet (height → 0). The stalk's interior pit gets only a WIDE, SOFT shade
-  // (onset well outside its footprint, gentle ceiling) — a tight strong mask
-  // here reads as a dark oval sticker stamped on the wall; the pit's surface
-  // itself now carries the same coil/fiber registers as its surroundings.
+  // meet (height → 0).
   // Inside the deep recesses the vertex FD normal bands across the steep
   // trench (sparse sampling of a deep valley) — swap toward the smooth
   // ellipsoid normal there and let the cavity AO carry the recess instead.
-  float pitShade = smoothstep(uStalkCos - 0.2, 1.0, dot(dir, stalkDir())) * interior * 0.3;
-  float cavity = clamp(cleftCavity(dir) + sepFoldMask(dir) * 0.75 + pitShade, 0.0, 1.0);
+  float cavity = clamp(cleftCavity(dir) + sepFoldMask(dir) * 0.75, 0.0, 1.0);
   vec3 smoothN = normalize(vSmoothNormal);
   if (!gl_FrontFacing) smoothN = -smoothN;
   N = normalize(mix(N, smoothN, cavity * 0.85));
@@ -183,11 +182,19 @@ void main() {
   // keeps bloom to the crests only.
   vec3 keyCol = vec3(1.0, 0.86, 0.62) * kBright;
 
+  // Interior light hierarchy: light pours in through the opening and falls
+  // off into the depths — keyed on the aperture axis in world space (same
+  // convention as the dissolve below), so the far interior sinks into warm
+  // umber instead of rendering as flat-lit wallpaper. Pure blend factor
+  // (interior gates it), never a branch; exterior is untouched.
+  float aptK = smoothstep(-0.1, 0.9, dot(normalize(vWorldPos), uApertureDir));
+  float lightK = mix(1.0, mix(0.12, 1.0, aptK), interior);
+
   // Clay micro-grain — keeps open surfaces alive without touching albedo;
   // fades at grazing with the other micro layers (rim speckle).
   float micro = 0.94 + 0.06 * snoise(vObjPos * 2.3) * grazeK;
 
-  vec3 color = uBaseColor * (ambient + keyCol * diff * micro) * occl;
+  vec3 color = uBaseColor * (ambient + keyCol * diff * micro) * occl * lightK;
 
   // Damp sheen: one broad low lobe over the whole form — matted down on the
   // interior, where a stretched gloss lobe at grazing angles smears the inner
@@ -195,13 +202,13 @@ void main() {
   vec3 H = normalize(key + V);
   float ndh = max(dot(N, H), 0.0);
   float sheen = pow(ndh, 20.0) * sheenK * mix(1.0, 0.3, interior);
-  color += vec3(1.0, 0.97, 0.90) * sheen * ao;
+  color += vec3(1.0, 0.97, 0.90) * sheen * ao * lightK;
 
   // …plus liquid-light streaks: a tight golden lobe masked to coil crests,
   // broken into runs by the micro-grain — bright enough to feed the depth-0
   // bloom so the ridges themselves glow. Nearly off inside (same streak smear).
   float streak = pow(ndh, 60.0) * smoothstep(0.55, 0.85, h0) * (0.55 + 0.45 * micro);
-  color += vec3(1.0, 0.92, 0.70) * streak * streakK * ao * mix(1.0, 0.15, interior);
+  color += vec3(1.0, 0.92, 0.70) * streak * streakK * ao * mix(1.0, 0.15, interior) * lightK;
 
   // Reaction-diffusion mottle — organic tonal breakup (SPEC §9 / DESIGN:
   // procedural RD surface texture), ~±15% so the coils carry visible material
@@ -210,7 +217,7 @@ void main() {
 
   // Golden silhouette rim — a warm bloom halo separating the form from the
   // dark bg; strength rides the look dial.
-  color += uFresnelColor * fresnel * rimK;
+  color += uFresnelColor * fresnel * rimK * lightK;
 
   // --- Breakthrough dissolve aperture ---
   // Opens a hole on the cap facing the incoming camera (uApertureDir, derived

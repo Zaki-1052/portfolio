@@ -24,6 +24,7 @@ import {
 import { useDepthStore } from '@/stores/depth';
 import { useMotionStore } from '@/stores/motion';
 import { postFxCurveFor } from './post-fx-curves';
+import { getAtmosphereOverride } from './atmosphere-live-params';
 
 export const PostFX = memo(function PostFX() {
   const bloom = useRef<BloomEffect | null>(null);
@@ -33,17 +34,27 @@ export const PostFX = memo(function PostFX() {
   useFrame(() => {
     const curve = postFxCurveFor(useDepthStore.getState().depth);
     const reduced = useMotionStore.getState().reduced;
+    // Dev-only tuning override (atmosphere-dev-tools): when armed, the panel's
+    // ABSOLUTE values replace the depth curves — tune while parked on a beat,
+    // then freeze the blessed numbers into post-fx-curves.ts.
+    const o = getAtmosphereOverride();
+    const live = o?.postOn ? o : null;
 
     if (bloom.current) {
-      bloom.current.intensity = curve.bloomIntensity;
-      bloom.current.luminanceMaterial.threshold = curve.bloomThreshold;
+      bloom.current.intensity = live ? live.bloomIntensity : curve.bloomIntensity;
+      bloom.current.luminanceMaterial.threshold = live ? live.bloomThreshold : curve.bloomThreshold;
     }
     if (noise.current) {
       // Reduced motion: kill the per-frame grain (its randomization is motion).
-      noise.current.blendMode.opacity.value = reduced ? 0 : curve.grainOpacity;
+      noise.current.blendMode.opacity.value = reduced
+        ? 0
+        : live
+          ? live.grainOpacity
+          : curve.grainOpacity;
     }
     if (vignette.current) {
-      vignette.current.darkness = curve.vignetteDarkness;
+      vignette.current.darkness = live ? live.vignetteDarkness : curve.vignetteDarkness;
+      if (live) vignette.current.offset = live.vignetteOffset;
     }
   });
 

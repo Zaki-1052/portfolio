@@ -12,6 +12,8 @@ import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { scaleProgressFor } from '@/engine/scale-manager';
 import { setAmbientRendering } from '@/engine/render-loop';
 import { getSceneFog } from '@/engine/scene-fog';
+import { getAtmosphereOverride } from '@/engine/atmosphere-live-params';
+import { lookFor } from '@/engine/look-curve';
 import { lerp, smoothstep } from '@/utils/math';
 import { SurfaceShellMaterial } from './tissue-shell-material';
 import { useCoilTexture } from './reaction-diffusion';
@@ -19,6 +21,7 @@ import { applyShellParams } from './shell-params';
 import { getShellParamsOverride } from './shell-live-params';
 import { PLUNGE_APERTURE_DIR, breakthroughProgress, dissolveAmountFor } from './breakthrough';
 import { BreakthroughParticles } from './breakthrough-particles';
+import { StalkMesh } from './stalk-mesh';
 
 export function SurfaceScene() {
   const reduced = useReducedMotion();
@@ -69,6 +72,11 @@ export function SurfaceScene() {
     material.uDissolve = dissolveAmountFor(depth, reduced);
     material.uTime = reduced ? 0 : state.clock.elapsedTime;
 
+    // Look curve: dreamy golden register at establish → crisp by the hover
+    // (the stalk companion mirrors uLook from this material each frame).
+    const atmo = getAtmosphereOverride();
+    material.uLook = atmo ? lookFor(depth, atmo.lookEstablish, atmo.lookCrisp) : lookFor(depth);
+
     // Match the shell's hand-rolled exp2 fog to the live scene fog —
     // SceneAtmosphere's useFrame runs first (mounted earlier in the Canvas).
     const fog = getSceneFog();
@@ -80,11 +88,12 @@ export function SurfaceScene() {
     <group>
       <mesh material={material}>
         {/* IcosahedronGeometry detail is LINEAR: tris = 20·(detail+1)². detail 64
-            ≈ 84.5k tris (edge ≈0.19u) — sufficient BECAUSE the vertex shader
-            frequency-clamps the displacement to this edge length (see the
-            Nyquist attenuation in tissue-shell.vert.glsl); raw subdivision can
-            never outrun the flow field's compression pockets. Still 1 draw call. */}
+            ≈ 84.5k tris (edge ≈0.19u); the baked coil texture's displacement
+            channel is band-limited in texel space, so the mesh never tears.
+            Still 1 draw call. */}
         <icosahedronGeometry args={[12, 64]} />
+        {/* The stalk rides as a child so it tracks any parent transform. */}
+        <StalkMesh shellMaterial={material} />
       </mesh>
       {!reduced && <BreakthroughParticles />}
     </group>
