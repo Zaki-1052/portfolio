@@ -11,7 +11,7 @@ import { useDepthStore } from '@/stores/depth';
 import { type ScaleName } from '@/engine/scale-manager';
 import { scalesToMount } from '@/engine/scene-registry';
 import { SurfaceScene } from '@/scales/tissue/TissueScene';
-import { CellularVoidStub } from '@/scales/cellular/CellularVoidStub';
+import { CellularScene } from '@/scales/cellular/CellularScene';
 
 // The shell spans TWO bands on purpose: the whole approach journey outside it,
 // then — after the plunge — its interior walls linger behind the first content
@@ -21,12 +21,12 @@ import { CellularVoidStub } from '@/scales/cellular/CellularVoidStub';
 const SCENE_REGISTRY: Partial<Record<ScaleName, ComponentType>> = {
   approach: SurfaceScene,
   tissue: SurfaceScene,
-  cellular: CellularVoidStub,
+  cellular: CellularScene,
 };
 
 const SCENE_KEYS = new Map<ComponentType, string>([
   [SurfaceScene, 'shell'],
-  [CellularVoidStub, 'cellular-void'],
+  [CellularScene, 'arbor'],
 ]);
 
 export function SceneManager() {

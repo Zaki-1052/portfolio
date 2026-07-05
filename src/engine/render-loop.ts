@@ -10,23 +10,32 @@ import { gsap } from 'gsap';
 import { useDepthStore } from '@/stores/depth';
 import { useMotionStore } from '@/stores/motion';
 
-let ambientActive = false;
+let ambientHolds = 0;
 let parity = 0;
 
-// Runs every gsap tick; renders on every other one (~30fps) while ambient
-// rendering is on. rAF-backed, so background tabs throttle it to nothing.
+// Runs every gsap tick; renders on every other one (~30fps) while any scene
+// holds ambient rendering. rAF-backed, so background tabs throttle it to nothing.
 function ambientTick(): void {
-  if (!ambientActive) return;
+  if (ambientHolds === 0) return;
   parity ^= 1;
   if (parity === 0) invalidate();
 }
 
 /**
- * Enable/disable the idle breathing loop. Scenes call this on mount/unmount,
- * gated on full motion (reduced motion holds the scene static).
+ * Acquire the idle breathing loop; returns the release. REFCOUNTED — during a
+ * band handoff two scenes are mounted at once (scene-registry's overlap
+ * window), and a plain boolean would let the unmounting scene freeze the
+ * surviving one's drift. Scenes acquire on mount under full motion and
+ * release on unmount/reduced.
  */
-export function setAmbientRendering(active: boolean): void {
-  ambientActive = active;
+export function acquireAmbientRendering(): () => void {
+  ambientHolds++;
+  let released = false;
+  return (): void => {
+    if (released) return;
+    released = true;
+    ambientHolds = Math.max(0, ambientHolds - 1);
+  };
 }
 
 /**
@@ -46,6 +55,6 @@ export function startRenderInvalidation(): () => void {
     unsubMotion();
     window.removeEventListener('resize', request);
     gsap.ticker.remove(ambientTick);
-    ambientActive = false;
+    ambientHolds = 0;
   };
 }

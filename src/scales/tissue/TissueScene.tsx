@@ -11,7 +11,7 @@ import { useDepthStore } from '@/stores/depth';
 import { useIntroStore } from '@/stores/intro';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { scaleProgressFor } from '@/engine/scale-manager';
-import { setAmbientRendering } from '@/engine/render-loop';
+import { acquireAmbientRendering } from '@/engine/render-loop';
 import { getSceneFog } from '@/engine/scene-fog';
 import { getAtmosphereOverride } from '@/engine/atmosphere-live-params';
 import { lookFor } from '@/engine/look-curve';
@@ -44,10 +44,11 @@ export function SurfaceScene() {
   }, []);
   useEffect(() => () => material.dispose(), [material]);
 
-  // Idle breathing only while this scene is mounted and motion is full.
+  // Idle breathing only while this scene is mounted and motion is full
+  // (refcounted — the arbor scene overlaps this one across the band handoff).
   useEffect(() => {
-    setAmbientRendering(!reduced);
-    return () => setAmbientRendering(false);
+    if (reduced) return undefined;
+    return acquireAmbientRendering();
   }, [reduced]);
 
   // Wire the baked coil texture in once it exists (until then the shell

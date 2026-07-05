@@ -43,6 +43,9 @@ const AtmosphereDevTools = import.meta.env.DEV
       import('@/dev/atmosphere-dev-tools').then((m) => ({ default: m.AtmosphereDevTools })),
     )
   : null;
+const ArborDevTools = import.meta.env.DEV
+  ? lazy(() => import('@/dev/arbor-dev-tools').then((m) => ({ default: m.ArborDevTools })))
+  : null;
 const CameraTheatreSpike = theatreEnabled
   ? lazy(() =>
       import('@/engine/camera-theatre-spike').then((m) => ({ default: m.CameraTheatreSpike })),
@@ -183,6 +186,12 @@ export function App() {
       {AtmosphereDevTools && (
         <Suspense fallback={null}>
           <AtmosphereDevTools />
+        </Suspense>
+      )}
+      {/* Arbor growth/look sliders ('arbor …' folders, same panel). */}
+      {ArborDevTools && (
+        <Suspense fallback={null}>
+          <ArborDevTools />
         </Suspense>
       )}
     </>
