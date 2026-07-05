@@ -24,17 +24,17 @@ import { ArborStrandMaterial, ArborTipMaterial } from './arbor-glow-material';
 // Wider than the canopy so the frame's flanks stay inhabited (user note:
 // the sides felt bare) — still sparse, most drift sits out in the dark.
 const CANOPY_DRIFT: DriftConfig = {
-  count: 210,
+  count: 510,
   rInner: 3,
   rOuter: 24,
   color: '#ffca8a', // warm scattered field dots against the navy (reference)
-  size: [0.22, 0.38],
+  size: [0.32, 0.48],
   wobble: 0.9,
   rise: 0.12,
   riseRange: 6,
   fadeNear: [1.2, 3],
   fadeFar: [30, 55],
-  opacityAt: (depth) => 0.55 * smoothstep(0.315, 0.35, depth) * (1 - smoothstep(0.43, 0.47, depth)),
+  opacityAt: (depth) => 0.65 * smoothstep(0.315, 0.35, depth) * (1 - smoothstep(0.43, 0.47, depth)),
 };
 
 export function ArborDrift() {

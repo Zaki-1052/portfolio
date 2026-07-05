@@ -97,10 +97,10 @@ export const ARBOR_GROWTH_DEFAULTS: ArborGrowthParams = {
   strandRadiusFloor: 0.015,
   minorLimbs: 4,
   minorScale: 0.45,
-  tailSegments: 8,
-  tailLength: 13,
+  tailSegments: 6,
+  tailLength: 2.0, // short — its end wisps must live inside the settle frame
   hubScale: 2.35,
-  waviness: 0.55,
+  waviness: 0.7,
   punctaSpacing: 0.55,
 };
 

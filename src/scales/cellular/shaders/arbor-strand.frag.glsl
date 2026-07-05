@@ -29,12 +29,13 @@ void main() {
   float glow = profile * (0.35 + 1.05 * vT * vT);
   vec3 col = mix(uColor, vec3(1.0), 0.18 * vT);
 
-  // Attachment ramp: strands GROW out of their member — dim and hue-locked
-  // to the sheath where they join (level 1-2), full luminance out in the
-  // free reaches. Kills the max-contrast "hologram off the limb" seam.
-  float attach = smoothstep(0.6, 2.8, vLevel);
-  glow *= mix(0.28, 1.0, attach);
-  col = mix(uColor * 0.8, col, mix(0.4, 1.0, attach));
+  // Attachment ramp: strands GROW out of their member — sheath-toned where
+  // they join, full luminance out in the free reaches. The floor stays
+  // fairly bright: a too-dim additive ribbon over the dark reads as a murky
+  // translucent film between the members, worse than the seam it fixed.
+  float attach = smoothstep(0.4, 2.2, vLevel);
+  glow *= mix(0.5, 1.0, attach);
+  col = mix(uColor * 0.9, col, mix(0.6, 1.0, attach));
 
   // Signal CRACKLE: the wave sweeping root→tip flickers at high frequency
   // and sputters (hard on/off segments) instead of gliding as a smooth

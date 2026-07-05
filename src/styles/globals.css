@@ -1613,7 +1613,8 @@ hr {
   transform-origin: 0 50%;
   transform: rotate(-14deg);
 }
-.arbor-annotation[data-side='left'] .arbor-annotation__line {
+.arbor-annotation[data-side='left'] .arbor-annotation__line,
+.arbor-annotation[data-focused] .arbor-annotation__line {
   transform: rotate(194deg);
 }
 .arbor-annotation__body {
@@ -1622,7 +1623,11 @@ hr {
   left: 56px;
   text-align: left;
 }
-.arbor-annotation[data-side='left'] .arbor-annotation__body {
+/* A FOCUSED annotation always opens leftward — enforced in CSS so no stale
+   imperative side-write can ever race it (the entries must sit clear of the
+   centered limb, and a stable side beats a clever one). */
+.arbor-annotation[data-side='left'] .arbor-annotation__body,
+.arbor-annotation[data-focused] .arbor-annotation__body {
   left: auto;
   right: 56px;
   text-align: right;
@@ -1696,6 +1701,38 @@ hr {
   transform: none;
   transition-delay: 0s;
 }
+/* The focused panel's close affordance + first-time teach — both in the
+   luminous annotation register (type and glow, nothing boxed). */
+.arbor-annotation__back {
+  pointer-events: auto;
+  background: none;
+  border: 0;
+  padding: 2px 4px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-shadow:
+    0 0 10px color-mix(in srgb, var(--accent) 45%, transparent),
+    0 1px 3px rgba(0, 0, 0, 0.9);
+  transition: color var(--dur-fast, 160ms) ease;
+}
+.arbor-annotation__back:hover,
+.arbor-annotation__back:focus-visible {
+  color: var(--text-strong);
+}
+.arbor-entries__hint {
+  margin: 8px 0 0;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-style: italic;
+  color: var(--text-muted);
+  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.85);
+}
+
 .arbor-entry {
   margin-bottom: var(--space-4);
 }

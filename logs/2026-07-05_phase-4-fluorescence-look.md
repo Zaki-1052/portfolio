@@ -96,6 +96,53 @@ and warm field dots on navy, labels clearly legible, neighbors at frame edge
 - **Flanks** — canopy drift widened (count 210, rOuter 24): sparse warm dots
   inhabit the frame edges without crowding.
 
+## Third same-day follow-up (final polish round of the session)
+
+- **Framing** — user called the reframe overcorrected; knots moved to the
+  midpoint between the two versions (settle [-11.5,-2.5,5.5] → [1,-3.5,-24]).
+- **Root closed** — spine sweeps now cap BOTH ends (the trunk's root ring was
+  an open pipe mouth visible under the hub from the new lower angles).
+- **Trailing filament** — tailLength 13 → 6.5, segments 6: its end wisps now
+  live inside the settle frame.
+- **Longer dwell** — runways arrival 180vh / index 200vh (~1 extra viewport
+  of sweep time before the next band covers).
+- **Entries always open LEFT when focused** — enforced in CSS
+  (`[data-focused] .arbor-annotation__body`) so no imperative side-write can
+  race it (a stale-side race was reproduced live: the focused panel flipped
+  when parallax pushed the anchor past the hysteresis band); focused
+  annotation stacks at z-index 2 so overlapping dim labels can't intercept
+  its links; React no longer owns data-side (JSX prop removed, CSS default).
+- **Click affordance** — anchor beads pulse (2.4s breathe, stops when its
+  branch is focused, off under reduced motion).
+- **Attachment gradient brightened** — the dim ramp read as a murky film
+  between members: floor 0.28 → 0.5, full luminance by generation ~2.2.
+- **Waviness 0.55 → 0.7.**
+- Verified live: /#cellular deep link → dwell → focus opens left (computed
+  style asserted) → release; final frame arbor-27-final.png. Gate: typecheck
+  · lint · **137** · build.
+
+## Closing round (focus-exit UX + wrap)
+
+- **Focus exit flow made discoverable** (user UX question: "how do I get out?"):
+  a "✕ back to overview" button heads the focused entries panel (luminous
+  register, no box; `.arbor-annotation__back`), **Esc** releases focus as its
+  keyboard twin (window keydown in ArborAnnotations), and a one-time teach —
+  "scroll to continue the descent" — shows under the entries on the FIRST
+  focus only (`hintRetired` state; retires once any panel is closed). The
+  pre-existing exits remain: re-click the focused label, click another label
+  (direct A→B glide), or scroll past ±0.012 depth.
+- **User hand-tuned `tailLength: 2.0`** in arbor-generator defaults (kept);
+  the decorative-members test now derives its descent threshold from
+  `tailLength` (≥ half its length below the hub), so tail tuning can never
+  fail it.
+- Gate run by the user (gate.txt): typecheck · lint · tests · build all green
+  (the && chain gates each step; build ✓ at 462 kB gzip).
+- Ember/drift dials for self-tuning: `CANOPY_DRIFT` in
+  `src/scales/cellular/arbor-atmosphere.tsx` (count/size/0.55 brightness/
+  color/radii) + `NEIGHBORS[].dim`; band one's fields in
+  `src/scales/tissue/atmosphere-motes.tsx` + the moteOpacity/emberOpacity
+  panel sliders.
+
 ## Open items
 
 - User slider session on the new register (hub granularity, bead density/size,

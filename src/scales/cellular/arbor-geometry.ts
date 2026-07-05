@@ -197,23 +197,31 @@ export function buildTrunkGeometry(nodes: ArborNode[], hubScale = 2.1): BufferGe
       }
     }
 
-    // Rounded end cap: a fan from the last ring to a point just past the tip.
-    const last = spine[spine.length - 1]!;
-    const lastTan = tangents[spine.length - 1]!;
-    const capIndex = positions.length / 3;
-    positions.push(
-      last.position[0] + lastTan[0] * last.radius,
-      last.position[1] + lastTan[1] * last.radius,
-      last.position[2] + lastTan[2] * last.radius,
-    );
-    normals.push(lastTan[0], lastTan[1], lastTan[2]);
-    aT.push(last.t);
-    aRadius.push(last.radius);
-    aLimb.push(last.limb);
-    const lastRing = ringStart[spine.length - 1]!;
-    for (let r = 0; r < RADIAL; r++) {
-      indices.push(lastRing + r, capIndex, lastRing + ((r + 1) % RADIAL));
-    }
+    // Rounded end caps on BOTH ends — an uncapped ring reads as an open pipe
+    // mouth the moment the camera sees down the axis (the trunk's root sat
+    // exactly there, under the hub).
+    const capEnd = (index: number, sign: number): void => {
+      const point = spine[index]!;
+      const tan = tangents[index]!;
+      const capIndex = positions.length / 3;
+      positions.push(
+        point.position[0] + tan[0] * point.radius * sign,
+        point.position[1] + tan[1] * point.radius * sign,
+        point.position[2] + tan[2] * point.radius * sign,
+      );
+      normals.push(tan[0] * sign, tan[1] * sign, tan[2] * sign);
+      aT.push(point.t);
+      aRadius.push(point.radius);
+      aLimb.push(point.limb);
+      const ring = ringStart[index]!;
+      for (let r = 0; r < RADIAL; r++) {
+        const r1 = (r + 1) % RADIAL;
+        if (sign > 0) indices.push(ring + r, capIndex, ring + r1);
+        else indices.push(ring + r, ring + r1, capIndex);
+      }
+    };
+    capEnd(spine.length - 1, 1);
+    capEnd(0, -1);
   }
 
   // --- The hub: a UV sphere at the split point, radius scaled off the

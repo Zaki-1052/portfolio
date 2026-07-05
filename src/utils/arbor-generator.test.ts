@@ -107,9 +107,13 @@ describe('generateArbor — the three limbs', () => {
     const nodes = nodesOf();
     const decor = nodes.filter((n) => n.limb === 3);
     expect(decor.some((n) => n.region === 'limb')).toBe(true);
-    // The filament descends: at least one decorative spine node sits below
-    // the hub (the majors all climb).
-    expect(decor.some((n) => n.region === 'limb' && n.position[1] < 0)).toBe(true);
+    // The filament descends below the hub (the majors all climb) — asserted
+    // relative to the split point AND scaled by the tunable tail length, so
+    // dialing the tail short can never silently fail this.
+    const trunkNodes = nodes.filter((n) => n.region === 'trunk');
+    const hubY = trunkNodes[trunkNodes.length - 1]!.position[1];
+    const minDescent = ARBOR_GROWTH_DEFAULTS.tailLength * 0.5;
+    expect(decor.some((n) => n.region === 'limb' && n.position[1] < hubY - minDescent)).toBe(true);
   });
 
   it('limbTipNode returns a distinct far-out tip per limb', () => {

@@ -80,22 +80,22 @@ export const CAMERA_KEYFRAMES: readonly CameraKeyframe[] = [
   { depth: 0.335, position: [2, -2, -8], target: [1, 0, -26], roll: -0.01, fov: 58 }, // exit glide — the structure's silhouette first resolves in the mist
   {
     depth: 0.36,
-    position: [17, -0.5, -5.5],
-    target: [1, -3, -25],
+    position: [16.5, -0.5, -7],
+    target: [1, -1.5, -25],
     roll: -0.02,
     fov: 55,
     reducedAnchor: true,
   }, // orbital sweep, broadside — hub + radiating limbs resolved, canopy towering (NB: keep every axis moving knot-to-knot — an exactly-stationary axis is a dead beat and reads as a camera stall)
-  { depth: 0.385, position: [9, -1.6, 0], target: [1, -4, -24], roll: 0.015, fov: 51 }, // the sweep curls in toward the front
+  { depth: 0.385, position: [8.5, -1.8, -1.5], target: [1, -2.5, -24], roll: 0.015, fov: 51 }, // the sweep curls in toward the front
   {
     depth: 0.41,
-    position: [-12, -3, 7],
-    target: [1, -5, -24],
+    position: [-11.5, -2.5, 5.5],
+    target: [1, -3.5, -24],
     roll: 0,
     fov: 49,
     reducedAnchor: true,
-  }, // off-axis rule-of-thirds settle — hub, all three tip anchors, AND the trailing filament's fall in frame (aim rides low: the hub must never clip the frame bottom)
-  { depth: 0.43, position: [-12, -4, 6.5], target: [1, -6, -24], roll: 0, fov: 49 }, // hold with a breath of downward drift while the next section covers (= SCALE_BOUNDARIES[3])
+  }, // off-axis rule-of-thirds settle — hub above the frame bottom with the filament's fall visible, canopy generous in frame (user-tuned midpoint framing, 2026-07-05)
+  { depth: 0.43, position: [-11.5, -4, 5], target: [1, -5, -24], roll: 0, fov: 49 }, // hold with a breath of downward drift while the next section covers (= SCALE_BOUNDARIES[3])
   {
     depth: 1.0,
     position: [0, -46, -14],

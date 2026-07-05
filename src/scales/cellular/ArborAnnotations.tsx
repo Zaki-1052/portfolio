@@ -10,7 +10,7 @@
 // the FINAL camera pose (camera-pose.ts — focus blend + parallax included) and
 // skips all work when the pose version, depth, and viewport are unchanged, so
 // the demand frameloop stays quiet at rest.
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { invalidate } from '@react-three/fiber';
 import { gsap } from 'gsap';
 import { useDepthStore } from '@/stores/depth';
@@ -40,6 +40,31 @@ export function ArborAnnotations() {
   const containerRef = useRef<HTMLDivElement>(null);
   const groupRefs = useRef<Map<BranchKey, HTMLDivElement>>(new Map());
   const { tier1 } = getProjects();
+
+  // The scroll-release teach shows on the FIRST focus only — once the
+  // visitor has closed a panel any way at all, they know the moves.
+  const [hintRetired, setHintRetired] = useState(false);
+  const wasFocused = useRef(false);
+  useEffect(() => {
+    if (focusedBranch !== null) {
+      wasFocused.current = true;
+    } else if (wasFocused.current) {
+      setHintRetired(true);
+    }
+  }, [focusedBranch]);
+
+  // Esc = the back control's keyboard twin.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key !== 'Escape') return;
+      const store = useBranchFocusStore.getState();
+      if (store.focusedBranch === null) return;
+      store.setFocusedBranch(null, useDepthStore.getState().depth);
+      invalidate();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   useEffect(() => {
     let lastVersion = -1;
@@ -93,12 +118,14 @@ export function ArborAnnotations() {
         else delete el.dataset.clamped;
 
         // Labels push outward from the screen center so they never sit on
-        // top of their own limb. The side is FROZEN while this branch is
-        // focused or hovered (the reader is aiming at the entries — the
-        // panel must not jump across the anchor mid-approach), and flips
-        // only through a hysteresis band otherwise.
-        const engaged = focusState.focusedBranch === branch || focusState.hoveredBranch === branch;
-        if (!engaged) {
+        // top of their own limb. A FOCUSED branch always opens its entries
+        // to the LEFT of the anchor (the pivot centers the limb — leftward
+        // is the reliably clear side, and a stable side beats a clever one).
+        // Hovered branches freeze their current side (no cursor-chasing);
+        // everyone else flips only through a hysteresis band.
+        if (focusState.focusedBranch === branch) {
+          el.dataset.side = 'left';
+        } else if (focusState.hoveredBranch !== branch) {
           const margin = w * 0.06;
           if (cx < w * 0.5 - margin) el.dataset.side = 'left';
           else if (cx > w * 0.5 + margin) el.dataset.side = 'right';
@@ -136,7 +163,7 @@ export function ArborAnnotations() {
               else groupRefs.current.delete(branch);
             }}
             className="arbor-annotation"
-            data-side="right"
+            data-focused={open || undefined}
           >
             <span className="arbor-annotation__dot" aria-hidden="true" />
             <span className="arbor-annotation__line" aria-hidden="true" />
@@ -154,6 +181,13 @@ export function ArborAnnotations() {
                 {BRANCH_META[branch].label}
               </button>
               <div className="arbor-annotation__entries" data-open={open || undefined}>
+                <button
+                  type="button"
+                  className="arbor-annotation__back"
+                  onClick={() => toggleFocus(branch)}
+                >
+                  <span aria-hidden="true">✕</span> back to overview
+                </button>
                 {projects.map((project) => (
                   <div key={project.id} className="arbor-entry">
                     {project.links.github ? (
@@ -167,6 +201,9 @@ export function ArborAnnotations() {
                     <span className="arbor-entry__tags">{project.tags.join(' · ')}</span>
                   </div>
                 ))}
+                {!hintRetired && (
+                  <p className="arbor-entries__hint">scroll to continue the descent</p>
+                )}
               </div>
             </div>
           </div>
