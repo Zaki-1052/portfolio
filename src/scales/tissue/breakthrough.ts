@@ -50,3 +50,16 @@ export function dissolveAmountFor(depth: number, reduced: boolean): number {
 export function fogBlendT(depth: number): number {
   return smoothstep(BREAKTHROUGH_START, BREAKTHROUGH_END, depth);
 }
+
+// The interior's exit beat: after the first content scale, the shell's walls
+// recede INTO the next band's mist (uOpacity dims fully toward fog) so the
+// scene-manager unmount at start+MOUNT_MARGIN is invisible — no pop, the
+// walls simply dissolve as the arbor resolves. Derived from the band
+// boundary like everything else here.
+export const INTERIOR_EXIT_START = SCALE_BOUNDARIES[2] + 0.02; // 0.30
+export const INTERIOR_EXIT_END = SCALE_BOUNDARIES[2] + 0.055; // 0.335 — before the 0.34 unmount
+
+/** 1 while the interior is present → 0 once the walls have fully receded. */
+export function interiorExitFade(depth: number): number {
+  return 1 - smoothstep(INTERIOR_EXIT_START, INTERIOR_EXIT_END, depth);
+}

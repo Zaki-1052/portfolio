@@ -1,0 +1,91 @@
+// src/engine/camera-focus.ts
+// The click-to-focus camera layer: a working pose per limb (derived from the
+// limb anchors — never hand-typed twice) and the blend that carries the
+// depth-driven sample toward it. Pure math (no three import), node-tested;
+// the controller composes the result BEFORE its parallax post-multiply.
+import type { BranchKey } from '@/content/branch-order';
+import { limbIndexOf } from '@/content/branch-order';
+import { BRANCH_ANCHORS } from '@/scales/cellular/arbor-anchors';
+import { ARBOR_ORIGIN } from '@/scales/cellular/arbor-params';
+import { lookAtQuaternion, type CameraSample, type Quat, type Vec3 } from './camera-keyframes';
+
+const FOCUS_DISTANCE = 8.5; // camera stand-off from the limb anchor
+const FOCUS_LIFT = 1.5; // slight elevation so entries read over the canopy
+const FOCUS_FOV = 44; // tighter than the band's settle framing
+
+/** Canopy pivot the stand-off direction radiates from — at tip altitude
+ *  (root +20), so focus cameras approach each anchor near-horizontally
+ *  instead of craning up from under the canopy. */
+const CANOPY_CENTER: Vec3 = [ARBOR_ORIGIN[0], ARBOR_ORIGIN[1] + 20, ARBOR_ORIGIN[2]];
+
+export function focusPoseFor(branch: BranchKey): CameraSample {
+  const anchor = BRANCH_ANCHORS[limbIndexOf(branch)];
+  const out: Vec3 = [
+    anchor[0] - CANOPY_CENTER[0],
+    anchor[1] - CANOPY_CENTER[1],
+    anchor[2] - CANOPY_CENTER[2],
+  ];
+  const len = Math.hypot(out[0], out[1], out[2]) || 1;
+  const position: [number, number, number] = [
+    anchor[0] + (out[0] / len) * FOCUS_DISTANCE,
+    anchor[1] + (out[1] / len) * FOCUS_DISTANCE + FOCUS_LIFT,
+    anchor[2] + (out[2] / len) * FOCUS_DISTANCE,
+  ];
+  return {
+    position,
+    quaternion: lookAtQuaternion(position, anchor, 0),
+    fov: FOCUS_FOV,
+  };
+}
+
+/** Shortest-arc quaternion slerp (hand-rolled, matches the codebase's pure
+ *  style; nlerp fallback when the arc is tiny). */
+function slerp(a: Quat, b: Quat, t: number): [number, number, number, number] {
+  let bx = b[0];
+  let by = b[1];
+  let bz = b[2];
+  let bw = b[3];
+  let cos = a[0] * bx + a[1] * by + a[2] * bz + a[3] * bw;
+  if (cos < 0) {
+    cos = -cos;
+    bx = -bx;
+    by = -by;
+    bz = -bz;
+    bw = -bw;
+  }
+  let wa: number;
+  let wb: number;
+  if (cos > 0.9995) {
+    wa = 1 - t;
+    wb = t;
+  } else {
+    const theta = Math.acos(Math.min(1, cos));
+    const sin = Math.sin(theta);
+    wa = Math.sin((1 - t) * theta) / sin;
+    wb = Math.sin(t * theta) / sin;
+  }
+  const qx = a[0] * wa + bx * wb;
+  const qy = a[1] * wa + by * wb;
+  const qz = a[2] * wa + bz * wb;
+  const qw = a[3] * wa + bw * wb;
+  const len = Math.hypot(qx, qy, qz, qw) || 1;
+  return [qx / len, qy / len, qz / len, qw / len];
+}
+
+export function blendCameraSample(
+  base: CameraSample,
+  focus: CameraSample,
+  t: number,
+): CameraSample {
+  if (t <= 0) return base;
+  if (t >= 1) return focus;
+  return {
+    position: [
+      base.position[0] + (focus.position[0] - base.position[0]) * t,
+      base.position[1] + (focus.position[1] - base.position[1]) * t,
+      base.position[2] + (focus.position[2] - base.position[2]) * t,
+    ],
+    quaternion: slerp(base.quaternion, focus.quaternion, t),
+    fov: base.fov + (focus.fov - base.fov) * t,
+  };
+}

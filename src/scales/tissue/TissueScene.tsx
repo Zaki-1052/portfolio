@@ -20,7 +20,12 @@ import { SurfaceShellMaterial } from './tissue-shell-material';
 import { useCoilTexture } from './reaction-diffusion';
 import { applyShellParams } from './shell-params';
 import { getShellParamsOverride } from './shell-live-params';
-import { PLUNGE_APERTURE_DIR, breakthroughProgress, dissolveAmountFor } from './breakthrough';
+import {
+  PLUNGE_APERTURE_DIR,
+  breakthroughProgress,
+  dissolveAmountFor,
+  interiorExitFade,
+} from './breakthrough';
 import { BreakthroughParticles } from './breakthrough-particles';
 import { AtmosphereHalo } from './atmosphere-halo';
 import { AtmosphereEmbers, AtmosphereMotes } from './atmosphere-motes';
@@ -74,9 +79,11 @@ export function SurfaceScene() {
     // Fully vivid through the approach journey; dimmed while the hero text
     // plays in front of the still-outside form; restored to full vividness
     // for the plunge (and the interior transit after it — clamped at 1).
+    // The exit fade then dissolves the walls into the next band's mist so
+    // the eventual unmount is invisible.
     const prog = scaleProgressFor(depth, 'tissue');
     const dimmed = 1 - 0.45 * smoothstep(0.05, 0.35, prog);
-    material.uOpacity = lerp(dimmed, 1, breakthroughProgress(depth));
+    material.uOpacity = lerp(dimmed, 1, breakthroughProgress(depth)) * interiorExitFade(depth);
 
     material.uDissolve = dissolveAmountFor(depth, reduced);
     material.uTime = reduced ? 0 : state.clock.elapsedTime;

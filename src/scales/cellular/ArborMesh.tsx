@@ -11,6 +11,8 @@ import { invalidate, useFrame } from '@react-three/fiber';
 import { AdditiveBlending, DoubleSide } from 'three';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { getSceneFog } from '@/engine/scene-fog';
+import { useBranchFocusStore } from '@/stores/branch-focus';
+import { limbIndexOf } from '@/content/branch-order';
 import { generateArbor } from '@/utils/arbor-generator';
 import {
   ARBOR_DEFAULTS,
@@ -110,6 +112,21 @@ export function ArborMesh({ origin = ARBOR_ORIGIN }: ArborMeshProps) {
     trunkMaterial.uFogDensity = fog.density;
     strandMaterial.uFogDensity = fog.density;
     tipMaterial.uFogDensity = fog.density;
+
+    // Focus/hover register: the focused limb holds full presence while the
+    // others recede; hover lifts its limb as the click affordance.
+    const focus = useBranchFocusStore.getState();
+    const focusLimb = focus.focusedBranch !== null ? limbIndexOf(focus.focusedBranch) : -1;
+    const hoverLimb = focus.hoveredBranch !== null ? limbIndexOf(focus.hoveredBranch) : -1;
+    trunkMaterial.uFocusBranch = focusLimb;
+    trunkMaterial.uFocusBlend = focus.focusBlend;
+    trunkMaterial.uHoverBranch = hoverLimb;
+    strandMaterial.uFocusBranch = focusLimb;
+    strandMaterial.uFocusBlend = focus.focusBlend;
+    strandMaterial.uHoverBranch = hoverLimb;
+    tipMaterial.uFocusBranch = focusLimb;
+    tipMaterial.uFocusBlend = focus.focusBlend;
+    tipMaterial.uHoverBranch = hoverLimb;
   });
 
   return (

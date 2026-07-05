@@ -1,5 +1,25 @@
 # Phase 4 — The Arbor: branching-tree scene for the second band
 
+> **REVISION (2026-07-05, user-directed): the band is SCENE-NATIVE.** During the
+> 4.1 eye-pass the user identified the deeper problem: the Phase-1 document
+> layout painted over the scene kills the graphics-first vision. New standing
+> decisions (user-locked): (1) under `[data-webgl='active']` the band's in-flow
+> document content is `display:none` and the band becomes named runways + the
+> tree; (2) the visible content is the **ArborAnnotations** overlay — luminous
+> pure-type labels + hairline connectors pinned to the projected limb tips,
+> compact project entries on focus, all real buttons/links (the accessible
+> interface under WebGL); (3) the no-WebGL fallback keeps the full document
+> version, untouched; (4) this pattern is the TEMPLATE — chromatin/protein
+> adopt it in Phase 5 after the user has felt it; code/expression stay
+> typographic by design. Stage 4.4 was pulled forward as the presentation
+> layer (pose mirror `camera-pose.ts`, `screen-project`, focus store,
+> `camera-focus` blend all landed); the 4.3 essentials (four band knots +
+> hold, `arbor-fog` additive delta, `interiorExitFade` wall dissolve) landed
+> with it so the band reads end-to-end. Remaining 4.3 tail: rose halo/ember
+> atmosphere bodies, tuning passes, freezes. A DEV `?content=0` toggle hides
+> the whole HTML layer for in-context eye-passes of any band. Session log:
+> `logs/2026-07-05_phase-4-scene-native-rework.md`.
+
 > **Language convention (hard requirement, same as Phase 3.5):** all code, comments, docs, commit messages, and session logs use only neutral geometric/botanical/design vocabulary — "arbor," "tree," "trunk," "limb," "strand," "tip," "canopy." No anatomical terms anywhere. The old roadmap's `Dendrite*` file names are NOT used; the existing `'cellular'` scale identifier stays (wired end-to-end). `'branch'` keeps its existing meaning: the three HTML click-groups in `content/projects.json` / `CellularContent.tsx`.
 
 ## Context

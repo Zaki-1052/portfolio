@@ -94,6 +94,16 @@ export function App() {
     };
   }, []);
 
+  // DEV-ONLY eye-pass aid: ?content=0 hides the whole HTML layer (visibility,
+  // not display — section heights and depth measurement stay intact) so the
+  // 3D scenes can be reviewed in context without the document over them.
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    if (new URLSearchParams(window.location.search).get('content') === '0') {
+      document.documentElement.dataset.devContent = 'hidden';
+    }
+  }, []);
+
   // Reflect WebGL activity for the scoped CSS reveal, and run the demand-mode
   // invalidation loop only while the Canvas is live.
   useEffect(() => {

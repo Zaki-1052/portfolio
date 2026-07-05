@@ -431,6 +431,13 @@
   border-top: none;
 }
 
+/* DEV-ONLY eye-pass aid (?content=0 → html[data-dev-content='hidden']): hide
+   the document layer but keep its layout, so depth measurement and camera
+   timing stay real while a scene is reviewed in context. Never set in prod. */
+html[data-dev-content='hidden'] main {
+  visibility: hidden;
+}
+
 /* Content-phase legibility: a soft radial halo of the scale's own --bg behind a
    text column, keeping WCAG contrast over the dimmed 3D. Opt-in via class; a
    no-op when WebGL is inactive (the section background is already opaque). The
@@ -1488,6 +1495,170 @@ hr {
    groove; the plunge fires in the band's last third. */
 .runway-post-hero {
   height: 90vh;
+}
+
+/* Second-band scene-native runways: arrival (the tree resolves out of the
+   haze, camera orbits in) and index (the settled framing where the annotation
+   interaction lives). They only take space when the Canvas owns the band —
+   without WebGL they collapse and the document version renders instead. */
+.arbor-runway {
+  display: none;
+}
+[data-webgl='active'] .arbor-runway--arrival {
+  display: block;
+  height: 160vh;
+}
+[data-webgl='active'] .arbor-runway--index {
+  display: block;
+  height: 150vh;
+}
+
+/* The band's document register yields entirely to the scene-native one:
+   the annotation overlay (below) is the real interface under WebGL, so the
+   in-flow copy is fully removed (not sr-only — no phantom tab stops, no
+   double exposure to AT). Without WebGL this rule never applies and the
+   document version IS the band. */
+[data-webgl='active'] [data-scale='cellular'] .cellular-doc {
+  display: none;
+}
+.cellular-doc__kicker {
+  margin: 0 0 var(--space-2);
+  color: var(--accent);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  letter-spacing: 0.02em;
+}
+.cellular-doc__title {
+  margin: 0 0 var(--space-6);
+  font-size: var(--text-3xl);
+  max-width: 20ch;
+}
+
+/* ============================================================
+   ARBOR ANNOTATIONS — the scene-native project index (Phase 4).
+   Luminous figure-annotation register: pure glowing type + hairline
+   connectors, nothing boxed (user-locked look). Each .arbor-annotation is
+   translated to its limb's PROJECTED anchor every rendered frame; the
+   side flip keeps labels pushed away from the screen center.
+   ============================================================ */
+.arbor-annotations {
+  display: none;
+}
+[data-webgl='active'] .arbor-annotations {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  pointer-events: none;
+}
+.arbor-annotation {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform;
+}
+/* Hairline from the anchor point toward the label block — fixed geometry per
+   side, so no per-frame math beyond the group transform. */
+.arbor-annotation__line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 52px;
+  height: 1px;
+  background: var(--accent-line);
+  box-shadow: 0 0 6px rgba(213, 122, 165, 0.35);
+  transform-origin: 0 50%;
+  transform: rotate(-14deg);
+}
+.arbor-annotation[data-side='left'] .arbor-annotation__line {
+  transform: rotate(194deg);
+}
+.arbor-annotation__body {
+  position: absolute;
+  top: -26px;
+  left: 56px;
+  text-align: left;
+}
+.arbor-annotation[data-side='left'] .arbor-annotation__body {
+  left: auto;
+  right: 56px;
+  text-align: right;
+}
+.arbor-annotation__label {
+  pointer-events: auto;
+  background: none;
+  border: 0;
+  padding: 4px 6px;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  text-shadow:
+    0 0 12px rgba(213, 122, 165, 0.55),
+    0 1px 3px rgba(0, 0, 0, 0.85);
+  transition: color var(--dur-fast, 160ms) ease;
+}
+.arbor-annotation__label:hover,
+.arbor-annotation__label:focus-visible,
+.arbor-annotation__label[aria-pressed='true'] {
+  color: var(--text-strong);
+}
+.arbor-annotation__entries {
+  width: min(280px, 38vw);
+  margin-top: 6px;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 280ms var(--ease-out, ease-out),
+    transform 280ms var(--ease-out, ease-out),
+    visibility 0s linear 280ms;
+}
+.arbor-annotation__entries[data-open] {
+  pointer-events: auto;
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+  transition-delay: 0s;
+}
+.arbor-entry {
+  margin-bottom: var(--space-4);
+}
+.arbor-entry a,
+.arbor-entry__title {
+  font-family: var(--font-heading);
+  font-size: var(--text-md);
+  color: var(--text-strong);
+  text-decoration: none;
+  text-shadow:
+    0 0 14px rgba(213, 122, 165, 0.4),
+    0 1px 4px rgba(0, 0, 0, 0.9);
+}
+.arbor-entry a:hover,
+.arbor-entry a:focus-visible {
+  color: var(--accent);
+}
+.arbor-entry p {
+  margin: 2px 0 3px;
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.85);
+}
+.arbor-entry__tags {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+@media (prefers-reduced-motion: reduce) {
+  .arbor-annotation__entries {
+    transition: none;
+  }
 }
 
 /* Fixed scroll cue (approach band). Two multiplicative fade layers: the

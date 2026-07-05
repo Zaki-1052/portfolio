@@ -74,6 +74,28 @@ export const CAMERA_KEYFRAMES: readonly CameraKeyframe[] = [
     reducedAnchor: true,
   }, // through the opening, inside the shell (= BREAKTHROUGH_END)
   { depth: 0.31, position: [0, -1, -6], target: [0, -4, -15], roll: 0, fov: 58 }, // interior glide along the long axis, walls receding into the next scale
+  // --- The arbor band (second scale): exit the receding interior into rose
+  // mist, sweep the canopy, settle off-axis for the index/backdrop hold.
+  // Starter values — tuned live via camera-dev-tools (bake → paste). ---
+  { depth: 0.335, position: [2, -2, -8], target: [1, 4, -26], roll: -0.01, fov: 58 }, // exit glide — the tree's silhouette first resolves in the mist
+  {
+    depth: 0.36,
+    position: [16, 2, -8],
+    target: [1, 4, -25],
+    roll: -0.02,
+    fov: 55,
+    reducedAnchor: true,
+  }, // orbital sweep, broadside — tree resolved, canopy towering past the frame
+  { depth: 0.385, position: [8, 1, -3], target: [1, 3, -24], roll: 0.015, fov: 51 }, // the sweep curls in toward the front
+  {
+    depth: 0.41,
+    position: [-11, 0, 4],
+    target: [1, 2, -24],
+    roll: 0,
+    fov: 48,
+    reducedAnchor: true,
+  }, // off-axis rule-of-thirds settle — whole canopy + all three tip anchors in frame; the index dwell lives 0.36–0.41, BEFORE the next band's document begins scrolling over
+  { depth: 0.43, position: [-11, -2, 3], target: [1, 0, -24], roll: 0, fov: 48 }, // hold with a breath of downward drift while the next section covers (= SCALE_BOUNDARIES[3])
   {
     depth: 1.0,
     position: [0, -46, -14],
