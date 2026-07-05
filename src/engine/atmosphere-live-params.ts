@@ -29,6 +29,8 @@ export interface AtmosphereParams {
   // Light shafts (exterior rakes + interior aperture beam) and cavern embers.
   shaftIntensity: number;
   emberOpacity: number;
+  // Breakthrough dissolve: world-space radius of the opening aperture.
+  dissolveRadius: number;
   // Absolute post-processing overrides (gated — when off, the depth curves run).
   postOn: boolean;
   bloomIntensity: number;

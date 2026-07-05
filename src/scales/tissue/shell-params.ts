@@ -50,6 +50,10 @@ export interface ShellParams {
   // 0 = flat face down (egg on a table) … 1 = flat plateau up (reference read:
   // broad flattened crown, rounded tucked underside).
   profileFlip: number;
+  // Per-half low-frequency height offset (world units): each side samples a
+  // different noise seed, gated to zero at the groove — the halves stop being
+  // perfect mirrors.
+  asymmetry: number;
   // Fine detail: crest strand amplitude, groove-wall pleat amplitude/frequency.
   fineAmp: number;
   pleatAmp: number;
@@ -81,6 +85,7 @@ export const SHELL_PRESETS: Record<'loaf' | 'crown' | 'bluff', ShellParams> = {
     sepFold: 0.0,
     frontLift: 0.0,
     profileFlip: 0.0,
+    asymmetry: 0.35,
     stalkY: -0.92,
     stalkZ: -0.2,
     stalkRadius: 16,
@@ -113,6 +118,7 @@ export const SHELL_PRESETS: Record<'loaf' | 'crown' | 'bluff', ShellParams> = {
     sepFold: 0.0,
     frontLift: -1.0,
     profileFlip: 1.0,
+    asymmetry: 0.35,
     stalkY: -0.92,
     stalkZ: -0.2,
     stalkRadius: 16,
@@ -142,6 +148,7 @@ export const SHELL_PRESETS: Record<'loaf' | 'crown' | 'bluff', ShellParams> = {
     sepFold: 0.0,
     frontLift: -1.0,
     profileFlip: 1.0,
+    asymmetry: 0.35,
     stalkY: -0.92,
     stalkZ: -0.2,
     stalkRadius: 18,
@@ -178,6 +185,7 @@ export interface ShellParamUniforms {
   uStalkHeight: number;
   uFrontLift: number;
   uProfileFlip: number;
+  uAsymmetry: number;
   uFineAmp: number;
   uPleatAmp: number;
   uPleatFreq: number;
@@ -210,6 +218,7 @@ export function applyShellParams(m: ShellParamUniforms, p: ShellParams, stalkOn 
   m.uStalkHeight = stalkOn ? p.stalkHeight : 0;
   m.uFrontLift = p.frontLift;
   m.uProfileFlip = p.profileFlip;
+  m.uAsymmetry = p.asymmetry;
   m.uFineAmp = p.fineAmp;
   m.uPleatAmp = p.pleatAmp;
   m.uPleatFreq = p.pleatFreq;

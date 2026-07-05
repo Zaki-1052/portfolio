@@ -1476,3 +1476,16 @@ hr {
     animation: none;
   }
 }
+
+/* ============================================================
+   Scroll runways — named spacer blocks whose heights are TUNED
+   AGAINST THE CAMERA TIMING. Do not resize casually: the
+   piecewise-canonical depth remap keeps band boundaries stable,
+   but the scroll FEEL through each beat is calibrated to these.
+   ============================================================ */
+
+/* First-scale post-hero runway: hero scrolls off while the camera hovers the
+   groove; the plunge fires in the band's last third. */
+.runway-post-hero {
+  height: 90vh;
+}

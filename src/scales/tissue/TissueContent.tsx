@@ -127,8 +127,9 @@ export function TissueContent() {
       </div>
       {/* Post-hero runway: the camera hovers near the central groove while the
           hero scrolls off through this space, then the plunge fires in the
-          band's last third and lands inside before the next scale begins. */}
-      <div aria-hidden="true" style={{ height: '90vh' }} />
+          band's last third and lands inside before the next scale begins.
+          Height lives in globals.css — LOCKED to the camera timing. */}
+      <div aria-hidden="true" className="runway-post-hero" />
     </ScaleSection>
   );
 }

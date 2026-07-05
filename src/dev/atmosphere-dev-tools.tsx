@@ -47,6 +47,8 @@ export function AtmosphereDevTools() {
         cloudOpacity: { value: CLOUD_OPACITY, min: 0, max: 0.6, step: 0.01 },
         shaftIntensity: { value: SHAFT_INTENSITY, min: 0, max: 2, step: 0.02 },
         emberOpacity: { value: EMBER_OPACITY, min: 0, max: 1, step: 0.02 },
+        // 12 = the material default (tissue-shell-material.ts) — freeze there.
+        dissolveRadius: { value: 12, min: 4, max: 24, step: 0.5 },
         // postOn arms ABSOLUTE overrides of the depth curves — park on a beat,
         // tune, note the numbers, then freeze them into post-fx-curves.ts.
         postOn: false,

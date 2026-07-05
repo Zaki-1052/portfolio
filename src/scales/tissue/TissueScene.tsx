@@ -84,6 +84,7 @@ export function SurfaceScene() {
     // (the stalk companion mirrors uLook from this material each frame).
     const atmo = getAtmosphereOverride();
     material.uLook = atmo ? lookFor(depth, atmo.lookEstablish, atmo.lookCrisp) : lookFor(depth);
+    if (atmo) material.uDissolveRadius = atmo.dissolveRadius;
 
     // Match the shell's hand-rolled exp2 fog to the live scene fog —
     // SceneAtmosphere's useFrame runs first (mounted earlier in the Canvas).

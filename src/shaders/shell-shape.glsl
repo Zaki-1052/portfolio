@@ -50,11 +50,11 @@ uniform float uStalkHeight; // stalk protrusion height — ALWAYS 0 on the main 
 uniform float uStalkSolo; // 1 on the stalk-only companion mesh
 uniform float uFrontLift; // front-lower lift — blunter, slightly raised front
 uniform float uProfileFlip; // 0 = flat face DOWN (egg on a table) … 1 = flat plateau UP (the reference read)
+uniform float uAsymmetry; // per-half low-frequency height offset — breaks the perfect mirror
 uniform float uFineAmp; // crest strand amplitude (fragment-only bump)
 uniform float uPleatAmp; // groove-wall pleat amplitude (fragment-only bump)
 uniform float uPleatFreq; // pleat corrugation frequency along the groove
 
-const float ASYM_HEIGHT = 0.35; // per-half low-frequency height offset — breaks the perfect mirror
 const float COIL_MEAN = 0.5; // shaped-field mean; displacement is centred on this
 const float RIDGE_RELIEF = 0.7; // peak-to-valley coil displacement, world units
 
@@ -166,7 +166,7 @@ float baseForm(vec3 p) {
   // continuous across the mirror plane.
   float side = step(0.0, dir.x);
   float sideGate = smoothstep(cleftW, 0.35, ax);
-  float asym = mix(snoise(dir * 1.1 + 23.0), snoise(dir * 1.1 + 57.0), side) * ASYM_HEIGHT * sideGate;
+  float asym = mix(snoise(dir * 1.1 + 23.0), snoise(dir * 1.1 + 57.0), side) * uAsymmetry * sideGate;
 
   // Rear-top overhang: a broad bulge pushing the upper rear outward.
   float over = pow(max(dot(dir, normalize(vec3(0.0, 0.42, -0.91))), 0.0), 2.0) * uOverhang;

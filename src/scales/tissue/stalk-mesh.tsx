@@ -49,6 +49,7 @@ export function StalkMesh({
     material.uFogColor = shellMaterial.uFogColor;
     material.uFogDensity = shellMaterial.uFogDensity;
     material.uDissolve = shellMaterial.uDissolve;
+    material.uDissolveRadius = shellMaterial.uDissolveRadius;
     material.uApertureDir = shellMaterial.uApertureDir;
     material.uCoilTex = shellMaterial.uCoilTex;
     material.uRDBlend = shellMaterial.uRDBlend;

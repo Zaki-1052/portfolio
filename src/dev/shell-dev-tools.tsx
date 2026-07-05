@@ -48,6 +48,7 @@ export function useShellControls(initial: ShellParams, collapsed: boolean): Shel
         stalkHeight: { value: initial.stalkHeight, min: 0, max: 6, step: 0.05 },
         frontLift: { value: initial.frontLift, min: -1, max: 2, step: 0.05 },
         profileFlip: { value: initial.profileFlip, min: 0, max: 1, step: 0.01 },
+        asymmetry: { value: initial.asymmetry, min: 0, max: 1, step: 0.01 },
         fineAmp: { value: initial.fineAmp, min: 0, max: 0.5, step: 0.005 },
         pleatAmp: { value: initial.pleatAmp, min: 0, max: 1, step: 0.01 },
         pleatFreq: { value: initial.pleatFreq, min: 10, max: 200, step: 1 },
