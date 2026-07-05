@@ -103,6 +103,15 @@ describe('generateArbor — the three limbs', () => {
     expect(nodes.some((n) => n.limb === -1 && n.region === 'trunk')).toBe(true);
   });
 
+  it('grows decorative members: minor limbs and a trailing filament (tag 3)', () => {
+    const nodes = nodesOf();
+    const decor = nodes.filter((n) => n.limb === 3);
+    expect(decor.some((n) => n.region === 'limb')).toBe(true);
+    // The filament descends: at least one decorative spine node sits below
+    // the hub (the majors all climb).
+    expect(decor.some((n) => n.region === 'limb' && n.position[1] < 0)).toBe(true);
+  });
+
   it('limbTipNode returns a distinct far-out tip per limb', () => {
     const nodes = nodesOf();
     const tips = LIMBS.map((limb) => limbTipNode(nodes, limb));

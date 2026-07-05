@@ -17,7 +17,7 @@ import { smoothstep } from '@/utils/math';
 import { useDepthStore } from '@/stores/depth';
 import { fogBlendT } from '@/scales/tissue/breakthrough';
 import {
-  ARBOR_FOG_ROSE,
+  ARBOR_FOG_TINT,
   arborFogColorBlendT,
   arborFogDensityDeltaFor,
 } from '@/scales/cellular/arbor-fog';
@@ -34,7 +34,7 @@ export function SceneAtmosphere() {
   const fogColor = useRef(new Color('#34302b'));
   const warmOverride = useRef(new Color('#4a3f33'));
   const interiorFog = useRef(new Color('#31221a'));
-  const arborRose = useRef(new Color(ARBOR_FOG_ROSE));
+  const arborTint = useRef(new Color(ARBOR_FOG_TINT));
 
   useFrame(() => {
     const depth = useDepthStore.getState().depth;
@@ -64,10 +64,10 @@ export function SceneAtmosphere() {
         t * (o ? o.interiorPush : INTERIOR_PUSH),
       );
     }
-    // Band-two handoff: the rose mist rises OVER the warm interior (lerp
-    // order does the amber→rose crossfade), then fades before the next scale.
-    const rose = arborFogColorBlendT(depth);
-    if (rose > 0) fogColor.current.lerp(arborRose.current, rose);
+    // Band-two handoff: the navy mist rises OVER the warm interior (lerp
+    // order does the amber→navy crossfade), then fades before the next scale.
+    const tint = arborFogColorBlendT(depth);
+    if (tint > 0) fogColor.current.lerp(arborTint.current, tint);
     const density =
       (o
         ? fogDensityFor(depth, o.densityEstablish, o.densityBase, o.densityInterior, o.densityVeil)

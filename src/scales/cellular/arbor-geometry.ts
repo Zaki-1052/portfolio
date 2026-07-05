@@ -9,7 +9,7 @@
 // Per-vertex seeds hash from NODE indices (not edges) so adjacent ribbon
 // segments and their tip sprites sway as one connected piece.
 import { BufferAttribute, BufferGeometry } from 'three';
-import type { ArborNode, LimbIndex, Vec3 } from '@/utils/arbor-generator';
+import type { ArborNode, Vec3 } from '@/utils/arbor-generator';
 
 const RADIAL = 8; // ring vertices per spine point
 
@@ -85,36 +85,50 @@ function subdivideSpine(points: SpinePoint[]): SpinePoint[] {
   return out;
 }
 
-/** The four spine polylines: the trunk chain, then each limb chain prefixed
- *  with its junction node so the tubes connect seamlessly at the split. */
+/** All spine polylines: the trunk chain, then every 'limb'-region chain —
+ *  the three labeled majors, the decorative minors, and the trailing
+ *  filament — each prefixed with its junction node so the tubes connect
+ *  seamlessly. Chains are identified structurally (a limb node whose parent
+ *  isn't the previous chain end starts a new chain), so any number of
+ *  members works regardless of limb tag. */
 function extractSpines(nodes: ArborNode[]): SpinePoint[][] {
   const trunk: SpinePoint[] = [];
-  const limbs: SpinePoint[][] = [[], [], []];
-  for (const n of nodes) {
+  const chains: SpinePoint[][] = [];
+  const chainEndingAt = new Map<number, SpinePoint[]>();
+  for (let i = 0; i < nodes.length; i++) {
+    const n = nodes[i]!;
     if (n.region === 'trunk') {
       trunk.push({ position: n.position, radius: n.radius, t: n.t, limb: -1 });
     } else if (n.region === 'limb') {
-      const chain = limbs[n.limb as LimbIndex]!;
-      if (chain.length === 0) {
+      let chain = chainEndingAt.get(n.parent);
+      if (!chain) {
         const junction = nodes[n.parent]!;
-        chain.push({
-          position: junction.position,
-          radius: junction.radius,
-          t: junction.t,
-          limb: n.limb,
-        });
+        chain = [
+          {
+            position: junction.position,
+            radius: junction.radius,
+            t: junction.t,
+            limb: n.limb,
+          },
+        ];
+        chains.push(chain);
+      } else {
+        chainEndingAt.delete(n.parent);
       }
       chain.push({ position: n.position, radius: n.radius, t: n.t, limb: n.limb });
+      chainEndingAt.set(i, chain);
     }
   }
-  return [trunk, ...limbs];
+  return [trunk, ...chains];
 }
 
 /**
- * Merged tapered-tube sweep of the trunk + three limb spines.
+ * Merged tapered-tube sweep of the trunk + every limb spine, plus the hub —
+ * a rounded central body at the split point that swallows the junctions, so
+ * the members read as radiating from a mass rather than forking off a pole.
  * Attributes: position, normal, aT, aRadius, aLimb.
  */
-export function buildTrunkGeometry(nodes: ArborNode[]): BufferGeometry {
+export function buildTrunkGeometry(nodes: ArborNode[], hubScale = 2.1): BufferGeometry {
   const spines = extractSpines(nodes);
 
   const positions: number[] = [];
@@ -202,6 +216,47 @@ export function buildTrunkGeometry(nodes: ArborNode[]): BufferGeometry {
     }
   }
 
+  // --- The hub: a UV sphere at the split point, radius scaled off the
+  // trunk-tip ring so the panel's hubScale dial reshapes it live. Same
+  // material/relief as the limbs (aRadius = hub radius caps the bark grain
+  // at full strength). ---
+  const trunkNodes = nodes.filter((n) => n.region === 'trunk');
+  const hubNode = trunkNodes[trunkNodes.length - 1];
+  if (hubNode) {
+    const hubR = hubNode.radius * hubScale;
+    // Dense enough that the fbm relief reads as surface, not facets.
+    const ROWS = 20;
+    const COLS = 32;
+    const base = positions.length / 3;
+    for (let r = 0; r <= ROWS; r++) {
+      const phi = (r / ROWS) * Math.PI;
+      for (let c = 0; c <= COLS; c++) {
+        const theta = (c / COLS) * Math.PI * 2;
+        const nx = Math.sin(phi) * Math.cos(theta);
+        const ny = Math.cos(phi);
+        const nz = Math.sin(phi) * Math.sin(theta);
+        positions.push(
+          hubNode.position[0] + nx * hubR,
+          hubNode.position[1] + ny * hubR,
+          hubNode.position[2] + nz * hubR,
+        );
+        normals.push(nx, ny, nz);
+        aT.push(hubNode.t);
+        aRadius.push(hubR);
+        // -2 marks HUB vertices: the shaders damp the bark relief and light
+        // the granular inner glow there (never dims on focus, like -1).
+        aLimb.push(-2);
+      }
+    }
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const a = base + r * (COLS + 1) + c;
+        const b = a + COLS + 1;
+        indices.push(a, b, a + 1, a + 1, b, b + 1);
+      }
+    }
+  }
+
   const geo = new BufferGeometry();
   geo.setAttribute('position', new BufferAttribute(new Float32Array(positions), 3));
   geo.setAttribute('normal', new BufferAttribute(new Float32Array(normals), 3));
@@ -226,6 +281,7 @@ export function buildStrandGeometry(nodes: ArborNode[]): BufferGeometry {
   const aRadius: number[] = [];
   const aLimb: number[] = [];
   const aSeed: number[] = [];
+  const aLevel: number[] = [];
   const indices: number[] = [];
 
   for (let i = 0; i < nodes.length; i++) {
@@ -250,6 +306,10 @@ export function buildStrandGeometry(nodes: ArborNode[]): BufferGeometry {
         aRadius.push(end.node.radius);
         aLimb.push(child.limb);
         aSeed.push(hash01(end.index));
+        // Strand generation depth — the frag ramps luminance up from the
+        // attachment so strands GROW out of their member instead of
+        // snapping on at full glow (the hologram seam).
+        aLevel.push(child.level);
       }
     }
     indices.push(base, base + 2, base + 1, base + 1, base + 2, base + 3);
@@ -263,7 +323,83 @@ export function buildStrandGeometry(nodes: ArborNode[]): BufferGeometry {
   geo.setAttribute('aRadius', new BufferAttribute(new Float32Array(aRadius), 1));
   geo.setAttribute('aLimb', new BufferAttribute(new Float32Array(aLimb), 1));
   geo.setAttribute('aSeed', new BufferAttribute(new Float32Array(aSeed), 1));
+  geo.setAttribute('aLevel', new BufferAttribute(new Float32Array(aLevel), 1));
   geo.setIndex(indices);
+  return geo;
+}
+
+/** Hex '#rrggbb' → linear-ish rgb floats (no three dependency). */
+function hexToRgb(hex: string): [number, number, number] {
+  const v = parseInt(hex.slice(1), 16);
+  return [((v >> 16) & 255) / 255, ((v >> 8) & 255) / 255, (v & 255) / 255];
+}
+
+/**
+ * The bead layer: multicolor glowing dots strung along EVERY member (spines
+ * and strands both) at ~spacing world-unit intervals, offset just off the
+ * surface — the fluorescence reference's signature. One Points buffer.
+ * Attributes: position, aColor, aT, aLimb, aSeed.
+ */
+export function buildPunctaGeometry(
+  nodes: ArborNode[],
+  spacing: number,
+  palette: readonly string[],
+): BufferGeometry {
+  const colors = palette.map(hexToRgb);
+  const positions: number[] = [];
+  const aColor: number[] = [];
+  const aT: number[] = [];
+  const aLimb: number[] = [];
+  const aSeed: number[] = [];
+
+  let bead = 0;
+  let carry = 0; // spacing remainder carried across edges → even chains
+  for (let i = 0; i < nodes.length; i++) {
+    const child = nodes[i]!;
+    if (child.parent < 0) continue;
+    const parent = nodes[child.parent]!;
+    const dx = child.position[0] - parent.position[0];
+    const dy = child.position[1] - parent.position[1];
+    const dz = child.position[2] - parent.position[2];
+    const len = Math.hypot(dx, dy, dz);
+    if (len < 1e-6) continue;
+
+    let s = carry <= 0 ? spacing * 0.5 : carry;
+    while (s <= len) {
+      const u = s / len;
+      const h1 = hash01(bead * 3 + 1);
+      const h2 = hash01(bead * 3 + 2);
+      // Perch each bead just off the member's surface, jittered around it.
+      const az = h1 * Math.PI * 2;
+      const ref: Vec3 = Math.abs(dy / len) < 0.99 ? [0, 1, 0] : [1, 0, 0];
+      const side = normalize(cross([dx / len, dy / len, dz / len], ref));
+      const up = cross([dx / len, dy / len, dz / len], side);
+      const r = (parent.radius + (child.radius - parent.radius) * u) * 0.9 + 0.08 + h2 * 0.22;
+      positions.push(
+        parent.position[0] + dx * u + (side[0] * Math.cos(az) + up[0] * Math.sin(az)) * r,
+        parent.position[1] + dy * u + (side[1] * Math.cos(az) + up[1] * Math.sin(az)) * r,
+        parent.position[2] + dz * u + (side[2] * Math.cos(az) + up[2] * Math.sin(az)) * r,
+      );
+      const col = colors[Math.floor(hash01(bead * 3) * colors.length) % colors.length]!;
+      aColor.push(col[0], col[1], col[2]);
+      const tAt = parent.t + (child.t - parent.t) * u;
+      aT.push(tAt);
+      aLimb.push(child.limb);
+      aSeed.push(hash01(bead + 977));
+      bead++;
+      // Beads crowd toward the reaches (the reference's crowns are the
+      // densest); the roots stay sparser.
+      s += spacing * (0.75 + hash01(bead * 7) * 0.5) * (1.25 - 0.65 * tAt);
+    }
+    carry = s - len;
+  }
+
+  const geo = new BufferGeometry();
+  geo.setAttribute('position', new BufferAttribute(new Float32Array(positions), 3));
+  geo.setAttribute('aColor', new BufferAttribute(new Float32Array(aColor), 3));
+  geo.setAttribute('aT', new BufferAttribute(new Float32Array(aT), 1));
+  geo.setAttribute('aLimb', new BufferAttribute(new Float32Array(aLimb), 1));
+  geo.setAttribute('aSeed', new BufferAttribute(new Float32Array(aSeed), 1));
   return geo;
 }
 

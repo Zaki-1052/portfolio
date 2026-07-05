@@ -228,12 +228,14 @@
   --bg-next: #2a292e;
 }
 
+/* Band-two register: electric blue (the fluorescence reference) — the rose
+   register moved down to chromatin (2026-07-05 palette swap, user-directed). */
 [data-scale='cellular'] {
-  --accent: var(--aod-rose);
-  --accent-soft: rgba(213, 122, 165, 0.16);
-  --accent-line: rgba(213, 122, 165, 0.42);
-  --bg: #2a292e;
-  --fog-color: #312b30;
+  --accent: var(--aod-blue);
+  --accent-soft: rgba(97, 175, 239, 0.16);
+  --accent-line: rgba(97, 175, 239, 0.42);
+  --bg: #23283a;
+  --fog-color: #232c40;
   --font-heading: var(--font-serif);
   --radius: var(--radius-soft);
   --grain-opacity: 0.04;
@@ -241,9 +243,9 @@
 }
 
 [data-scale='chromatin'] {
-  --accent: var(--aod-blue);
-  --accent-soft: rgba(97, 175, 239, 0.16);
-  --accent-line: rgba(97, 175, 239, 0.4);
+  --accent: var(--aod-rose);
+  --accent-soft: rgba(213, 122, 165, 0.16);
+  --accent-line: rgba(213, 122, 165, 0.4);
   --bg: var(--aod-bg);
   --fog-color: #2b3038;
   --font-heading: var(--font-sans);
@@ -348,13 +350,13 @@
 
 [data-scale='cellular']::before {
   background:
-    radial-gradient(ellipse 70% 50% at 72% 40%, rgba(213, 122, 165, 0.1) 0%, transparent 70%),
+    radial-gradient(ellipse 70% 50% at 72% 40%, rgba(97, 175, 239, 0.09) 0%, transparent 70%),
     linear-gradient(to bottom, transparent 75%, var(--bg-next) 100%);
 }
 
 [data-scale='chromatin']::before {
   background:
-    radial-gradient(ellipse 60% 60% at 50% 45%, rgba(97, 175, 239, 0.07) 0%, transparent 65%),
+    radial-gradient(ellipse 60% 60% at 50% 45%, rgba(213, 122, 165, 0.08) 0%, transparent 65%),
     linear-gradient(to bottom, transparent 75%, var(--bg-next) 100%);
 }
 
@@ -1506,11 +1508,11 @@ hr {
 }
 [data-webgl='active'] .arbor-runway--arrival {
   display: block;
-  height: 160vh;
+  height: 180vh;
 }
 [data-webgl='active'] .arbor-runway--index {
   display: block;
-  height: 150vh;
+  height: 200vh;
 }
 
 /* The band's document register yields entirely to the scene-native one:
@@ -1557,6 +1559,47 @@ hr {
   left: 0;
   will-change: transform;
 }
+/* The focused annotation stacks ABOVE its siblings — an overlapping dim
+   label must never intercept clicks aimed at the open entries. */
+.arbor-annotation[data-focused] {
+  z-index: 2;
+}
+/* A small luminous bead at the projected anchor itself — the labels' "find
+   me" affordance; without it thin text sinks into the canopy. */
+.arbor-annotation__dot {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffffff 0%, var(--accent) 55%, transparent 75%);
+  box-shadow: 0 0 10px 2px color-mix(in srgb, var(--accent) 65%, transparent);
+  /* Breathing pulse = "I'm clickable". Stops once its branch is focused. */
+  animation: arbor-dot-pulse 2.4s ease-in-out infinite;
+}
+.arbor-annotation[data-focused] .arbor-annotation__dot {
+  animation: none;
+}
+@keyframes arbor-dot-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.75;
+  }
+  50% {
+    transform: scale(1.55);
+    opacity: 1;
+  }
+}
+[data-motion='reduced'] .arbor-annotation__dot {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .arbor-annotation__dot {
+    animation: none;
+  }
+}
 /* Hairline from the anchor point toward the label block — fixed geometry per
    side, so no per-frame math beyond the group transform. */
 .arbor-annotation__line {
@@ -1566,7 +1609,7 @@ hr {
   width: 52px;
   height: 1px;
   background: var(--accent-line);
-  box-shadow: 0 0 6px rgba(213, 122, 165, 0.35);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 35%, transparent);
   transform-origin: 0 50%;
   transform: rotate(-14deg);
 }
@@ -1591,21 +1634,32 @@ hr {
   padding: 4px 6px;
   cursor: pointer;
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 600;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--accent);
+  /* Near-white type with an accent HALO (not accent type) — colored thin
+     text sinks into the canopy; white with glow survives any backdrop. */
+  color: var(--text-strong);
   text-shadow:
-    0 0 12px rgba(213, 122, 165, 0.55),
-    0 1px 3px rgba(0, 0, 0, 0.85);
-  transition: color var(--dur-fast, 160ms) ease;
+    0 0 14px color-mix(in srgb, var(--accent) 80%, transparent),
+    0 0 4px color-mix(in srgb, var(--accent) 60%, transparent),
+    0 1px 3px rgba(0, 0, 0, 0.9);
+  transition:
+    color var(--dur-fast, 160ms) ease,
+    text-shadow var(--dur-fast, 160ms) ease;
 }
 .arbor-annotation__label:hover,
 .arbor-annotation__label:focus-visible,
 .arbor-annotation__label[aria-pressed='true'] {
-  color: var(--text-strong);
+  color: #ffffff;
+  text-shadow:
+    0 0 18px var(--accent),
+    0 0 6px color-mix(in srgb, var(--accent) 80%, transparent),
+    0 1px 3px rgba(0, 0, 0, 0.9);
 }
 .arbor-annotation__entries {
+  position: relative;
   width: min(280px, 38vw);
   margin-top: 6px;
   visibility: hidden;
@@ -1615,6 +1669,25 @@ hr {
     opacity 280ms var(--ease-out, ease-out),
     transform 280ms var(--ease-out, ease-out),
     visibility 0s linear 280ms;
+}
+/* Feathered darkening behind the entries — NOT a box: a soft radial pool that
+   restores text contrast where the type crosses bright canopy geometry. */
+.arbor-annotation__entries::before {
+  content: '';
+  position: absolute;
+  inset: -52px -84px;
+  z-index: -1;
+  background: radial-gradient(
+    ellipse 72% 78% at 50% 44%,
+    rgba(12, 8, 12, 0.62),
+    rgba(12, 8, 12, 0.3) 52%,
+    transparent 72%
+  );
+  pointer-events: none;
+}
+/* A clamped annotation's hairline points at nothing honest — fade it. */
+.arbor-annotation[data-clamped='true'] .arbor-annotation__line {
+  opacity: 0.15;
 }
 .arbor-annotation__entries[data-open] {
   pointer-events: auto;
@@ -1630,10 +1703,10 @@ hr {
 .arbor-entry__title {
   font-family: var(--font-heading);
   font-size: var(--text-md);
-  color: var(--text-strong);
+  color: #f2f5f9;
   text-decoration: none;
   text-shadow:
-    0 0 14px rgba(213, 122, 165, 0.4),
+    0 0 14px color-mix(in srgb, var(--accent) 45%, transparent),
     0 1px 4px rgba(0, 0, 0, 0.9);
 }
 .arbor-entry a:hover,
@@ -1645,14 +1718,14 @@ hr {
   font-family: var(--font-sans);
   font-size: 12.5px;
   line-height: 1.5;
-  color: var(--text);
+  color: #d9dfe8;
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.85);
 }
 .arbor-entry__tags {
   font-family: var(--font-sans);
   font-size: 11px;
   letter-spacing: 0.06em;
-  color: var(--text-muted);
+  color: #aeb9c6;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
 }
 @media (prefers-reduced-motion: reduce) {

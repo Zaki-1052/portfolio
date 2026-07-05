@@ -39,7 +39,7 @@ const DriftMaterial = shaderMaterial(
   frag,
 );
 
-interface DriftConfig {
+export interface DriftConfig {
   count: number;
   rInner: number;
   rOuter: number;
@@ -88,7 +88,8 @@ const EMBERS: DriftConfig = {
     (1 - smoothstep(FOG_INTERIOR_PEAK, FOG_INTERIOR_SETTLE, depth)),
 };
 
-function DriftField({ config }: { config: DriftConfig }) {
+// Exported for reuse: the arbor band mounts its own rose-tinted fields.
+export function DriftField({ config }: { config: DriftConfig }) {
   const { positions, seeds } = useMemo(() => {
     const positions = new Float32Array(config.count * 3);
     const seeds = new Float32Array(config.count);

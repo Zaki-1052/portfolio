@@ -24,11 +24,17 @@ export const ArborTrunkMaterial = shaderMaterial(
     uEmissiveStrength: D.emissiveStrength,
     uReliefAmp: D.reliefAmp,
     uReliefFreq: D.reliefFreq,
-    uFogColor: new Color('#312b30'), // band fog anchor; mirrored live per frame
+    uFogColor: new Color('#232c40'), // band fog anchor; mirrored live per frame
     uFogDensity: 0.014,
     uFocusBranch: -1,
     uFocusBlend: 0,
     uHoverBranch: -1,
+    uHubGlowA: new Color(D.hubGlowA),
+    uHubGlowB: new Color(D.hubGlowB),
+    uHubGlowStrength: D.hubGlowStrength,
+    uHubBump: D.hubBump,
+    uSheathColor: new Color(D.sheathColor),
+    uSheathAmount: D.sheathAmount,
   },
   vertexShader,
   fragmentShader,

@@ -8,9 +8,21 @@
 // and late signals can't wedge the machine.
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
+import { scaleFromHash } from '@/engine/scale-manager';
 import { useMotionStore } from './motion';
 
 export type IntroPhase = 'typing' | 'push' | 'done';
+
+/**
+ * Deep links skip the overture entirely: the typed opening only makes sense
+ * arriving at the top (base URL or the approach itself). Loading any other
+ * section's #hash must land there immediately — locking a returning visitor
+ * into the intro AND scrolling them away from their link reads as a bug.
+ */
+export function shouldSkipIntroForHash(hash: string): boolean {
+  const scale = scaleFromHash(hash);
+  return scale !== null && scale !== 'approach';
+}
 
 interface IntroStore {
   phase: IntroPhase;

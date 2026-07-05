@@ -27,6 +27,21 @@ export interface ArborLookParams {
   tipSize: number;
   /** Canopy sway amplitude (world units at the deepest tips; 0 = still). */
   swayAmp: number;
+  /** Signal pulses riding the strands root→tip: sweep rate (cycles/s) and
+   *  brightness gain (0 disables; forced 0 under reduced motion). */
+  pulseSpeed: number;
+  pulseGain: number;
+  /** The hub's granular inner glow: two mottled colors + strength. */
+  hubGlowA: string;
+  hubGlowB: string;
+  hubGlowStrength: number;
+  /** Hub silhouette lumps (world units) — an organic mass, not a ball. */
+  hubBump: number;
+  /** Limb encrustation: sheath patch color + coverage (0 = bare body). */
+  sheathColor: string;
+  sheathAmount: number;
+  /** World size of the multicolor beads strung along the members. */
+  punctaSize: number;
 }
 
 export type ArborParams = ArborGrowthParams & ArborLookParams;
@@ -39,20 +54,41 @@ export type ArborParams = ArborGrowthParams & ArborLookParams;
  */
 export const ARBOR_ORIGIN: readonly [number, number, number] = [2, -14, -28];
 
+// The fluorescence register (2026-07-05 reference): electric-blue body,
+// green-sheathed strands, warm multicolor beads, glowing granular hub.
 const LOOK_DEFAULTS: ArborLookParams = {
-  baseColor: '#463037', // dark rose-umber bark — cooling from the shell's gold
-  tipColor: '#e58bb8',
-  fresnelColor: '#d57aa5', // the band accent (--aod-rose)
+  baseColor: '#356487', // electric blue-slate body (bright enough to read vs navy)
+  tipColor: '#c6ecff', // icy bright reaches
+  fresnelColor: '#5fc0ee', // cyan rim (the band accent family)
   fresnelPower: 5.5, // tight — thin cylinders live near grazing everywhere
-  emissiveStrength: 1.5,
+  emissiveStrength: 1.3,
   reliefAmp: 0.06,
   reliefFreq: 2.6,
-  strandColor: '#e896c0',
-  strandOpacity: 0.85,
+  strandColor: '#8be3b4', // green sheath on the fine periphery
+  strandOpacity: 0.65, // user-blessed 2026-07-05
   strandWidth: 1.6,
-  tipSize: 0.34,
+  tipSize: 0.46,
   swayAmp: 0.12,
+  pulseSpeed: 0.11,
+  pulseGain: 1.0, // user-blessed 2026-07-05
+  hubGlowA: '#57b6f0', // granular core glow, blue…
+  hubGlowB: '#7fe4c0', // …mottled toward green-cyan
+  hubGlowStrength: 2.0, // user-blessed 2026-07-05
+  hubBump: 0.1, // user-blessed 2026-07-05
+  sheathColor: '#7fd8a4', // the green encrustation riding the blue limbs
+  sheathAmount: 0.55,
+  punctaSize: 0.65, // user-blessed 2026-07-05
 };
+
+/** The bead layer's color pool — warm golds/corals/reds over green/cyan,
+ *  hashed per bead (the reference's multicolor puncta strung along arms). */
+export const PUNCTA_PALETTE: readonly string[] = [
+  '#ffd27d',
+  '#ff8a66',
+  '#ff6472',
+  '#93e88f',
+  '#7fd7f2',
+];
 
 // Three starting points for iteration: 'sparse' is an airy winter read,
 // 'dense' the filled-canopy default guess, 'gnarled' pushes wander/crook hard.
@@ -92,12 +128,20 @@ export interface ArborTrunkUniforms {
   uEmissiveStrength: number;
   uReliefAmp: number;
   uReliefFreq: number;
+  uHubGlowA: Color;
+  uHubGlowB: Color;
+  uHubGlowStrength: number;
+  uHubBump: number;
+  uSheathColor: Color;
+  uSheathAmount: number;
 }
 
 export interface ArborGlowUniforms {
   uColor: Color;
   uGlowOpacity: number;
   uSway: number;
+  uPulseSpeed: number;
+  uPulseGain: number;
 }
 
 /** Write the look params onto the trunk material's uniforms. */
@@ -109,6 +153,12 @@ export function applyArborTrunkLook(m: ArborTrunkUniforms, p: ArborLookParams): 
   m.uEmissiveStrength = p.emissiveStrength;
   m.uReliefAmp = p.reliefAmp;
   m.uReliefFreq = p.reliefFreq;
+  m.uHubGlowA.set(p.hubGlowA);
+  m.uHubGlowB.set(p.hubGlowB);
+  m.uHubGlowStrength = p.hubGlowStrength;
+  m.uHubBump = p.hubBump;
+  m.uSheathColor.set(p.sheathColor);
+  m.uSheathAmount = p.sheathAmount;
 }
 
 /** Write the glow params onto a strand/tip material's uniforms. */
@@ -116,4 +166,6 @@ export function applyArborGlowLook(m: ArborGlowUniforms, p: ArborLookParams): vo
   m.uColor.set(p.strandColor);
   m.uGlowOpacity = p.strandOpacity;
   m.uSway = p.swayAmp;
+  m.uPulseSpeed = p.pulseSpeed;
+  m.uPulseGain = p.pulseGain;
 }

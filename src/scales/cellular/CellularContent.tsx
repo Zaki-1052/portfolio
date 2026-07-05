@@ -8,7 +8,7 @@
 //     kicker/title/prose, the three branch buttons, and the project cards.
 // Both registers drive the SAME focus store, so the fallback buttons and the
 // 3D interaction can never disagree.
-import { ScaleSection } from '@/components/ScaleSection';
+import { ScaleBadge, ScaleSection } from '@/components/ScaleSection';
 import { ProjectCard } from '@/components/ProjectCard';
 import { MarkdownRenderer } from '@/content/markdown';
 import { getSection, getProjects } from '@/content/loader';
@@ -33,7 +33,10 @@ export function CellularContent() {
   };
 
   return (
-    <ScaleSection scale="cellular" magnification="100×">
+    // hideBadge: the floating scale badge reads as a document artifact over
+    // the scene-native band — the depth indicator already carries the scale
+    // identity there; the fallback document keeps its own badge below.
+    <ScaleSection scale="cellular" hideBadge>
       {/* Scene-native runways — heights are TUNED AGAINST THE CAMERA TIMING
           (globals.css Scroll runways block); they only take space when the
           Canvas owns the band. */}
@@ -42,6 +45,7 @@ export function CellularContent() {
       <ArborAnnotations />
 
       <div className="cellular-doc">
+        <ScaleBadge scale="cellular" magnification="100×" />
         <p className="cellular-doc__kicker">pick a branch</p>
         <h2 className="cellular-doc__title">
           {section?.frontmatter.title ?? 'Three branches of one tree'}

@@ -18,6 +18,7 @@ uniform float uFogDensity;
 uniform float uRDBlend;
 uniform float uDissolve;
 uniform float uDissolveRadius;
+uniform float uExitDissolve;
 uniform vec3 uDissolveEdgeColor;
 uniform vec3 uApertureDir;
 uniform float uLook; // 0 = crisp matte sculpture … 1 = soft dreamy bloom-glow
@@ -232,6 +233,19 @@ void main() {
   if (openness > cut) discard;
   float edge = smoothstep(cut - 0.1, cut, openness) * smoothstep(0.0, 0.05, uDissolve);
   color += uDissolveEdgeColor * edge * 2.2;
+
+  // --- Interior exit disintegration ---
+  // Past the first content beat the walls BREAK APART (noise-keyed discard
+  // with the same glowing-edge language) instead of merely dimming — a
+  // dimmed-but-opaque interior would keep depth-occluding the next band's
+  // scene and the two solids would interpenetrate during the handoff.
+  // All texture taps happened above; a late divergent discard is safe.
+  float exitField = fbm(vWorldPos * 0.22) * 0.5 + 0.5;
+  float exitCut = 1.0 - uExitDissolve * 1.2;
+  if (exitField > exitCut) discard;
+  float exitEdge =
+    smoothstep(exitCut - 0.09, exitCut, exitField) * smoothstep(0.0, 0.04, uExitDissolve);
+  color += uDissolveEdgeColor * exitEdge * 1.8;
 
   // Manual exp2 fog toward the atmospheric color.
   float fogFactor = 1.0 - exp(-uFogDensity * uFogDensity * vViewDist * vViewDist);

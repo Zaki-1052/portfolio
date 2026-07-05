@@ -77,25 +77,25 @@ export const CAMERA_KEYFRAMES: readonly CameraKeyframe[] = [
   // --- The arbor band (second scale): exit the receding interior into rose
   // mist, sweep the canopy, settle off-axis for the index/backdrop hold.
   // Starter values — tuned live via camera-dev-tools (bake → paste). ---
-  { depth: 0.335, position: [2, -2, -8], target: [1, 4, -26], roll: -0.01, fov: 58 }, // exit glide — the tree's silhouette first resolves in the mist
+  { depth: 0.335, position: [2, -2, -8], target: [1, 0, -26], roll: -0.01, fov: 58 }, // exit glide — the structure's silhouette first resolves in the mist
   {
     depth: 0.36,
-    position: [16, 2, -8],
-    target: [1, 4, -25],
+    position: [17, -0.5, -5.5],
+    target: [1, -3, -25],
     roll: -0.02,
     fov: 55,
     reducedAnchor: true,
-  }, // orbital sweep, broadside — tree resolved, canopy towering past the frame
-  { depth: 0.385, position: [8, 1, -3], target: [1, 3, -24], roll: 0.015, fov: 51 }, // the sweep curls in toward the front
+  }, // orbital sweep, broadside — hub + radiating limbs resolved, canopy towering (NB: keep every axis moving knot-to-knot — an exactly-stationary axis is a dead beat and reads as a camera stall)
+  { depth: 0.385, position: [9, -1.6, 0], target: [1, -4, -24], roll: 0.015, fov: 51 }, // the sweep curls in toward the front
   {
     depth: 0.41,
-    position: [-11, 0, 4],
-    target: [1, 2, -24],
+    position: [-12, -3, 7],
+    target: [1, -5, -24],
     roll: 0,
-    fov: 48,
+    fov: 49,
     reducedAnchor: true,
-  }, // off-axis rule-of-thirds settle — whole canopy + all three tip anchors in frame; the index dwell lives 0.36–0.41, BEFORE the next band's document begins scrolling over
-  { depth: 0.43, position: [-11, -2, 3], target: [1, 0, -24], roll: 0, fov: 48 }, // hold with a breath of downward drift while the next section covers (= SCALE_BOUNDARIES[3])
+  }, // off-axis rule-of-thirds settle — hub, all three tip anchors, AND the trailing filament's fall in frame (aim rides low: the hub must never clip the frame bottom)
+  { depth: 0.43, position: [-12, -4, 6.5], target: [1, -6, -24], roll: 0, fov: 49 }, // hold with a breath of downward drift while the next section covers (= SCALE_BOUNDARIES[3])
   {
     depth: 1.0,
     position: [0, -46, -14],

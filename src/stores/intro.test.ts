@@ -1,6 +1,6 @@
 // src/stores/intro.test.ts
 import { describe, it, expect, beforeEach } from 'vitest';
-import { useIntroStore } from './intro';
+import { shouldSkipIntroForHash, useIntroStore } from './intro';
 import { useMotionStore } from './motion';
 
 function resetStores(): void {
@@ -80,5 +80,22 @@ describe('intro store', () => {
     useIntroStore.getState().markTypingDone();
     useIntroStore.getState().markSceneReady();
     expect(useIntroStore.getState().phase).toBe('done');
+  });
+});
+
+describe('shouldSkipIntroForHash', () => {
+  it('plays the overture at the base URL and at the approach', () => {
+    expect(shouldSkipIntroForHash('')).toBe(false);
+    expect(shouldSkipIntroForHash('#approach')).toBe(false);
+  });
+
+  it('skips straight to any deep-linked section', () => {
+    expect(shouldSkipIntroForHash('#tissue')).toBe(true);
+    expect(shouldSkipIntroForHash('#cellular')).toBe(true);
+    expect(shouldSkipIntroForHash('#expression')).toBe(true);
+  });
+
+  it('ignores unknown fragments (they are not deep links)', () => {
+    expect(shouldSkipIntroForHash('#not-a-scale')).toBe(false);
   });
 });

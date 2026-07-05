@@ -23,9 +23,11 @@ export interface ArborGrowthParams {
   limbRadius: number;
   limbSpreadDeg: number;
   limbCurl: number;
-  /** Fine periphery: recursion depth, children per split, angular spread
-   *  (deg), per-generation length/radius decay, wander, and the probability
-   *  that an intermediate spine node sprouts a side strand. */
+  /** Fine periphery: recursion depth, children per split (FRACTIONAL — 2.4
+   *  means a stochastic mix of 2s and 3s, so the canopy never reads as a
+   *  uniform binary fractal), angular spread (deg), per-generation
+   *  length/radius decay, wander, and the probability that an intermediate
+   *  spine node sprouts a side strand. */
   fineLevels: number;
   fineSplits: number;
   fineSpreadDeg: number;
@@ -35,9 +37,27 @@ export interface ArborGrowthParams {
   sideSproutRate: number;
   /** Recursion hard stop: no strand thinner than this is grown. */
   strandRadiusFloor: number;
+  /** Decorative members: short unlabeled minor limbs radiating wide off the
+   *  hub, and one long thin trailing filament descending from it — the
+   *  silhouette reads as a radiating body, not a botanical trunk. */
+  minorLimbs: number;
+  minorScale: number;
+  tailSegments: number;
+  tailLength: number;
+  /** Central-body (hub) radius as a multiple of the trunk-tip radius —
+   *  consumed by the geometry sweep; carried here so presets own it. */
+  hubScale: number;
+  /** Smooth per-limb lateral bow (0 = straight spokes, ~1 = fluid arcs). */
+  waviness: number;
+  /** World distance between beads along the members (geometry-consumed). */
+  punctaSpacing: number;
 }
 
 export type LimbIndex = 0 | 1 | 2;
+/** Decorative members (minor limbs, the trailing filament): dim on focus like
+ *  any non-focused limb, but are never labeled or focusable. */
+export const DECOR_LIMB = 3 as const;
+export type LimbTag = -1 | LimbIndex | typeof DECOR_LIMB;
 
 export interface ArborNode {
   position: Vec3;
@@ -45,8 +65,8 @@ export interface ArborNode {
   /** Index of the parent node; -1 only for the root. Parents always precede
    *  their children in the list (the sweep builders rely on it). */
   parent: number;
-  /** Which major limb this node belongs to; -1 = shared trunk. */
-  limb: -1 | LimbIndex;
+  /** Which major limb this node belongs to; -1 = shared trunk/hub, 3 = decor. */
+  limb: LimbTag;
   /** Growth generation counter (trunk rings count up from 0). */
   level: number;
   region: 'trunk' | 'limb' | 'strand';
@@ -59,22 +79,29 @@ export interface ArborNode {
 // by side sprouts. Values iterate via the arbor dev panel and freeze here.
 export const ARBOR_GROWTH_DEFAULTS: ArborGrowthParams = {
   seed: 7,
-  trunkSegments: 5,
-  trunkLength: 7,
-  trunkRadius: 0.85,
+  trunkSegments: 3,
+  trunkLength: 3.4,
+  trunkRadius: 1.0,
   limbSegments: 9,
   limbLength: 14,
   limbRadius: 0.6,
-  limbSpreadDeg: 42,
-  limbCurl: 0.35,
+  limbSpreadDeg: 50,
+  limbCurl: 0.45,
   fineLevels: 6,
-  fineSplits: 2,
+  fineSplits: 2.4,
   fineSpreadDeg: 28,
   fineLengthTaper: 0.72,
   fineRadiusTaper: 0.68,
   fineCurl: 0.5,
   sideSproutRate: 0.35,
   strandRadiusFloor: 0.015,
+  minorLimbs: 4,
+  minorScale: 0.45,
+  tailSegments: 8,
+  tailLength: 13,
+  hubScale: 2.35,
+  waviness: 0.55,
+  punctaSpacing: 0.55,
 };
 
 /** Compact deterministic PRNG (mulberry32) — one stream per generateArbor call. */
@@ -145,7 +172,7 @@ export function generateArbor(params: ArborGrowthParams): ArborNode[] {
     position: Vec3,
     radius: number,
     parent: number,
-    limb: -1 | LimbIndex,
+    limb: LimbTag,
     level: number,
     region: ArborNode['region'],
   ): number => {
@@ -183,7 +210,7 @@ export function generateArbor(params: ArborGrowthParams): ArborNode[] {
     length: number,
     radius: number,
     level: number,
-    limb: LimbIndex,
+    limb: LimbTag,
   ): void => {
     if (radius < params.strandRadiusFloor || level > params.fineLevels) return;
     const bent = wander(dir, params.fineCurl * 0.3, rng);
@@ -202,8 +229,11 @@ export function generateArbor(params: ArborGrowthParams): ArborNode[] {
       level,
       'strand',
     );
-    for (let s = 0; s < params.fineSplits; s++) {
-      const az = (s / params.fineSplits) * Math.PI * 2 + (rng() * 2 - 1) * 0.8;
+    // Fractional splits: 2.4 → 2 children usually, 3 sometimes — the mix
+    // breaks the uniform-binary-fractal read.
+    const kids = Math.floor(params.fineSplits) + (rng() < params.fineSplits % 1 ? 1 : 0);
+    for (let s = 0; s < kids; s++) {
+      const az = (s / kids) * Math.PI * 2 + (rng() * 2 - 1) * 0.8;
       const spread = params.fineSpreadDeg * DEG * (0.7 + rng() * 0.6);
       growStrand(
         idx,
@@ -226,12 +256,31 @@ export function generateArbor(params: ArborGrowthParams): ArborNode[] {
     const spread = params.limbSpreadDeg * DEG * (0.7 + rng() * 0.7);
     const reach = spineStep * (0.85 + rng() * 0.45);
     let dir = coneSpread([0, 1, 0], spread, az);
+    // Fluid bow: each limb gets its own lateral sweep axis; the bend peaks
+    // mid-spine, so arms arc gracefully instead of spoking straight out.
+    const { t: sweepAxis } = frame(dir);
+    const sweepSign = rng() < 0.5 ? -1 : 1;
+    // Momentum meander: the bend direction random-walks SLOWLY instead of
+    // jittering per step — consecutive steps curve the same way, so spines
+    // read as flowing arcs, not rigid segments with kinks.
+    let meander: Vec3 = [0, 0, 0];
     let spineCursor = trunkTip;
     for (let i = 1; i <= params.limbSegments; i++) {
-      // Wander plus an upward pull growing toward the tips — limbs sweep out,
-      // then lift as they thin, the classic silhouette.
-      dir = wander(dir, (params.limbCurl / params.limbSegments) * 2.2, rng);
-      dir = normalize([dir[0], dir[1] + 0.045 * (i / params.limbSegments), dir[2]]);
+      meander = normalize([
+        meander[0] + (rng() * 2 - 1) * 0.45,
+        meander[1] + (rng() * 2 - 1) * 0.45,
+        meander[2] + (rng() * 2 - 1) * 0.45,
+      ]);
+      const curl = (params.limbCurl / params.limbSegments) * 2.2;
+      const bow =
+        ((params.waviness * sweepSign) / params.limbSegments) *
+        Math.sin((i / params.limbSegments) * Math.PI) *
+        1.6;
+      dir = normalize([
+        dir[0] + meander[0] * curl + sweepAxis[0] * bow,
+        dir[1] + meander[1] * curl + sweepAxis[1] * bow + 0.045 * (i / params.limbSegments),
+        dir[2] + meander[2] * curl + sweepAxis[2] * bow,
+      ]);
       const prev = nodes[spineCursor]!;
       const k = i / params.limbSegments;
       const radius = params.limbRadius + (limbTipRadius - params.limbRadius) * Math.pow(k, 1.2);
@@ -261,8 +310,9 @@ export function generateArbor(params: ArborGrowthParams): ArborNode[] {
       }
     }
     // Tip crown: a burst of initial strands continuing past the spine.
-    for (let s = 0; s < params.fineSplits + 1; s++) {
-      const crownAz = (s / (params.fineSplits + 1)) * Math.PI * 2 + rng() * 0.9;
+    const crownCount = Math.round(params.fineSplits) + 1;
+    for (let s = 0; s < crownCount; s++) {
+      const crownAz = (s / crownCount) * Math.PI * 2 + rng() * 0.9;
       growStrand(
         spineCursor,
         coneSpread(dir, params.fineSpreadDeg * DEG * (0.4 + rng() * 0.8), crownAz),
@@ -272,6 +322,81 @@ export function generateArbor(params: ArborGrowthParams): ArborNode[] {
         limb,
       );
     }
+  }
+
+  // --- Decorative minor limbs: short radiating members at wide, near-lateral
+  // angles — they fill the hub's silhouette so the body reads as radiating in
+  // all directions, without competing with the three labeled majors. ---
+  for (let m = 0; m < params.minorLimbs; m++) {
+    const az = rng() * Math.PI * 2;
+    const spread = (65 + rng() * 35) * DEG;
+    let dir = coneSpread([0, 1, 0], spread, az);
+    let cursor = trunkTip;
+    const segs = Math.max(2, Math.round(params.limbSegments * 0.45));
+    const step = (params.limbLength * params.minorScale) / segs;
+    const baseR = params.limbRadius * 0.55;
+    for (let i = 1; i <= segs; i++) {
+      dir = wander(dir, (params.limbCurl / segs) * 2.0, rng);
+      const prev = nodes[cursor]!;
+      const k = i / segs;
+      const radius = Math.min(baseR + (limbTipRadius * 0.6 - baseR) * k, prev.radius);
+      cursor = push(
+        [
+          prev.position[0] + dir[0] * step,
+          prev.position[1] + dir[1] * step,
+          prev.position[2] + dir[2] * step,
+        ],
+        radius,
+        cursor,
+        DECOR_LIMB,
+        i,
+        'limb',
+      );
+    }
+    growStrand(
+      cursor,
+      coneSpread(dir, params.fineSpreadDeg * DEG, rng() * Math.PI * 2),
+      spineStep * 0.8,
+      nodes[cursor]!.radius * params.fineRadiusTaper,
+      3,
+      DECOR_LIMB,
+    );
+  }
+
+  // --- The trailing filament: one long thin process descending from the hub
+  // — the silhouette's counterweight beneath the canopy. ---
+  if (params.tailSegments > 0) {
+    let dir = normalize([0.35 + rng() * 0.2, -1, (rng() - 0.5) * 0.5]);
+    let cursor = trunkTip;
+    const step = params.tailLength / params.tailSegments;
+    for (let i = 1; i <= params.tailSegments; i++) {
+      dir = wander(dir, 0.1, rng);
+      dir = normalize([dir[0], dir[1] - 0.04, dir[2]]); // keeps sinking
+      const prev = nodes[cursor]!;
+      const k = i / params.tailSegments;
+      const radius = Math.min(0.16 * (1 - 0.8 * k) + 0.02, prev.radius);
+      cursor = push(
+        [
+          prev.position[0] + dir[0] * step,
+          prev.position[1] + dir[1] * step,
+          prev.position[2] + dir[2] * step,
+        ],
+        radius,
+        cursor,
+        DECOR_LIMB,
+        i,
+        'limb',
+      );
+    }
+    // A few wisps where the filament peters out.
+    growStrand(
+      cursor,
+      wander([0.2, -1, 0], 0.4, rng),
+      step * 0.7,
+      nodes[cursor]!.radius * 0.8,
+      4,
+      DECOR_LIMB,
+    );
   }
 
   // --- Second pass: t = cumulative path length from root, normalized. ---

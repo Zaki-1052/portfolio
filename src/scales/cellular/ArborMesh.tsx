@@ -11,20 +11,33 @@ import { invalidate, useFrame } from '@react-three/fiber';
 import { AdditiveBlending, DoubleSide } from 'three';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { getSceneFog } from '@/engine/scene-fog';
+import { useDepthStore } from '@/stores/depth';
 import { useBranchFocusStore } from '@/stores/branch-focus';
 import { limbIndexOf } from '@/content/branch-order';
 import { generateArbor } from '@/utils/arbor-generator';
+import { smoothstep } from '@/utils/math';
 import {
   ARBOR_DEFAULTS,
   ARBOR_ORIGIN,
+  PUNCTA_PALETTE,
   applyArborGlowLook,
   applyArborTrunkLook,
   type ArborParams,
 } from './arbor-params';
 import { getArborParamsOverride, subscribeArborParams } from './arbor-live-params';
-import { buildStrandGeometry, buildTipGeometry, buildTrunkGeometry } from './arbor-geometry';
+import {
+  buildPunctaGeometry,
+  buildStrandGeometry,
+  buildTipGeometry,
+  buildTrunkGeometry,
+} from './arbor-geometry';
 import { ArborTrunkMaterial } from './arbor-trunk-material';
-import { ArborStrandMaterial, ArborTipMaterial } from './arbor-glow-material';
+import { ArborPunctaMaterial, ArborStrandMaterial, ArborTipMaterial } from './arbor-glow-material';
+
+// The solid body materializes AFTER its lights: the glow layers punch
+// through the mist from the band's start, the mass resolves behind them.
+const BODY_REVEAL_START = 0.315;
+const BODY_REVEAL_END = 0.35;
 
 interface ArborMeshProps {
   /** World placement of the tree group; the preview overrides it. */
@@ -49,9 +62,10 @@ export function ArborMesh({ origin = ARBOR_ORIGIN }: ArborMeshProps) {
   const geometries = useMemo(() => {
     const nodes = generateArbor(params);
     return {
-      trunk: buildTrunkGeometry(nodes),
+      trunk: buildTrunkGeometry(nodes, params.hubScale),
       strands: buildStrandGeometry(nodes),
       tips: buildTipGeometry(nodes),
+      puncta: buildPunctaGeometry(nodes, params.punctaSpacing, PUNCTA_PALETTE),
     };
   }, [params]);
   useEffect(
@@ -59,6 +73,7 @@ export function ArborMesh({ origin = ARBOR_ORIGIN }: ArborMeshProps) {
       geometries.trunk.dispose();
       geometries.strands.dispose();
       geometries.tips.dispose();
+      geometries.puncta.dispose();
     },
     [geometries],
   );
@@ -79,13 +94,21 @@ export function ArborMesh({ origin = ARBOR_ORIGIN }: ArborMeshProps) {
     m.blending = AdditiveBlending;
     return m;
   }, []);
+  const punctaMaterial = useMemo(() => {
+    const m = new ArborPunctaMaterial();
+    m.transparent = true;
+    m.depthWrite = false;
+    m.blending = AdditiveBlending;
+    return m;
+  }, []);
   useEffect(
     () => () => {
       trunkMaterial.dispose();
       strandMaterial.dispose();
       tipMaterial.dispose();
+      punctaMaterial.dispose();
     },
-    [trunkMaterial, strandMaterial, tipMaterial],
+    [trunkMaterial, strandMaterial, tipMaterial, punctaMaterial],
   );
 
   // Look params are uniform-only.
@@ -95,15 +118,34 @@ export function ArborMesh({ origin = ARBOR_ORIGIN }: ArborMeshProps) {
     applyArborGlowLook(tipMaterial, params);
     strandMaterial.uWidthScale = params.strandWidth;
     tipMaterial.uTipSize = params.tipSize;
+    punctaMaterial.uGlowOpacity = params.strandOpacity;
+    punctaMaterial.uPunctaSize = params.punctaSize;
+    punctaMaterial.uSway = params.swayAmp;
+    punctaMaterial.uPulseSpeed = params.pulseSpeed;
     invalidate();
-  }, [params, trunkMaterial, strandMaterial, tipMaterial]);
+  }, [params, trunkMaterial, strandMaterial, tipMaterial, punctaMaterial]);
 
   useFrame((state) => {
+    const depth = useDepthStore.getState().depth;
     const time = reduced ? 0 : state.clock.elapsedTime;
     strandMaterial.uTime = time;
     tipMaterial.uTime = time;
+    punctaMaterial.uTime = time;
+    // Signal pulses freeze fully under reduced motion (a static bright band
+    // would read as a defect, not a paused signal).
+    const pulseGain = reduced ? 0 : params.pulseGain;
+    strandMaterial.uPulseGain = pulseGain;
+    tipMaterial.uPulseGain = pulseGain;
+    punctaMaterial.uPulseGain = pulseGain;
     // Matches three's own point size attenuation scale (½ buffer height).
-    tipMaterial.uPixelScale = state.gl.domElement.height * 0.5;
+    const pixelScale = state.gl.domElement.height * 0.5;
+    tipMaterial.uPixelScale = pixelScale;
+    punctaMaterial.uPixelScale = pixelScale;
+
+    // Lights-first reveal: the solid body materializes after the glow
+    // layers are already glimmering through the mist. (The preview parks
+    // depth mid-band, so it always renders fully revealed.)
+    trunkMaterial.uOpacity = smoothstep(BODY_REVEAL_START, BODY_REVEAL_END, depth);
 
     // Match the hand-rolled fog to the live scene fog — SceneAtmosphere's
     // useFrame runs first (mounted earlier in the Canvas).
@@ -112,21 +154,18 @@ export function ArborMesh({ origin = ARBOR_ORIGIN }: ArborMeshProps) {
     trunkMaterial.uFogDensity = fog.density;
     strandMaterial.uFogDensity = fog.density;
     tipMaterial.uFogDensity = fog.density;
+    punctaMaterial.uFogDensity = fog.density;
 
     // Focus/hover register: the focused limb holds full presence while the
     // others recede; hover lifts its limb as the click affordance.
     const focus = useBranchFocusStore.getState();
     const focusLimb = focus.focusedBranch !== null ? limbIndexOf(focus.focusedBranch) : -1;
     const hoverLimb = focus.hoveredBranch !== null ? limbIndexOf(focus.hoveredBranch) : -1;
-    trunkMaterial.uFocusBranch = focusLimb;
-    trunkMaterial.uFocusBlend = focus.focusBlend;
-    trunkMaterial.uHoverBranch = hoverLimb;
-    strandMaterial.uFocusBranch = focusLimb;
-    strandMaterial.uFocusBlend = focus.focusBlend;
-    strandMaterial.uHoverBranch = hoverLimb;
-    tipMaterial.uFocusBranch = focusLimb;
-    tipMaterial.uFocusBlend = focus.focusBlend;
-    tipMaterial.uHoverBranch = hoverLimb;
+    for (const m of [trunkMaterial, strandMaterial, tipMaterial, punctaMaterial]) {
+      m.uFocusBranch = focusLimb;
+      m.uFocusBlend = focus.focusBlend;
+      m.uHoverBranch = hoverLimb;
+    }
   });
 
   return (
@@ -136,6 +175,7 @@ export function ArborMesh({ origin = ARBOR_ORIGIN }: ArborMeshProps) {
           positions bound them within a half-width — default culling is safe. */}
       <mesh geometry={geometries.strands} material={strandMaterial} />
       <points geometry={geometries.tips} material={tipMaterial} />
+      <points geometry={geometries.puncta} material={punctaMaterial} />
     </group>
   );
 }

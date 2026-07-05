@@ -13,6 +13,8 @@ import strandVert from './shaders/arbor-strand.vert.glsl?raw';
 import strandFrag from './shaders/arbor-strand.frag.glsl?raw';
 import tipVert from './shaders/arbor-tip.vert.glsl?raw';
 import tipFrag from './shaders/arbor-tip.frag.glsl?raw';
+import punctaVert from './shaders/arbor-puncta.vert.glsl?raw';
+import punctaFrag from './shaders/arbor-puncta.frag.glsl?raw';
 import { ARBOR_DEFAULTS as D } from './arbor-params';
 
 export const ArborStrandMaterial = shaderMaterial(
@@ -23,6 +25,8 @@ export const ArborStrandMaterial = shaderMaterial(
     uGlowOpacity: D.strandOpacity,
     uWidthScale: D.strandWidth,
     uSway: D.swayAmp,
+    uPulseSpeed: D.pulseSpeed,
+    uPulseGain: D.pulseGain,
     uFogDensity: 0.014,
     uFocusBranch: -1,
     uFocusBlend: 0,
@@ -40,6 +44,8 @@ export const ArborTipMaterial = shaderMaterial(
     uGlowOpacity: D.strandOpacity,
     uTipSize: D.tipSize,
     uSway: D.swayAmp,
+    uPulseSpeed: D.pulseSpeed,
+    uPulseGain: D.pulseGain,
     uPixelScale: 500, // drawingBufferHeight/2, written per frame
     uFogDensity: 0.014,
     uFocusBranch: -1,
@@ -48,4 +54,25 @@ export const ArborTipMaterial = shaderMaterial(
   },
   tipVert,
   tipFrag,
+);
+
+// The bead layer: per-vertex palette color (aColor → vColor), so one draw
+// call carries the whole multicolor string-of-lights.
+export const ArborPunctaMaterial = shaderMaterial(
+  {
+    uTime: 0,
+    uOpacity: 1,
+    uGlowOpacity: D.strandOpacity,
+    uPunctaSize: D.punctaSize,
+    uSway: D.swayAmp,
+    uPulseSpeed: D.pulseSpeed,
+    uPulseGain: D.pulseGain,
+    uPixelScale: 500, // drawingBufferHeight/2, written per frame
+    uFogDensity: 0.014,
+    uFocusBranch: -1,
+    uFocusBlend: 0,
+    uHoverBranch: -1,
+  },
+  punctaVert,
+  punctaFrag,
 );

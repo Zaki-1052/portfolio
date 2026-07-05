@@ -73,6 +73,7 @@ export const SurfaceShellMaterial = shaderMaterial(
     uRDBlend: 0,
     uDissolve: 0,
     uDissolveRadius: 12,
+    uExitDissolve: 0, // interior exit: walls disintegrate into the next band's mist
     uDissolveEdgeColor: new Color('#f2a65a'), // warm burning edge
     uApertureDir: new Vector3(0, 0, 1), // which cap the dissolve opens; set from PLUNGE_APERTURE_DIR
   },

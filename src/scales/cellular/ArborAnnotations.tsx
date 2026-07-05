@@ -70,6 +70,7 @@ export function ArborAnnotations() {
       container.style.visibility = envelope <= 0.001 ? 'hidden' : 'visible';
       if (envelope <= 0.001) return;
 
+      const focusState = useBranchFocusStore.getState();
       for (const branch of BRANCH_ORDER) {
         const el = groupRefs.current.get(branch);
         if (!el) continue;
@@ -80,10 +81,28 @@ export function ArborAnnotations() {
           continue;
         }
         el.style.display = '';
-        el.style.transform = `translate3d(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px, 0)`;
+
+        // Clamp the annotation into the viewport so edge labels never clip;
+        // a clamped annotation dims its connector (the hairline would point
+        // at nothing honest).
+        const cx = Math.min(Math.max(p.x, 150), w - 150);
+        const cy = Math.min(Math.max(p.y, 90), h - 170);
+        el.style.transform = `translate3d(${cx.toFixed(1)}px, ${cy.toFixed(1)}px, 0)`;
+        const clamped = Math.abs(cx - p.x) + Math.abs(cy - p.y) > 2;
+        if (clamped) el.dataset.clamped = 'true';
+        else delete el.dataset.clamped;
+
         // Labels push outward from the screen center so they never sit on
-        // top of their own limb.
-        el.dataset.side = p.x < w * 0.5 ? 'left' : 'right';
+        // top of their own limb. The side is FROZEN while this branch is
+        // focused or hovered (the reader is aiming at the entries — the
+        // panel must not jump across the anchor mid-approach), and flips
+        // only through a hysteresis band otherwise.
+        const engaged = focusState.focusedBranch === branch || focusState.hoveredBranch === branch;
+        if (!engaged) {
+          const margin = w * 0.06;
+          if (cx < w * 0.5 - margin) el.dataset.side = 'left';
+          else if (cx > w * 0.5 + margin) el.dataset.side = 'right';
+        }
       }
     };
 
@@ -119,6 +138,7 @@ export function ArborAnnotations() {
             className="arbor-annotation"
             data-side="right"
           >
+            <span className="arbor-annotation__dot" aria-hidden="true" />
             <span className="arbor-annotation__line" aria-hidden="true" />
             <div className="arbor-annotation__body">
               <button

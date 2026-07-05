@@ -8,11 +8,12 @@ import { useEffect } from 'react';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { acquireAmbientRendering } from '@/engine/render-loop';
 import { ArborMesh } from './ArborMesh';
+import { ArborDrift, ArborNeighbors } from './arbor-atmosphere';
 
 export function CellularScene() {
   const reduced = useReducedMotion();
 
-  // Idle breathing (canopy sway, tip pulse) only under full motion —
+  // Idle breathing (canopy sway, signal pulses) only under full motion —
   // refcounted, since the shell scene overlaps this one across the handoff.
   useEffect(() => {
     if (reduced) return undefined;
@@ -22,6 +23,11 @@ export function CellularScene() {
   return (
     <group>
       <ArborMesh />
+      {/* Distant network presences: static geometry, kept under reduced
+          motion (their uTime freezes); the drifting motes are full-motion
+          only, per the decorative-particles convention. */}
+      <ArborNeighbors />
+      {!reduced && <ArborDrift />}
     </group>
   );
 }

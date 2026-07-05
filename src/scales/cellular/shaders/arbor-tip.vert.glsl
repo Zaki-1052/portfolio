@@ -18,10 +18,12 @@ varying float vT;
 varying float vLimb;
 varying float vViewDist;
 varying float vPulse;
+varying float vSeed;
 
 void main() {
   vT = aT;
   vLimb = aLimb;
+  vSeed = aSeed;
 
   float ph = aSeed * 6.2831;
   vec3 sway = vec3(

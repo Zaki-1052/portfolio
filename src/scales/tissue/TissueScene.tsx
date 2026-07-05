@@ -86,6 +86,9 @@ export function SurfaceScene() {
     material.uOpacity = lerp(dimmed, 1, breakthroughProgress(depth)) * interiorExitFade(depth);
 
     material.uDissolve = dissolveAmountFor(depth, reduced);
+    // Interior exit: the walls disintegrate (noise-keyed discard) as the
+    // next band's mist takes over, so they stop depth-occluding its scene.
+    material.uExitDissolve = 1 - interiorExitFade(depth);
     material.uTime = reduced ? 0 : state.clock.elapsedTime;
 
     // Look curve: dreamy golden register at establish → crisp by the hover

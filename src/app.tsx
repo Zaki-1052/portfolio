@@ -5,7 +5,7 @@ import { initScrollEngine, setEngineReducedMotion, getLenis } from '@/engine/scr
 import { startThemeBridge } from '@/engine/theme-bridge';
 import { startUrlSync } from '@/engine/url-scale-sync';
 import { initMotionStore, useMotionStore } from '@/stores/motion';
-import { useIntroStore } from '@/stores/intro';
+import { shouldSkipIntroForHash, useIntroStore } from '@/stores/intro';
 import { detectGpuTierStandalone } from '@/engine/gpu-detect';
 import { startRenderInvalidation } from '@/engine/render-loop';
 import { WebGLErrorBoundary } from '@/components/WebGLErrorBoundary';
@@ -72,6 +72,12 @@ export function App() {
     // first scene unmounted, so the bake-driven sceneReady signal could never
     // fire and the intro would wait forever.
     history.scrollRestoration = 'manual';
+    // Deep links (#cellular etc.) skip the overture and land directly —
+    // finish() before the lock so it never engages; LoadingSequence's
+    // landing effect then honors the hash immediately.
+    if (shouldSkipIntroForHash(window.location.hash)) {
+      useIntroStore.getState().finish();
+    }
     if (useIntroStore.getState().phase !== 'done') {
       const lenis = getLenis();
       lenis?.scrollTo(0, { immediate: true, force: true });
