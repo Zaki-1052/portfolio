@@ -22,6 +22,9 @@ import { visibleTextAt, type TypingSnapshot } from './intro-typing';
 const INTRO_LINES = getIntro().lines;
 const PUSH_SECONDS = 2.5;
 const OVERLAY_FADE_SECONDS = 0.8;
+// The finished last line holds for a beat (cursor still blinking) before the
+// flight begins — the sequence lands, breathes, then descends.
+const TYPED_HOLD_MS = 600;
 
 export function LoadingSequence() {
   const phase = useIntroStore((s) => s.phase);
@@ -40,17 +43,21 @@ export function LoadingSequence() {
     }
     const start = performance.now();
     let raf = 0;
+    let hold = 0;
     const tick = (): void => {
       const s = visibleTextAt(INTRO_LINES, performance.now() - start);
       setSnap(s);
       if (s.done) {
-        useIntroStore.getState().markTypingDone();
+        hold = window.setTimeout(() => useIntroStore.getState().markTypingDone(), TYPED_HOLD_MS);
         return;
       }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.clearTimeout(hold);
+    };
   }, [phase, reduced]);
 
   // Push flight: drive introProgress through the INTRO_KEYFRAMES track while
@@ -108,7 +115,9 @@ export function LoadingSequence() {
         {snap.lines.map((text, i) => (
           <p key={i} className="intro-line">
             {text}
-            {i === snap.activeLine && !snap.done && <span className="intro-cursor" />}
+            {/* Cursor keeps blinking through the held beat after the last
+                line completes; it vanishes when the flight takes over. */}
+            {i === snap.activeLine && phase === 'typing' && <span className="intro-cursor" />}
           </p>
         ))}
       </div>

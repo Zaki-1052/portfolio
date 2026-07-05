@@ -49,6 +49,9 @@ export function AtmosphereDevTools() {
         emberOpacity: { value: EMBER_OPACITY, min: 0, max: 1, step: 0.02 },
         // 12 = the material default (tissue-shell-material.ts) — freeze there.
         dissolveRadius: { value: 12, min: 4, max: 24, step: 0.5 },
+        // DOM-side: the hero content scrim (globals.css custom properties).
+        scrimAlpha: { value: 0.22, min: 0, max: 0.8, step: 0.01 },
+        scrimBlur: { value: 5, min: 0, max: 24, step: 0.5 },
         // postOn arms ABSOLUTE overrides of the depth curves — park on a beat,
         // tune, note the numbers, then freeze them into post-fx-curves.ts.
         postOn: false,
@@ -64,6 +67,11 @@ export function AtmosphereDevTools() {
 
   useEffect(() => {
     setAtmosphereOverride(values as unknown as AtmosphereParams);
+    // DOM-side dials: the hero scrim reads these custom properties (CSS
+    // fallbacks hold the shipping values when the panel isn't mounted).
+    const root = document.documentElement.style;
+    root.setProperty('--scrim-alpha', String(values.scrimAlpha));
+    root.setProperty('--scrim-blur', `${values.scrimBlur}px`);
     invalidate();
   }, [values]);
   useEffect(() => () => setAtmosphereOverride(null), []);

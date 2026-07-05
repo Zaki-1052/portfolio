@@ -14,6 +14,46 @@ interface ScaleSectionProps {
   className?: string;
   id?: string;
   style?: CSSProperties;
+  /** Suppress the section-level badge so a child can place it itself (the
+   *  tissue hero pulls it inside its legibility scrim). */
+  hideBadge?: boolean;
+}
+
+/** The scale badge (accent dot + "scale · magnification"). Exported so a
+ *  section child can re-home it — e.g. inside the hero's content scrim, where
+ *  it stays readable over the bright 3D surface. Text color is overridable
+ *  via --badge-color (the scrim lifts it toward white). */
+export function ScaleBadge({ scale, magnification }: { scale: string; magnification?: string }) {
+  return (
+    <div
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 'var(--space-2)',
+        fontFamily: 'var(--font-sans)',
+        fontSize: 'var(--text-2xs)',
+        letterSpacing: 'var(--tracking-caps)',
+        textTransform: 'uppercase',
+        color: 'var(--badge-color, var(--text-muted))',
+        marginBottom: 'var(--space-4)',
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          width: 7,
+          height: 7,
+          borderRadius: '50%',
+          background: 'var(--accent)',
+          boxShadow: 'var(--glow-accent)',
+        }}
+      />
+      <span>
+        {scale}
+        {magnification ? ` · ${magnification}` : ''}
+      </span>
+    </div>
+  );
 }
 
 export function ScaleSection({
@@ -28,6 +68,7 @@ export function ScaleSection({
   className,
   id,
   style,
+  hideBadge = false,
 }: ScaleSectionProps) {
   return (
     <section
@@ -56,36 +97,7 @@ export function ScaleSection({
           textAlign: align,
         }}
       >
-        {(scale || magnification) && (
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 'var(--space-2)',
-              fontFamily: 'var(--font-sans)',
-              fontSize: 'var(--text-2xs)',
-              letterSpacing: 'var(--tracking-caps)',
-              textTransform: 'uppercase',
-              color: 'var(--text-muted)',
-              marginBottom: 'var(--space-4)',
-            }}
-          >
-            <span
-              aria-hidden="true"
-              style={{
-                width: 7,
-                height: 7,
-                borderRadius: '50%',
-                background: 'var(--accent)',
-                boxShadow: 'var(--glow-accent)',
-              }}
-            />
-            <span>
-              {scale}
-              {magnification ? ` · ${magnification}` : ''}
-            </span>
-          </div>
-        )}
+        {!hideBadge && <ScaleBadge scale={scale} magnification={magnification} />}
 
         {kicker && (
           <p

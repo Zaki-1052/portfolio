@@ -1489,3 +1489,55 @@ hr {
 .runway-post-hero {
   height: 90vh;
 }
+
+/* Fixed scroll cue (approach band). Two multiplicative fade layers: the
+   wrapper appears a beat after the overture lands (transition + delay); the
+   inner div's opacity is depth-driven from JS and dissolves the cue as
+   scrolling begins. pointer-events: none — purely an affordance. */
+.descend-cue {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-7);
+  transform: translateX(-50%);
+  z-index: var(--z-overlay);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--dur-slow) var(--ease-in-out) 800ms;
+}
+.descend-cue[data-visible] {
+  opacity: 1;
+}
+.descend-cue .scroll-hint {
+  margin-top: 0;
+  /* Gold-tinted faint (user-picked): the cue sits in the warm register of the
+     void it floats over, not the site-wide cool gray. */
+  color: rgba(229, 192, 123, 0.55);
+}
+
+/* The hero's legibility scrim — THE one sanctioned glass element (DESIGN §2
+   allows one or two over the 3D scene, nowhere else). Backdrop blur keeps the
+   form present behind the text — its shape and warmth bleed through — while
+   guaranteeing body-text contrast even over the brightest crests. The tint is
+   deliberately light so the scene never reads as hidden; browsers without
+   backdrop-filter get a heavier tint instead. */
+.content-scrim {
+  padding: var(--space-6);
+  border-radius: var(--radius-organic);
+  /* Tint alpha + blur are live-tunable from the dev atmosphere panel via
+     these custom properties; the fallbacks ARE the shipping values — frozen
+     to the user's blessed numbers (2026-07-04: 0.22 / 5px). */
+  background: rgba(26, 22, 18, var(--scrim-alpha, 0.22));
+  -webkit-backdrop-filter: blur(var(--scrim-blur, 5px));
+  backdrop-filter: blur(var(--scrim-blur, 5px));
+  /* Text on the glass runs brighter than the site-wide body gray — the light
+     scrim still lets warm crests glow through behind it. Trying the full
+     --text-strong step (#d7dae0); the half-step back is #c2c8d2 if this reads
+     too hot. The badge lifts all the way toward white. */
+  color: var(--text-strong);
+  --badge-color: var(--text-strong);
+}
+@supports not (backdrop-filter: blur(8px)) {
+  .content-scrim {
+    background: rgba(26, 22, 18, 0.8);
+  }
+}

@@ -1,6 +1,6 @@
 // src/scales/tissue/TissueContent.tsx
 import { useMemo } from 'react';
-import { ScaleSection } from '@/components/ScaleSection';
+import { ScaleBadge, ScaleSection } from '@/components/ScaleSection';
 import { MarkdownRenderer } from '@/content/markdown';
 import { getSection, getStatus } from '@/content/loader';
 import { useGlitchCycle } from '@/hooks/useGlitchCycle';
@@ -22,6 +22,7 @@ export function TissueContent() {
     <ScaleSection
       scale="tissue"
       magnification="1×"
+      hideBadge
       full
       maxWidth="min(1400px, 100%)"
       style={{ display: 'flex', alignItems: 'center' }}
@@ -35,6 +36,9 @@ export function TissueContent() {
         }}
       >
         <div className="content-scrim" style={{ maxWidth: 760, flex: 1 }}>
+          {/* Badge re-homed inside the scrim (hideBadge above) so it stays
+              readable over the bright surface like the rest of the hero. */}
+          <ScaleBadge scale="tissue" magnification="1×" />
           <p
             style={{
               margin: '0 0 var(--space-3)',
