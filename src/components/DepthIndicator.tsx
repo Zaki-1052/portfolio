@@ -1,6 +1,7 @@
 // src/components/DepthIndicator.tsx
 import { useEffect, useRef, useCallback } from 'react';
 import { useDepthStore } from '@/stores/depth';
+import { useIntroStore } from '@/stores/intro';
 import { useMotionStore } from '@/stores/motion';
 import { useCurrentScale } from '@/hooks/useCurrentScale';
 import {
@@ -29,6 +30,9 @@ const SCALE_INFO: ScaleInfo[] = [
 
 /** Smooth-scroll to a scale via Lenis (instant under reduced motion). */
 function jumpToScale(id: ScaleName): void {
+  // The overture owns the page until it lands — no scale jumps mid-intro
+  // (keyboard would otherwise bypass the scroll lock).
+  if (useIntroStore.getState().phase !== 'done') return;
   const lenis = getLenis();
   const immediate = useMotionStore.getState().reduced;
   if (lenis) {

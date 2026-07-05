@@ -16,6 +16,7 @@ import linksData from '../../content/links.json';
 import statusData from '../../content/status.json';
 import toolkitData from '../../content/toolkit.json';
 import formData from '../../content/form.json';
+import introData from '../../content/intro.json';
 
 const markdownFiles = import.meta.glob('/content/sections/*.md', {
   eager: true,
@@ -103,4 +104,12 @@ export function getToolkit(): ToolkitEntry[] {
 
 export function getFormConfig(): FormConfig {
   return formData as FormConfig;
+}
+
+export interface IntroContent {
+  lines: string[];
+}
+
+export function getIntro(): IntroContent {
+  return introData as IntroContent;
 }

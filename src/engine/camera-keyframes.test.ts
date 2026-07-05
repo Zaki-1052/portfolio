@@ -2,6 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   CAMERA_KEYFRAMES,
+  INTRO_KEYFRAMES,
   REDUCED_ANCHOR_KEYFRAMES,
   lookAtQuaternion,
   sampleCamera,
@@ -35,6 +36,36 @@ describe('CAMERA_KEYFRAMES table', () => {
   it('spans the full [0,1] depth range', () => {
     expect(CAMERA_KEYFRAMES[0]!.depth).toBe(0);
     expect(CAMERA_KEYFRAMES[CAMERA_KEYFRAMES.length - 1]!.depth).toBe(1);
+  });
+});
+
+describe('INTRO_KEYFRAMES (overture push-in track)', () => {
+  it('ends exactly on the depth-0 descent pose (pop-free handoff)', () => {
+    const end = INTRO_KEYFRAMES[INTRO_KEYFRAMES.length - 1]!;
+    const first = CAMERA_KEYFRAMES[0]!;
+    expect(end.position).toEqual(first.position);
+    expect(end.target).toEqual(first.target);
+    expect(end.roll).toBe(first.roll);
+    expect(end.fov).toBe(first.fov);
+  });
+
+  it('samples identically at handoff: intro(1) === descent(0)', () => {
+    const intro = sampleCamera(1, INTRO_KEYFRAMES);
+    const descent = sampleCamera(0, CAMERA_KEYFRAMES);
+    for (let i = 0; i < 3; i++) {
+      expect(intro.position[i]).toBeCloseTo(descent.position[i]!, 10);
+    }
+    for (let i = 0; i < 4; i++) {
+      expect(intro.quaternion[i]).toBeCloseTo(descent.quaternion[i]!, 10);
+    }
+    expect(intro.fov).toBeCloseTo(descent.fov, 10);
+  });
+
+  it('spans progress [0,1] with a strictly farther start knot', () => {
+    expect(INTRO_KEYFRAMES[0]!.depth).toBe(0);
+    expect(INTRO_KEYFRAMES[INTRO_KEYFRAMES.length - 1]!.depth).toBe(1);
+    const dist = (v: Vec3): number => Math.hypot(v[0], v[1], v[2]);
+    expect(dist(INTRO_KEYFRAMES[0]!.position)).toBeGreaterThan(dist(CAMERA_KEYFRAMES[0]!.position));
   });
 });
 

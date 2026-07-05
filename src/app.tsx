@@ -3,8 +3,9 @@ import { Suspense, lazy, useEffect, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { initScrollEngine, setEngineReducedMotion, getLenis } from '@/engine/scroll-engine';
 import { startThemeBridge } from '@/engine/theme-bridge';
-import { jumpToInitialHash, startUrlSync } from '@/engine/url-scale-sync';
+import { startUrlSync } from '@/engine/url-scale-sync';
 import { initMotionStore, useMotionStore } from '@/stores/motion';
+import { useIntroStore } from '@/stores/intro';
 import { detectGpuTierStandalone } from '@/engine/gpu-detect';
 import { startRenderInvalidation } from '@/engine/render-loop';
 import { WebGLErrorBoundary } from '@/components/WebGLErrorBoundary';
@@ -20,6 +21,7 @@ import { ProteinContent } from '@/scales/protein/ProteinContent';
 import { CodeContent } from '@/scales/code/CodeContent';
 import { ExpressionContent } from '@/scales/expression/ExpressionContent';
 import { DepthIndicator } from '@/components/DepthIndicator';
+import { LoadingSequence } from '@/components/LoadingSequence';
 import { MotionToggle } from '@/components/MotionToggle';
 
 const theatreEnabled = import.meta.env.DEV && import.meta.env.VITE_THEATRE_ENABLED === 'true';
@@ -60,8 +62,18 @@ export function App() {
   useEffect(() => {
     initMotionStore();
     initScrollEngine();
-    const lenis = getLenis();
-    if (lenis) jumpToInitialHash(lenis);
+    // The overture owns the opening and ALWAYS plays from the very top: undo
+    // any browser scroll restoration or native #hash anchor jump (the hash is
+    // honored at the landing instead), then lock scroll until it lands (both
+    // released by LoadingSequence). Booting mid-page would also leave the
+    // first scene unmounted, so the bake-driven sceneReady signal could never
+    // fire and the intro would wait forever.
+    history.scrollRestoration = 'manual';
+    if (useIntroStore.getState().phase !== 'done') {
+      const lenis = getLenis();
+      lenis?.scrollTo(0, { immediate: true, force: true });
+      lenis?.stop();
+    }
     const stopUrlSync = startUrlSync();
     const stopThemeBridge = startThemeBridge(() => useMotionStore.getState().reduced);
     const unsubMotion = useMotionStore.subscribe(
@@ -83,7 +95,12 @@ export function App() {
   // invalidation loop only while the Canvas is live.
   useEffect(() => {
     document.documentElement.dataset.webgl = webglActive ? 'active' : 'fallback';
-    if (!webglActive) return;
+    if (!webglActive) {
+      // No canvas → no coil bake and no camera to fly: the overture types,
+      // then cuts straight to the page.
+      useIntroStore.getState().disablePush();
+      return;
+    }
     return startRenderInvalidation();
   }, [webglActive]);
 
@@ -146,6 +163,7 @@ export function App() {
         <CodeContent />
         <ExpressionContent />
       </main>
+      <LoadingSequence />
       <DepthIndicator />
       <MotionToggle />
       {/* leva panel lives in the HTML layer (renders DOM), not the Canvas. */}

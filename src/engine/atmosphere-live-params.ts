@@ -26,6 +26,9 @@ export interface AtmosphereParams {
   haloIntensity: number;
   moteOpacity: number;
   cloudOpacity: number;
+  // Light shafts (exterior rakes + interior aperture beam) and cavern embers.
+  shaftIntensity: number;
+  emberOpacity: number;
   // Absolute post-processing overrides (gated — when off, the depth curves run).
   postOn: boolean;
   bloomIntensity: number;

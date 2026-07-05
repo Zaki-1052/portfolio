@@ -18,6 +18,8 @@ import {
   FOG_DENSITY_VEIL,
 } from '@/engine/fog-density';
 import { CLOUD_OPACITY } from '@/scales/tissue/atmosphere-clouds';
+import { SHAFT_INTENSITY } from '@/scales/tissue/atmosphere-shafts';
+import { EMBER_OPACITY } from '@/scales/tissue/atmosphere-motes';
 import { LOOK_CRISP, LOOK_ESTABLISH } from '@/engine/look-curve';
 import { HALO_INTENSITY } from '@/scales/tissue/atmosphere-halo';
 import { MOTE_OPACITY } from '@/scales/tissue/atmosphere-motes';
@@ -43,6 +45,8 @@ export function AtmosphereDevTools() {
         haloIntensity: { value: HALO_INTENSITY, min: 0, max: 2, step: 0.02 },
         moteOpacity: { value: MOTE_OPACITY, min: 0, max: 1, step: 0.02 },
         cloudOpacity: { value: CLOUD_OPACITY, min: 0, max: 0.6, step: 0.01 },
+        shaftIntensity: { value: SHAFT_INTENSITY, min: 0, max: 2, step: 0.02 },
+        emberOpacity: { value: EMBER_OPACITY, min: 0, max: 1, step: 0.02 },
         // postOn arms ABSOLUTE overrides of the depth curves — park on a beat,
         // tune, note the numbers, then freeze them into post-fx-curves.ts.
         postOn: false,

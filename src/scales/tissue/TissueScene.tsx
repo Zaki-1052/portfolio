@@ -8,6 +8,7 @@ import { useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { DoubleSide } from 'three';
 import { useDepthStore } from '@/stores/depth';
+import { useIntroStore } from '@/stores/intro';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { scaleProgressFor } from '@/engine/scale-manager';
 import { setAmbientRendering } from '@/engine/render-loop';
@@ -22,8 +23,9 @@ import { getShellParamsOverride } from './shell-live-params';
 import { PLUNGE_APERTURE_DIR, breakthroughProgress, dissolveAmountFor } from './breakthrough';
 import { BreakthroughParticles } from './breakthrough-particles';
 import { AtmosphereHalo } from './atmosphere-halo';
-import { AtmosphereMotes } from './atmosphere-motes';
+import { AtmosphereEmbers, AtmosphereMotes } from './atmosphere-motes';
 import { AtmosphereClouds } from './atmosphere-clouds';
+import { AtmosphereShafts } from './atmosphere-shafts';
 import { StalkMesh } from './stalk-mesh';
 
 export function SurfaceScene() {
@@ -49,11 +51,14 @@ export function SurfaceScene() {
   }, [reduced]);
 
   // Wire the baked coil texture in once it exists (until then the shell
-  // renders smooth on the mid-gray placeholder).
+  // renders smooth on the mid-gray placeholder). The bake landing is also the
+  // overture's honest scene-ready signal — the push-in never reveals a
+  // half-sculpted form.
   useEffect(() => {
     if (coilTexture) {
       material.uCoilTex = coilTexture;
       material.uRDBlend = 0.5;
+      useIntroStore.getState().markSceneReady();
     }
   }, [material, coilTexture]);
 
@@ -99,10 +104,13 @@ export function SurfaceScene() {
         <StalkMesh shellMaterial={material} />
       </mesh>
       {/* The void-fillers: glow backdrop + haze patches (always — static
-          atmosphere, frozen under reduced) and drifting dust (full motion). */}
+          atmosphere, frozen under reduced); drifting dust, light shafts,
+          interior embers, and the burst (full motion only). */}
       <AtmosphereHalo />
       <AtmosphereClouds />
       {!reduced && <AtmosphereMotes />}
+      {!reduced && <AtmosphereShafts />}
+      {!reduced && <AtmosphereEmbers />}
       {!reduced && <BreakthroughParticles />}
     </group>
   );

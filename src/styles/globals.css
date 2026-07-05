@@ -184,6 +184,7 @@
   --z-canvas: -1;
   --z-content: 0;
   --z-overlay: 10;
+  --z-intro: 20; /* overture overlay — below --z-nav so MotionToggle stays clickable */
   --z-nav: 30;
   --z-modal: 50;
 }
@@ -1408,5 +1409,70 @@ hr {
   .terminal-mail__bar-fill {
     animation: none;
     transform: scaleX(0.5);
+  }
+}
+
+/* ============================================================
+   Overture overlay (LoadingSequence) — typed intro before the descent.
+   Decorative (aria-hidden); blocks page pointer input while it plays.
+   MotionToggle sits above it (--z-nav) and stays clickable throughout.
+   ============================================================ */
+.intro-overlay {
+  /* Warm gold palette (user-picked 2026-07-04) — matches the golden register
+     the descent opens on. */
+  --intro-text: #b3a184;
+  --intro-cursor: var(--aod-gold);
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-intro);
+  background: #191613; /* bridge register: darker than the approach void */
+  display: flex;
+  align-items: center;
+  pointer-events: auto;
+}
+
+.intro-lines {
+  /* Left-weighted composition (no centered-everything): the typed block sits
+     in the left third, breathing room to the right. */
+  margin-left: clamp(2rem, 16vw, 20rem);
+  margin-right: 2rem;
+  max-width: 60ch;
+}
+
+.intro-line {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  line-height: 2;
+  letter-spacing: 0.01em;
+  color: var(--intro-text);
+  white-space: pre-wrap;
+  min-height: 2em; /* reserve each line so the block never reflows mid-type */
+  margin: 0;
+}
+
+.intro-cursor {
+  display: inline-block;
+  width: 0.55em;
+  height: 1.05em;
+  margin-left: 0.15em;
+  vertical-align: text-bottom;
+  background: var(--intro-cursor);
+  animation: intro-blink 1.06s steps(2, start) infinite;
+}
+
+@keyframes intro-blink {
+  to {
+    visibility: hidden;
+  }
+}
+
+[data-motion='reduced'] .intro-cursor,
+[data-motion='reduced'] .intro-overlay {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro-cursor {
+    animation: none;
   }
 }

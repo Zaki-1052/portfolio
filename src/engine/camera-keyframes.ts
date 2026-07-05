@@ -84,6 +84,17 @@ export const CAMERA_KEYFRAMES: readonly CameraKeyframe[] = [
   }, // continued descent through the void
 ];
 
+// The overture's push-in track, sampled by introProgress (0..1) instead of
+// scroll depth. The start knot sits far out along the establish bearing —
+// deep inside the opening veil, so the form emerges from the haze during the
+// flight. The end knot IS the depth-0 descent pose (spread from
+// CAMERA_KEYFRAMES[0]), so the handoff to scroll is structurally pop-free
+// (asserted in camera-keyframes.test.ts).
+export const INTRO_KEYFRAMES: readonly CameraKeyframe[] = [
+  { depth: 0, position: [155, 132, 220], target: [0, 2, 0], roll: 0, fov: 55 },
+  { ...CAMERA_KEYFRAMES[0]!, depth: 1 },
+];
+
 // Mutable working copy the dev panel writes into; production reads the frozen
 // table above. Deep-cloned so leva edits never mutate the shipped constants.
 export const liveCameraKeyframes: CameraKeyframe[] = CAMERA_KEYFRAMES.map((k) => ({
