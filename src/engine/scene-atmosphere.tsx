@@ -59,7 +59,7 @@ export function SceneAtmosphere() {
       );
     }
     const density = o
-      ? fogDensityFor(depth, o.densityEstablish, o.densityBase, o.densityInterior)
+      ? fogDensityFor(depth, o.densityEstablish, o.densityBase, o.densityInterior, o.densityVeil)
       : fogDensityFor(depth);
     if (fogRef.current) {
       fogRef.current.color.copy(fogColor.current);

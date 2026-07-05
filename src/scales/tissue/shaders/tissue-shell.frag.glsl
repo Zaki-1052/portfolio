@@ -187,8 +187,8 @@ void main() {
   // convention as the dissolve below), so the far interior sinks into warm
   // umber instead of rendering as flat-lit wallpaper. Pure blend factor
   // (interior gates it), never a branch; exterior is untouched.
-  float aptK = smoothstep(-0.1, 0.9, dot(normalize(vWorldPos), uApertureDir));
-  float lightK = mix(1.0, mix(0.12, 1.0, aptK), interior);
+  float aptK = smoothstep(-0.35, 0.8, dot(normalize(vWorldPos), uApertureDir));
+  float lightK = mix(1.0, mix(0.3, 1.0, aptK), interior);
 
   // Clay micro-grain — keeps open surfaces alive without touching albedo;
   // fades at grazing with the other micro layers (rim speckle).

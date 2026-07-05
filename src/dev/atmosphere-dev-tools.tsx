@@ -15,8 +15,12 @@ import {
   FOG_DENSITY_BASE,
   FOG_DENSITY_ESTABLISH,
   FOG_DENSITY_INTERIOR,
+  FOG_DENSITY_VEIL,
 } from '@/engine/fog-density';
+import { CLOUD_OPACITY } from '@/scales/tissue/atmosphere-clouds';
 import { LOOK_CRISP, LOOK_ESTABLISH } from '@/engine/look-curve';
+import { HALO_INTENSITY } from '@/scales/tissue/atmosphere-halo';
+import { MOTE_OPACITY } from '@/scales/tissue/atmosphere-motes';
 
 export function AtmosphereDevTools() {
   // Plain-object schema (no preset buttons here) — returns values directly,
@@ -24,6 +28,7 @@ export function AtmosphereDevTools() {
   const values = useControls({
     'atmosphere / fx': folder(
       {
+        densityVeil: { value: FOG_DENSITY_VEIL, min: 0, max: 0.03, step: 0.0005 },
         densityEstablish: { value: FOG_DENSITY_ESTABLISH, min: 0, max: 0.05, step: 0.0005 },
         densityBase: { value: FOG_DENSITY_BASE, min: 0, max: 0.08, step: 0.001 },
         densityInterior: { value: FOG_DENSITY_INTERIOR, min: 0, max: 0.2, step: 0.002 },
@@ -35,6 +40,9 @@ export function AtmosphereDevTools() {
         interiorPush: { value: 0.7, min: 0, max: 1, step: 0.01 },
         lookEstablish: { value: LOOK_ESTABLISH, min: 0, max: 1, step: 0.01 },
         lookCrisp: { value: LOOK_CRISP, min: 0, max: 1, step: 0.01 },
+        haloIntensity: { value: HALO_INTENSITY, min: 0, max: 2, step: 0.02 },
+        moteOpacity: { value: MOTE_OPACITY, min: 0, max: 1, step: 0.02 },
+        cloudOpacity: { value: CLOUD_OPACITY, min: 0, max: 0.6, step: 0.01 },
         // postOn arms ABSOLUTE overrides of the depth curves — park on a beat,
         // tune, note the numbers, then freeze them into post-fx-curves.ts.
         postOn: false,

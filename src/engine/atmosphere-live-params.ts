@@ -8,6 +8,7 @@
 
 export interface AtmosphereParams {
   // Fog density curve endpoints (fogDensityFor).
+  densityVeil: number;
   densityEstablish: number;
   densityBase: number;
   densityInterior: number;
@@ -21,6 +22,10 @@ export interface AtmosphereParams {
   // Look curve endpoints (lookFor): dreamy at establish → crisp at the hover.
   lookEstablish: number;
   lookCrisp: number;
+  // Void-fillers: glow backdrop, dust field, and haze-patch strengths.
+  haloIntensity: number;
+  moteOpacity: number;
+  cloudOpacity: number;
   // Absolute post-processing overrides (gated — when off, the depth curves run).
   postOn: boolean;
   bloomIntensity: number;

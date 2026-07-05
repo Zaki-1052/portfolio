@@ -21,6 +21,9 @@ import { applyShellParams } from './shell-params';
 import { getShellParamsOverride } from './shell-live-params';
 import { PLUNGE_APERTURE_DIR, breakthroughProgress, dissolveAmountFor } from './breakthrough';
 import { BreakthroughParticles } from './breakthrough-particles';
+import { AtmosphereHalo } from './atmosphere-halo';
+import { AtmosphereMotes } from './atmosphere-motes';
+import { AtmosphereClouds } from './atmosphere-clouds';
 import { StalkMesh } from './stalk-mesh';
 
 export function SurfaceScene() {
@@ -95,6 +98,11 @@ export function SurfaceScene() {
         {/* The stalk rides as a child so it tracks any parent transform. */}
         <StalkMesh shellMaterial={material} />
       </mesh>
+      {/* The void-fillers: glow backdrop + haze patches (always — static
+          atmosphere, frozen under reduced) and drifting dust (full motion). */}
+      <AtmosphereHalo />
+      <AtmosphereClouds />
+      {!reduced && <AtmosphereMotes />}
       {!reduced && <BreakthroughParticles />}
     </group>
   );
