@@ -24,17 +24,21 @@ import { ArborStrandMaterial, ArborTipMaterial } from './arbor-glow-material';
 // Wider than the canopy so the frame's flanks stay inhabited (user note:
 // the sides felt bare) — still sparse, most drift sits out in the dark.
 const CANOPY_DRIFT: DriftConfig = {
-  count: 510,
+  count: 760,
   rInner: 3,
   rOuter: 24,
-  color: '#ffca8a', // warm scattered field dots against the navy (reference)
-  size: [0.32, 0.48],
+  color: '#ffca8a', // single-hue fallback (unused when palette is set)
+  // Warm multicolor scatter against the navy — the reference's free-floating
+  // gold/amber dots (per-particle, sRGB→linear via the shared DriftField).
+  // Goldward, no pure red (kept the holiday read out of the field too).
+  palette: ['#ffca8a', '#ffb36b', '#ff9e57', '#ffb347', '#ffd27d'],
+  size: [0.34, 0.52],
   wobble: 0.9,
   rise: 0.12,
   riseRange: 6,
   fadeNear: [1.2, 3],
   fadeFar: [30, 55],
-  opacityAt: (depth) => 0.65 * smoothstep(0.315, 0.35, depth) * (1 - smoothstep(0.43, 0.47, depth)),
+  opacityAt: (depth) => 0.9 * smoothstep(0.315, 0.35, depth) * (1 - smoothstep(0.43, 0.47, depth)),
 };
 
 export function ArborDrift() {

@@ -14,10 +14,13 @@ uniform float uRise; // upward conveyor speed (units/s; embers)
 uniform float uRiseRange; // vertical wrap band (0 disables the conveyor)
 
 attribute float aSeed;
+attribute vec3 aColor; // per-particle tint (white ⇒ single-color field unchanged)
 
 varying float vAlpha;
+varying vec3 vColor;
 
 void main() {
+  vColor = aColor;
   float s = aSeed * 6.2831;
   vec3 p = position +
     vec3(

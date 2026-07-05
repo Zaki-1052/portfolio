@@ -44,6 +44,8 @@ export interface DriftConfig {
   rInner: number;
   rOuter: number;
   color: string;
+  /** Opt-in per-particle color pool (hashed per point). Absent ⇒ single `color`. */
+  palette?: readonly string[];
   size: readonly [number, number];
   wobble: number;
   rise: number;
@@ -90,9 +92,18 @@ const EMBERS: DriftConfig = {
 
 // Exported for reuse: the arbor band mounts its own rose-tinted fields.
 export function DriftField({ config }: { config: DriftConfig }) {
-  const { positions, seeds } = useMemo(() => {
+  const { positions, seeds, colors } = useMemo(() => {
     const positions = new Float32Array(config.count * 3);
     const seeds = new Float32Array(config.count);
+    // Per-particle color: opt-in palette (sRGB→linear via three's Color, same as
+    // the bead layer) → the warm multicolor scatter. Always emit the attribute
+    // (a declared-but-missing attribute defaults to black); white ⇒ uColor
+    // unchanged, so single-color fields stay byte-identical.
+    const colors = new Float32Array(config.count * 3);
+    const palette =
+      config.palette && config.palette.length > 0
+        ? config.palette.map((hex) => new Color(hex))
+        : null;
     for (let i = 0; i < config.count; i++) {
       // Uniform direction × cube-root radius = even density through the shell.
       const z = Math.random() * 2 - 1;
@@ -103,8 +114,12 @@ export function DriftField({ config }: { config: DriftConfig }) {
       positions[i * 3 + 1] = z * r;
       positions[i * 3 + 2] = Math.sin(a) * xy * r;
       seeds[i] = Math.random();
+      const c = palette ? palette[Math.floor(Math.random() * palette.length)]! : null;
+      colors[i * 3 + 0] = c ? c.r : 1;
+      colors[i * 3 + 1] = c ? c.g : 1;
+      colors[i * 3 + 2] = c ? c.b : 1;
     }
-    return { positions, seeds };
+    return { positions, seeds, colors };
   }, [config]);
 
   const material = useMemo(() => {
@@ -136,6 +151,7 @@ export function DriftField({ config }: { config: DriftConfig }) {
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
         <bufferAttribute attach="attributes-aSeed" args={[seeds, 1]} />
+        <bufferAttribute attach="attributes-aColor" args={[colors, 3]} />
       </bufferGeometry>
     </points>
   );

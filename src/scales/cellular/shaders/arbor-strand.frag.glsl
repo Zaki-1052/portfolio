@@ -27,7 +27,7 @@ void main() {
   // white-shifts toward the tips so the periphery feeds the bloom pass.
   float profile = 1.0 - vAcross * vAcross;
   float glow = profile * (0.35 + 1.05 * vT * vT);
-  vec3 col = mix(uColor, vec3(1.0), 0.18 * vT);
+  vec3 col = mix(uColor, vec3(1.0), 0.10 * vT);
 
   // Attachment ramp: strands GROW out of their member — sheath-toned where
   // they join, full luminance out in the free reaches. The floor stays
@@ -46,7 +46,7 @@ void main() {
   float sputter = step(0.35, fract(sin((vSeed + floor(uTime * 24.0)) * 78.233) * 43758.5453));
   float pulse = uPulseGain * front * flicker * (0.55 + 0.45 * sputter);
   glow *= 1.0 + pulse;
-  col = mix(col, vec3(1.0), min(0.6 * front * flicker, 0.6));
+  col = mix(col, vec3(1.0), min(0.6 * front * flicker, 0.4));
 
   float hasFocus = step(0.0, uFocusBranch);
   float isMine = step(abs(vLimb - uFocusBranch), 0.5);

@@ -57,37 +57,38 @@ export const ARBOR_ORIGIN: readonly [number, number, number] = [2, -14, -28];
 // The fluorescence register (2026-07-05 reference): electric-blue body,
 // green-sheathed strands, warm multicolor beads, glowing granular hub.
 const LOOK_DEFAULTS: ArborLookParams = {
-  baseColor: '#356487', // electric blue-slate body (bright enough to read vs navy)
-  tipColor: '#c6ecff', // icy bright reaches
+  baseColor: '#2f6aa0', // electric blue body — saturated so it reads through the green
+  tipColor: '#a6e8cf', // green-cyan reaches (feeds reach-albedo + emissive; was icy white)
   fresnelColor: '#5fc0ee', // cyan rim (the band accent family)
   fresnelPower: 5.5, // tight — thin cylinders live near grazing everywhere
-  emissiveStrength: 1.3,
+  emissiveStrength: 1.1, // periphery still crosses bloom, less white blowout
   reliefAmp: 0.06,
   reliefFreq: 2.6,
-  strandColor: '#8be3b4', // green sheath on the fine periphery
+  strandColor: '#83e6a6', // green sheath on the fine periphery (matched to sheathColor)
   strandOpacity: 0.65, // user-blessed 2026-07-05
   strandWidth: 1.6,
   tipSize: 0.46,
   swayAmp: 0.12,
   pulseSpeed: 0.11,
   pulseGain: 1.0, // user-blessed 2026-07-05
-  hubGlowA: '#57b6f0', // granular core glow, blue…
-  hubGlowB: '#7fe4c0', // …mottled toward green-cyan
+  hubGlowA: '#3b82f0', // granular core glow, electric blue…
+  hubGlowB: '#57c4e0', // …mottled toward blue-cyan (soma reads blue-dominant)
   hubGlowStrength: 2.0, // user-blessed 2026-07-05
   hubBump: 0.1, // user-blessed 2026-07-05
-  sheathColor: '#7fd8a4', // the green encrustation riding the blue limbs
-  sheathAmount: 0.55,
+  sheathColor: '#74e0a0', // the green coat riding the blue limbs (vivid)
+  sheathAmount: 0.72, // balanced green-on-blue — green covers, blue still reads through
   punctaSize: 0.65, // user-blessed 2026-07-05
 };
 
-/** The bead layer's color pool — warm golds/corals/reds over green/cyan,
- *  hashed per bead (the reference's multicolor puncta strung along arms). */
+/** The bead layer's color pool — warm gold/amber/orange over green/cyan, hashed
+ *  per bead (the reference's multicolor puncta). Goldward, no pure red: the
+ *  saturated red-on-green combo read as a holiday palette. */
 export const PUNCTA_PALETTE: readonly string[] = [
-  '#ffd27d',
-  '#ff8a66',
-  '#ff6472',
-  '#93e88f',
-  '#7fd7f2',
+  '#ffd27d', // gold
+  '#ffb968', // amber
+  '#ff9d5a', // orange
+  '#93e88f', // green
+  '#7fd7f2', // cyan
 ];
 
 // Three starting points for iteration: 'sparse' is an airy winter read,

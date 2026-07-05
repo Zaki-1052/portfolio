@@ -52,8 +52,8 @@ void main() {
   // (vLimb < 0) keep the clean blue core register. All blend factors.
   float memberK = step(-0.5, vLimb);
   float sheath =
-    smoothstep(0.35, 0.75, fbm(vObjPos * (uReliefFreq * 1.5) + vec3(7.3)) * 0.5 + 0.5);
-  albedo = mix(albedo, uSheathColor, sheath * uSheathAmount * memberK * (0.35 + 0.65 * glowK));
+    smoothstep(0.22, 0.70, fbm(vObjPos * (uReliefFreq * 1.5) + vec3(7.3)) * 0.5 + 0.5);
+  albedo = mix(albedo, uSheathColor, sheath * uSheathAmount * memberK * (0.55 + 0.45 * glowK));
   float speck = smoothstep(0.62, 0.95, snoise(vObjPos * 7.5));
   albedo += mix(uSheathColor, vec3(1.0), 0.5) * (speck * 0.55 * memberK);
   float tintShift = fract(vLimb * 0.37 + 0.21);
@@ -81,7 +81,7 @@ void main() {
 
   // Emissive kick toward the periphery — the limbs dissolve into light.
   // White-shifted so the reaches cross the bloom threshold in this band.
-  vec3 emissive = mix(uTipColor, vec3(1.0), 0.25 * glowK);
+  vec3 emissive = mix(uTipColor, vec3(1.0), 0.15 * glowK);
   color += emissive * (uEmissiveStrength * glowK * glowK * 0.8);
 
   // The hub is LIT FROM WITHIN: a granular two-hue glow, brightest facing

@@ -26,8 +26,8 @@ void main() {
   float core = smoothstep(0.45, 0.0, d);
   // Keep the hue dominant — a hot white core would launder every bead the
   // same under bloom, and the multicolor IS the point.
-  vec3 col = mix(vColor, vec3(1.0), core * 0.3);
-  float glow = disc * vShimmer * 1.25;
+  vec3 col = mix(vColor, vec3(1.0), core * 0.14);
+  float glow = disc * vShimmer * 1.15;
 
   // Glint when the member's signal wave passes.
   float wave = fract(uTime * uPulseSpeed + vLimb * 0.29 + 0.13);

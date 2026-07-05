@@ -25,7 +25,7 @@ void main() {
   float disc = smoothstep(1.0, 0.2, d);
   // The hottest points of the tree — white-shifted core so bloom catches them.
   float glow = disc * (0.5 + 1.1 * vT) * vPulse;
-  vec3 col = mix(uColor, vec3(1.0), 0.28 * vT);
+  vec3 col = mix(uColor, vec3(1.0), 0.14 * vT);
 
   // The tip FIRES when its limb's signal wave arrives (same phase as the
   // strand crackle — the discharge sparks rather than swelling).
@@ -33,7 +33,7 @@ void main() {
   float spark = 0.5 + 0.5 * sin(uTime * 43.0 + vSeed * 57.0);
   float fire = uPulseGain * smoothstep(0.09, 0.0, abs(vT - wave)) * spark;
   glow *= 1.0 + fire * 1.8;
-  col = mix(col, vec3(1.0), min(fire, 0.7));
+  col = mix(col, vec3(1.0), min(fire, 0.45));
 
   float hasFocus = step(0.0, uFocusBranch);
   float isMine = step(abs(vLimb - uFocusBranch), 0.5);

@@ -8,7 +8,7 @@
 //   · tips — one Points buffer over the leaf nodes (soft additive sprites).
 // Per-vertex seeds hash from NODE indices (not edges) so adjacent ribbon
 // segments and their tip sprites sway as one connected piece.
-import { BufferAttribute, BufferGeometry } from 'three';
+import { BufferAttribute, BufferGeometry, Color } from 'three';
 import type { ArborNode, Vec3 } from '@/utils/arbor-generator';
 
 const RADIAL = 8; // ring vertices per spine point
@@ -336,10 +336,12 @@ export function buildStrandGeometry(nodes: ArborNode[]): BufferGeometry {
   return geo;
 }
 
-/** Hex '#rrggbb' → linear-ish rgb floats (no three dependency). */
+/** Hex '#rrggbb' → LINEAR rgb floats via three's color management (sRGB→linear,
+ *  matching how the strand/tip uColor uniforms resolve). Raw byte/255 values
+ *  would be treated as linear and read lighter + desaturated under bloom/ACES. */
 function hexToRgb(hex: string): [number, number, number] {
-  const v = parseInt(hex.slice(1), 16);
-  return [((v >> 16) & 255) / 255, ((v >> 8) & 255) / 255, (v & 255) / 255];
+  const c = new Color(hex);
+  return [c.r, c.g, c.b];
 }
 
 /**
