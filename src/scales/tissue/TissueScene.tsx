@@ -27,6 +27,7 @@ import {
   interiorExitFade,
 } from './breakthrough';
 import { BreakthroughParticles } from './breakthrough-particles';
+import { FlagFlight } from './flag-flight-mesh';
 import { AtmosphereHalo } from './atmosphere-halo';
 import { AtmosphereEmbers, AtmosphereMotes } from './atmosphere-motes';
 import { AtmosphereClouds } from './atmosphere-clouds';
@@ -124,6 +125,9 @@ export function SurfaceScene() {
       {!reduced && <AtmosphereShafts />}
       {!reduced && <AtmosphereEmbers />}
       {!reduced && <BreakthroughParticles />}
+      {/* Identity beat: the flag card flies into the hero on arrival (full
+          motion only — a decorative one-shot, like the burst above). */}
+      {!reduced && <FlagFlight />}
     </group>
   );
 }

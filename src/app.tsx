@@ -46,6 +46,11 @@ const AtmosphereDevTools = import.meta.env.DEV
 const ArborDevTools = import.meta.env.DEV
   ? lazy(() => import('@/dev/arbor-dev-tools').then((m) => ({ default: m.ArborDevTools })))
   : null;
+const FlagFlightDevTools = import.meta.env.DEV
+  ? lazy(() =>
+      import('@/dev/flag-flight-dev-tools').then((m) => ({ default: m.FlagFlightDevTools })),
+    )
+  : null;
 const CameraTheatreSpike = theatreEnabled
   ? lazy(() =>
       import('@/engine/camera-theatre-spike').then((m) => ({ default: m.CameraTheatreSpike })),
@@ -208,6 +213,12 @@ export function App() {
       {ArborDevTools && (
         <Suspense fallback={null}>
           <ArborDevTools />
+        </Suspense>
+      )}
+      {/* Flag-flight tuning ('flag flight' folder: preset toggle + replay). */}
+      {FlagFlightDevTools && (
+        <Suspense fallback={null}>
+          <FlagFlightDevTools />
         </Suspense>
       )}
     </>
