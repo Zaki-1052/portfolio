@@ -5,7 +5,7 @@
 // composes parallax on top and assumes a normalized quaternion.
 import { describe, expect, it } from 'vitest';
 import { BRANCH_ORDER } from '@/content/branch-order';
-import { BRANCH_ANCHORS } from '@/scales/cellular/arbor-anchors';
+import { getBranchAnchors } from '@/scales/cellular/arbor-anchors';
 import { limbIndexOf } from '@/content/branch-order';
 import { blendCameraSample, focusPoseFor } from './camera-focus';
 
@@ -15,7 +15,7 @@ describe('focusPoseFor', () => {
   it('positions the camera a working distance from each anchor, aimed at it', () => {
     for (const branch of BRANCH_ORDER) {
       const pose = focusPoseFor(branch);
-      const anchor = BRANCH_ANCHORS[limbIndexOf(branch)];
+      const anchor = getBranchAnchors()[limbIndexOf(branch)];
       const d = Math.hypot(
         pose.position[0] - anchor[0],
         pose.position[1] - anchor[1],

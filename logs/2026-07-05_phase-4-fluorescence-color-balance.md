@@ -69,3 +69,30 @@ change), then a goldward follow-up.
 `src/scales/cellular/arbor-atmosphere.tsx` (CANOPY_DRIFT) ·
 `src/scales/tissue/atmosphere-motes.tsx` + `shaders/atmosphere-motes.{vert,frag}.glsl`
 (opt-in per-particle palette)
+
+## Addendum — dev-vs-prod divergence bug + full dev-panel audit
+
+User reported the trailing filament below the hub rendered longer in `npm run dev`
+than in `npm run preview`/the build. Root cause: `ARBOR_GROWTH_DEFAULTS.tailLength`
+was 2.0 (dropped from 13 in `c857ccc`, ostensibly for a test — but the tail-descent
+test derives its threshold from `tailLength * 0.5`, so it's self-relative and never
+constrained the value), while the dev-panel slider was `min: 5`. leva clamps an
+out-of-range initial value into `[min,max]`, so the dev panel silently forced 2.0 →
+5 and pushed 5 through the arbor override channel; production (panel unmounted,
+override null) shipped the true 2.0. The dev panel had been showing a value the
+build never used.
+
+Fix (2 lines): `tailLength` default 2.0 → **5.0** (matches what dev showed / the
+user's tuned settle framing), and the slider `min` 5 → **0** so the panel can never
+again clamp-mask the real value.
+
+**Then audited all five leva dev panels** for the same class (a slider whose
+`[min,max]` excludes its shipped default → dev≠prod via the null-in-prod override
+channel): arbor, shell (28 sliders), atmosphere/fx (20), camera (30 roll/fov), and
+flag-flight (18). **`tailLength` was the only mismatch in the whole codebase** — all
+~96 other sliders sit inside their ranges. Also confirmed the only dev/prod branches
+in `app.tsx` are the standard `import.meta.env.DEV` tool-gating (folds to null, Rollup
+drops the chunks) and the `?content=0` HTML-hide aid — neither touches the 3D scene.
+
+Verified: typecheck · lint · **151 tests** · build (464 kB gzip). Both fixes
+committed by the user (`6ad6f2c fix dev bug`).

@@ -28,4 +28,15 @@ export function computeBranchAnchors(): Record<LimbIndex, Vec3> {
   return { 0: anchor(0), 1: anchor(1), 2: anchor(2) };
 }
 
-export const BRANCH_ANCHORS: Record<LimbIndex, Vec3> = computeBranchAnchors();
+let cached: Record<LimbIndex, Vec3> | null = null;
+
+/**
+ * The limb anchors, computed once on first use and memoized. Lazy (not a
+ * module-load `const`) so the ~600-node arbor generation stays off the initial
+ * synchronous module-eval / FCP path: it runs when the cellular scene first
+ * needs an anchor (a focus pose or a visible annotation), and never at all in a
+ * session that stops above cellular or falls back to the no-WebGL layer.
+ */
+export function getBranchAnchors(): Record<LimbIndex, Vec3> {
+  return (cached ??= computeBranchAnchors());
+}

@@ -8,6 +8,7 @@ interface GlitchCycleOptions {
   holdMs?: number;
   scrambleMs?: number;
   resolveMs?: number;
+  enabled?: boolean;
 }
 
 /**
@@ -15,10 +16,13 @@ interface GlitchCycleOptions {
  * Holds each item, then scrambles into the next on a loop.
  * Respects reduced motion (OS pref or on-page toggle, live) by holding the
  * first item statically — flipping the toggle mid-cycle snaps it to rest.
+ * `enabled` (default true) lets the caller pause the loop when the headline is
+ * off-screen: while false it holds the first item and runs no timers/rAF, so a
+ * scrolled-away hero stops re-rendering; re-enabling restarts from the top.
  */
 export function useGlitchCycle(
   items: string[],
-  { holdMs = 3000, scrambleMs = 600, resolveMs = 400 }: GlitchCycleOptions = {},
+  { holdMs = 3000, scrambleMs = 600, resolveMs = 400, enabled = true }: GlitchCycleOptions = {},
 ): string {
   const [display, setDisplay] = useState<string>(items[0] ?? '');
   const indexRef = useRef(0);
@@ -26,8 +30,10 @@ export function useGlitchCycle(
   const reduced = useReducedMotion();
 
   useEffect(() => {
-    // Reduced motion or nothing to cycle: hold the first item, no scramble.
-    if (items.length < 2 || reduced) {
+    // Reduced motion, nothing to cycle, or paused while off-screen: hold the
+    // first item, no scramble or timers. Any of these flipping mid-cycle snaps
+    // to rest (the cleanup below has already cleared a running scramble).
+    if (items.length < 2 || reduced || !enabled) {
       indexRef.current = 0;
       setDisplay(items[0] ?? '');
       return;
@@ -76,7 +82,7 @@ export function useGlitchCycle(
       clearInterval(interval);
       cancelAnimationFrame(rafRef.current);
     };
-  }, [items, holdMs, scrambleMs, resolveMs, reduced]);
+  }, [items, holdMs, scrambleMs, resolveMs, reduced, enabled]);
 
   return display;
 }

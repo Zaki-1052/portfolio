@@ -5,8 +5,8 @@
 // unit-tested in isolation (the vitest node environment forbids DOM tests).
 
 // Cadence (user-tuned 2026-07-04: "a little slower" than the first cut).
-export const CHAR_MS = 31;
-export const LINE_PAUSE_MS = 400;
+export const CHAR_MS = 33;
+export const LINE_PAUSE_MS = 500;
 
 export interface TypingSnapshot {
   /** Visible prefix of each input line (always the same length as the input). */

@@ -5,7 +5,7 @@
 // the controller composes the result BEFORE its parallax post-multiply.
 import type { BranchKey } from '@/content/branch-order';
 import { limbIndexOf } from '@/content/branch-order';
-import { BRANCH_ANCHORS } from '@/scales/cellular/arbor-anchors';
+import { getBranchAnchors } from '@/scales/cellular/arbor-anchors';
 import { ARBOR_ORIGIN } from '@/scales/cellular/arbor-params';
 import { lookAtQuaternion, type CameraSample, type Quat, type Vec3 } from './camera-keyframes';
 
@@ -19,7 +19,7 @@ const FOCUS_FOV = 44; // tighter than the band's settle framing
 const CANOPY_CENTER: Vec3 = [ARBOR_ORIGIN[0], ARBOR_ORIGIN[1] + 20, ARBOR_ORIGIN[2]];
 
 export function focusPoseFor(branch: BranchKey): CameraSample {
-  const anchor = BRANCH_ANCHORS[limbIndexOf(branch)];
+  const anchor = getBranchAnchors()[limbIndexOf(branch)];
   const out: Vec3 = [
     anchor[0] - CANOPY_CENTER[0],
     anchor[1] - CANOPY_CENTER[1],

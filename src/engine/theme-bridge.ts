@@ -62,9 +62,17 @@ export function startThemeBridge(isReducedMotion: () => boolean): () => void {
   const cache = themeCache;
   const root = document.documentElement;
 
+  // Reused across ticks — this runs at scroll frequency, so `out` is a scratch
+  // (never reallocated) and `applied` holds the last value written per channel.
+  // Outside the 0.03-wide blend zones every channel is a constant cached string
+  // tick-over-tick, so the diff below elides all 5 root style writes there;
+  // theme-bridge is the sole writer of these root channels, so the cache is
+  // authoritative. Only inside a blend zone do the values move and get written.
+  const out = {} as Theme;
+  const applied = {} as Partial<Theme>;
+
   const applyDepth = (depth: number): void => {
     const zone = blendZoneFor(depth);
-    const out = {} as Theme;
     if (zone.from === zone.to) {
       const theme = cache[zone.to];
       for (const c of CHANNELS) out[c] = theme[c];
@@ -75,8 +83,19 @@ export function startThemeBridge(isReducedMotion: () => boolean): () => void {
       // Stateless per-tick interpolation (scroll-scrubbed, not time-tweened).
       for (const c of CHANNELS) out[c] = gsap.utils.interpolate(from[c], to[c], t);
     }
-    for (const c of CHANNELS) root.style.setProperty(c, out[c]);
-    blendedTheme = { bg: out['--bg'], fogColor: out['--fog-color'], accent: out['--accent'] };
+    let changed = false;
+    for (const c of CHANNELS) {
+      if (applied[c] !== out[c]) {
+        root.style.setProperty(c, out[c]);
+        applied[c] = out[c];
+        changed = true;
+      }
+    }
+    // The WebGL layer (SceneAtmosphere) reads this each frame; only rebuild it
+    // when a channel actually moved, so unchanged ticks allocate nothing.
+    if (changed || blendedTheme === null) {
+      blendedTheme = { bg: out['--bg'], fogColor: out['--fog-color'], accent: out['--accent'] };
+    }
   };
 
   const unsubDepth = useDepthStore.subscribe((s) => s.depth, applyDepth, { fireImmediately: true });

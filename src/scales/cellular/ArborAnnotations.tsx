@@ -19,7 +19,7 @@ import { BRANCH_META, BRANCH_ORDER, limbIndexOf, type BranchKey } from '@/conten
 import { getProjects } from '@/content/loader';
 import { getCameraPose } from '@/engine/camera-pose';
 import { worldToScreen } from '@/engine/screen-project';
-import { BRANCH_ANCHORS } from './arbor-anchors';
+import { getBranchAnchors } from './arbor-anchors';
 import { smoothstep } from '@/utils/math';
 
 // The overlay fades in as the mist clears off the resolved tree, and out as
@@ -96,10 +96,11 @@ export function ArborAnnotations() {
       if (envelope <= 0.001) return;
 
       const focusState = useBranchFocusStore.getState();
+      const anchors = getBranchAnchors();
       for (const branch of BRANCH_ORDER) {
         const el = groupRefs.current.get(branch);
         if (!el) continue;
-        const anchor = BRANCH_ANCHORS[limbIndexOf(branch)];
+        const anchor = anchors[limbIndexOf(branch)];
         const p = worldToScreen(anchor, pose, w, h);
         if (!p.visible) {
           el.style.display = 'none';

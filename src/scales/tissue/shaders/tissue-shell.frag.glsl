@@ -225,27 +225,40 @@ void main() {
   // from the flight path) as uDissolve rises 0→1. Radius is measured from the
   // aperture axis, not a fixed world axis, so the hole stays circular whatever
   // direction the plunge arrives from.
-  vec3 radVec = vWorldPos - uApertureDir * dot(vWorldPos, uApertureDir);
-  float radial = clamp(length(radVec) / uDissolveRadius, 0.0, 1.0);
-  float front = smoothstep(-0.35, 0.7, dot(normalize(vWorldPos), uApertureDir));
-  float openness = clamp((1.0 - radial) * front + fbm(vWorldPos * 0.35) * 0.15, 0.0, 1.0);
-  float cut = 1.0 - uDissolve;
-  if (openness > cut) discard;
-  float edge = smoothstep(cut - 0.1, cut, openness) * smoothstep(0.0, 0.05, uDissolve);
-  color += uDissolveEdgeColor * edge * 2.2;
+  // Uniform gate: at uDissolve == 0 the discard can never fire (openness is
+  // clamped ≤ 1 while cut == 1) and edge resolves to 0, so the entire block —
+  // including its fbm — is dead work across the whole non-breakthrough band.
+  // uDissolve is a uniform, so the branch is coherent (no warp divergence);
+  // the block has no texture taps, so the divergent-LOD caveat above (L51) does
+  // not apply. Gate on > 0.0 exactly so every active value stays identical.
+  if (uDissolve > 0.0) {
+    vec3 radVec = vWorldPos - uApertureDir * dot(vWorldPos, uApertureDir);
+    float radial = clamp(length(radVec) / uDissolveRadius, 0.0, 1.0);
+    float front = smoothstep(-0.35, 0.7, dot(normalize(vWorldPos), uApertureDir));
+    float openness = clamp((1.0 - radial) * front + fbm(vWorldPos * 0.35) * 0.15, 0.0, 1.0);
+    float cut = 1.0 - uDissolve;
+    if (openness > cut) discard;
+    float edge = smoothstep(cut - 0.1, cut, openness) * smoothstep(0.0, 0.05, uDissolve);
+    color += uDissolveEdgeColor * edge * 2.2;
+  }
 
   // --- Interior exit disintegration ---
   // Past the first content beat the walls BREAK APART (noise-keyed discard
   // with the same glowing-edge language) instead of merely dimming — a
   // dimmed-but-opaque interior would keep depth-occluding the next band's
   // scene and the two solids would interpenetrate during the handoff.
-  // All texture taps happened above; a late divergent discard is safe.
-  float exitField = fbm(vWorldPos * 0.22) * 0.5 + 0.5;
-  float exitCut = 1.0 - uExitDissolve * 1.2;
-  if (exitField > exitCut) discard;
-  float exitEdge =
-    smoothstep(exitCut - 0.09, exitCut, exitField) * smoothstep(0.0, 0.04, uExitDissolve);
-  color += uDissolveEdgeColor * exitEdge * 1.8;
+  // Same uniform gate as the aperture: at uExitDissolve == 0 the discard can't
+  // fire (exitField ≤ 1 while exitCut == 1) and exitEdge resolves to 0, so its
+  // fbm is dead work outside the handoff. (All texture taps happened above; the
+  // late discard was already safe.)
+  if (uExitDissolve > 0.0) {
+    float exitField = fbm(vWorldPos * 0.22) * 0.5 + 0.5;
+    float exitCut = 1.0 - uExitDissolve * 1.2;
+    if (exitField > exitCut) discard;
+    float exitEdge =
+      smoothstep(exitCut - 0.09, exitCut, exitField) * smoothstep(0.0, 0.04, uExitDissolve);
+    color += uDissolveEdgeColor * exitEdge * 1.8;
+  }
 
   // Manual exp2 fog toward the atmospheric color.
   float fogFactor = 1.0 - exp(-uFogDensity * uFogDensity * vViewDist * vViewDist);

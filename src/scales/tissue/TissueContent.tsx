@@ -4,6 +4,7 @@ import { ScaleBadge, ScaleSection } from '@/components/ScaleSection';
 import { MarkdownRenderer } from '@/content/markdown';
 import { getSection, getStatus } from '@/content/loader';
 import { useGlitchCycle } from '@/hooks/useGlitchCycle';
+import { useCurrentScale } from '@/hooks/useCurrentScale';
 
 const ROLES = [
   'bioinformatics',
@@ -16,7 +17,10 @@ export function TissueContent() {
   const section = getSection('tissue');
   const status = getStatus();
   const roles = useMemo(() => ROLES, []);
-  const role = useGlitchCycle(roles);
+  // Pause the scramble once the hero scrolls out of view (cellular and below)
+  // so it stops re-rendering off-screen; it's only visible in approach/tissue.
+  const scale = useCurrentScale();
+  const role = useGlitchCycle(roles, { enabled: scale === 'approach' || scale === 'tissue' });
 
   return (
     <ScaleSection
