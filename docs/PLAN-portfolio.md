@@ -13,9 +13,9 @@
 
 ## Current status
 
-**Planning complete.** Three sessions of architectural planning have resolved: the concept (biological scale descent), the stack (Vite + R3F + GSAP + Lenis), the content architecture (6 scales, tiered projects, single spine), navigation (depth indicator + URL fragments), transitions (crossfade-with-z-motion, cortex breakthrough), typography (Lora/Inter/Fira Code), color (Atom One Dark with per-scale accent shifts), content pipeline (markdown + JSON, build-time), accessibility strategy (HTML-first), and mobile fallback (GPU-tier detection).
+**Phases 0-4 complete. Phase 5 ready.** Phases 0-2 (scaffolding, content layer, scroll engine) shipped the full HTML site with depth-driven theming. Phase 3 shipped the tissue/brain scene (sculpted shell with reaction-diffusion coils, atmosphere system, cortex breakthrough). Phase 4 shipped the cellular/arbor scene (procedural branching tree with fluorescence look, signal pulses, scene-native annotations). The Phase 4 arbor rework established the graphics-first content pattern: under WebGL, HTML document content is `display:none` and all content is scene-native annotations pinned to 3D anchors.
 
-Ready for Phase 0 (scaffolding).
+Phases 5-8 (chromatin, protein, code, expression) were revised on 2026-07-06 to match the quality bar and interactivity of the tissue and cellular scenes. Each scale is now its own phase with full specification. Ready for Phase 5 (chromatin).
 
 ---
 
@@ -406,67 +406,420 @@ Scroll from tissue through the breakthrough into cellular. The tree renders. Cli
 
 ---
 
-## Phase 5: remaining scales
+## Phase 5: chromatin scale
 
-> **Goal:** Chromatin, protein, code, and expression scales all have their 3D scenes and HTML content wired up. All transitions between adjacent scales work.
-> **Estimate:** 7-10 days (these are simpler than cellular since they have no complex interactions).
+> **Goal:** A polished, interactive chromatin fiber scene in the same graphics-first register as tissue and cellular. Publication content is scene-native — luminous annotations anchored to 3D geometry, not HTML documents overlaying a dimmed backdrop. The cellular-to-chromatin transition works.
+> **Estimate:** 5-7 days.
 
 ### Prerequisites
 
 - Phase 4 complete
 
-### 5.1 Chromatin/nuclear scene
+### Content display pattern (Phase 4 precedent, applies to all remaining 3D scales)
 
-Build `src/scales/chromatin/ChromatinScene.tsx`. Instanced nucleosome beads (sphere geometry) along a Catmull-Rom spline. The fiber structure gently rotates or undulates based on time/scroll. Blue accent lighting. Neutral post-processing (Atom One Dark "home base").
+The Phase 4 arbor rework established the standing rule: under `[data-webgl='active']`, in-flow HTML document content is `display:none`. The visible content is scene-native — luminous annotations, hairline connectors, and interactive cards pinned to projected 3D anchor points. The no-WebGL fallback keeps the full document version untouched. This is the template. Chromatin and protein adopt it here. See `docs/p4-plan-arbor-scene.md` and `logs/2026-07-05_phase-4-scene-native-rework.md` for the full rationale and implementation reference.
 
-### 5.2 Protein/MD scene
+### 5.1 Chromatin fiber geometry
 
-Build `src/scales/protein/ProteinScene.tsx`. An abstracted protein structure. Options to evaluate:
-- Procedural: noise-displaced blob with cyan accent lighting, pulsing to suggest dynamics
-- Data-driven: load a PDB structure via Mol* or 3Dmol.js for a single "real data" moment, then fade to the abstract version
+Build `src/scales/chromatin/ChromatinScene.tsx`. The scene shows a chromatin fiber — nucleosome beads threaded along a coiling linker DNA path. The geometry:
 
-The MD trajectory aesthetic: subtle ribbon/tube geometry with time-animated position noise to suggest molecular motion.
+- **Fiber path:** A Catmull-Rom spline defining the coiled trajectory of the fiber. The path should have enough length and curvature to fill the viewport with a section of fiber that feels like part of a larger structure extending beyond the frame.
+- **Nucleosome beads:** Instanced sphere geometry (InstancedMesh, one draw call) positioned along the spline at regular intervals. Each bead represents a nucleosome core particle — a disc-like cylinder or flattened sphere, not a perfect sphere. Approximate dimensions: wider than tall, suggesting the histone octamer wrapped with DNA.
+- **Linker DNA:** Thin tube geometry connecting beads along the spline path. This is the visible backbone of the fiber.
+- **Fiber topology:** The fiber should show the characteristic solenoid or zigzag packing — beads arranged in a helical pattern around a central axis, not strung flat like a necklace. The 30nm fiber structure is the visual target (evocative, not textbook-accurate).
 
-### 5.3 Code/terminal scene
+The fiber gently undulates on a slow time-driven oscillation (breathing motion, like the arbor's signal pulse but slower and more fluid). Scroll position controls the camera's relationship to the fiber, not the fiber's motion.
 
-Build `src/scales/code/CodeScene.tsx`. This scale has the least 3D. The scene is atmospheric: a dark void with faint green grid lines or code-rain particles (think Matrix but subtle, low-opacity, background-only). The terminal listing and software content dominate the viewport as HTML.
+### 5.2 Chromatin shading and atmosphere
 
-### 5.4 Expression/contact scene
+Follow the established material patterns: custom ShaderMaterial with hand-rolled lighting, manual exp2 fog, no scene lights.
 
-Build `src/scales/expression/ExpressionScene.tsx`. Continues the code register. Could be: outgoing data streams (thin lines radiating outward from center), a pulsing signal, or just atmospheric particles. The content (links, socials) is entirely HTML.
+- **Lighting:** Blue accent key (#61afef), cool hemisphere ambient. This is the Atom One Dark "home base" — the visual midpoint of the warm-to-cool gradient. Neutral compared to tissue's golden warmth and protein's cyan chill.
+- **Bead surface:** Subtle procedural texture suggesting the wrapped DNA — fine parallel grooves or a shallow helical ridge on each bead's surface. Not anatomically precise, but enough to read as "wrapped."
+- **Linker DNA:** Slightly emissive, thinner than the beads, glowing faintly blue.
+- **Atmosphere:** Sparse blue-tinted drift motes (reuse the DriftField pattern from tissue/cellular). Fainter and cooler than the arbor's warm multicolor motes. A faint volumetric haze at distance.
+- **Post-processing:** Neutral register — moderate bloom (less than tissue, comparable to cellular), minimal grain, blue-tinted fog. This is the visual equilibrium point of the descent.
 
-### 5.5 All transitions
+### 5.3 Chromatin conformation interaction (the focus mechanic)
 
-Wire the standard crossfade-with-z-motion pattern between all adjacent scale pairs (cellular-to-chromatin, chromatin-to-protein, protein-to-code, code-to-expression). The tissue-to-cellular breakthrough was built in Phase 3.
+The interaction concept: **chromatin conformation change**. This is what the publications are about — Hi-C loops, chromatin structure, BAP1's effect on conformation. The fiber's structure IS the interaction.
 
-Each transition: during the overlap zone (~2-3% of total scroll range at the boundary), the outgoing scene fades to 0 opacity while the incoming scene fades to 1, and the camera advances along z.
+- **Default state:** The fiber is in a compact, coiled conformation. The two publication anchors are visible as luminous markers on specific regions of the fiber — subtle glowing loci that invite interaction.
+- **Focus interaction:** Clicking a publication locus triggers a conformation change — the fiber unwinds and opens at that region, loops forming between distant loci (thin luminous arcs connecting bead positions, suggesting Hi-C contact maps). The unwinding animation reveals the publication card as a scene-native annotation pinned to the opened region. The camera pivots toward the focused region (same GSAP-animated focus pattern as the arbor's branch focus).
+- **Loop visualization:** When a publication is focused, thin glowing lines arc between specific bead pairs, visualizing chromatin loops. These are the structural features the research studies — differential loop calling, TAD boundaries. The loops don't need to be data-accurate; they need to read as "connections between distant regions of the fiber."
+- **Unfocused state:** Non-active regions dim (same opacity reduction pattern as the arbor). Clicking the active region or an escape control returns the fiber to its compact conformation.
+- **Two publications:** "Regulation of chromatin conformation by BAP1" and "Coordinated methylation and hydroxymethylation changes at gene bodies after BAP1 loss." Each anchored to a distinct region of the fiber.
 
-### 5.6 Post-processing gradient
+### 5.4 Scene-native publication annotations
 
-Verify the full post-processing gradient works across all scales. Bloom intensity should decrease from tissue (heaviest) to code (minimal). Film grain follows the same curve. Fog color shifts with the palette. The code and expression scales should feel clean and sharp, with almost no post-processing artifacts.
+Build `src/scales/chromatin/ChromatinAnnotations.tsx`. Same architectural pattern as `ArborAnnotations.tsx`:
 
-**Verify:** Scroll from top to bottom in one smooth motion. All 6 scales render, transition, and display content correctly. The warm-to-cool gradient is perceptible and continuous. No jarring cuts.
+- Luminous pure-type labels + hairline connectors pinned to projected 3D anchor points on the fiber.
+- Positioned imperatively on the gsap ticker (no React re-renders per frame).
+- Publication cards on focus: title, venue, status (in preparation), description, and links. All real interactive elements (buttons, links).
+- Keyboard-navigable (Esc to unfocus, Tab between publications).
+- Scroll-release hint on first focus.
+
+### 5.5 Chromatin intro overlay
+
+Build `src/scales/chromatin/ChromatinIntro.tsx`. Same pattern as `ArborIntro.tsx` — a fixed overlay that resolves out of the haze with the fiber and clears before the publication annotations arrive. Reads prose from `content/sections/chromatin.md`. Cooled-lens legibility approach adapted for the blue register.
+
+### 5.6 Cellular-to-chromatin transition
+
+Wire the transition at the cellular/chromatin boundary. The arbor scene fades out via depth-enveloped opacity while the chromatin fiber fades in. The camera advances along z. Fog color shifts from the cellular palette toward the neutral Atom One Dark blue. No cinematic breakthrough here — this is a standard crossfade-with-z-motion, but tuned so the fiber's first beads emerge from the same haze the arbor dissolves into.
+
+### 5.7 Integration and post-processing verification
+
+Scroll from tissue through cellular into chromatin. The fiber renders with blue lighting and neutral post-processing. Click each publication locus — the fiber unwinds, loops appear, publication card anchors to the opened region. Links work. Scroll past chromatin; the fiber fades.
+
+**Verify:** Both publications are accessible via scene-native annotations. The conformation-change interaction feels fluid (unwind animation 400-600ms). The warm-to-neutral post-processing gradient is continuous through the transition. Performance stays under budget (target: under 15 draw calls for the chromatin scene — instanced beads are 1 draw call, linker tubes 1, loops 1, atmosphere 2-3, annotations are HTML).
 
 ### Phase 5 done criteria
 
-- All 6 scales have 3D scenes
-- All transitions work (including the cortex breakthrough)
-- Post-processing gradient is continuous across the full descent
-- All content phases show HTML content with dimmed 3D backdrop
+- Chromatin fiber renders with instanced beads, linker DNA, and solenoid packing
+- Conformation-change interaction works (click locus, fiber unwinds, loops form, card appears)
+- Both publications accessible as scene-native annotations
+- Chromatin intro overlay resolves from haze and clears before annotations
+- Cellular-to-chromatin transition works end-to-end
+- Post-processing at neutral midpoint of the warm-to-cool gradient
+- No-WebGL fallback shows the full document version from Phase 1
+- Performance baseline recorded
 
 ---
 
-## Phase 6: loading sequence and polish
+## Phase 6: protein scale
+
+> **Goal:** A real molecular structure rendered from PDB data (9AS8, the 5-HT2A receptor system), with scroll-driven trajectory animation from actual MD simulation data. Scene-native content for the Amaro Lab and structural biology work.
+> **Estimate:** 7-10 days. This phase includes a data pipeline step (PDB/DCD parsing) before scene construction.
+
+### Prerequisites
+
+- Phase 5 complete
+- PDB file for 9AS8 (5-HT2A receptor, membrane-embedded)
+- DCD trajectory files from OpenMM MD simulation of 9AS8
+- Optionally: PDB file for 9LL8 (100ns trajectory, if available by this point)
+
+### 6.1 PDB parser and geometry extraction
+
+Build `src/utils/pdb-parser.ts`. Parse PDB files to extract atomic coordinates, residue information, and chain assignments. The parser needs to produce geometry-ready data structures:
+
+- **Backbone trace:** C-alpha positions for each chain, ordered by residue number. This drives ribbon/tube geometry.
+- **Secondary structure:** Helix and sheet assignments from the PDB HELIX/SHEET records (or DSSP if needed). These control ribbon width/shape — helices as wide ribbons or cylinders, sheets as flat arrows, coils as thin tubes.
+- **Chain boundaries:** Separate chains for the receptor, G-protein subunits, and membrane lipids.
+- **Ligand positions:** Psilocin coordinates for highlighting.
+
+The parser runs at build time (Vite plugin or pre-build script) and outputs a compact JSON representation — not the raw PDB text. This JSON ships in the bundle; the PDB file does not.
+
+### 6.2 Trajectory data pipeline
+
+Build `scripts/process-trajectory.ts` (or Python script, whichever handles DCD format better). Process the MD trajectory:
+
+- Read the DCD trajectory file (binary format — may require a Python script using MDAnalysis, which Zara already has installed).
+- Cluster frames by RMSD to extract ~50-100 representative conformations. This condenses the full trajectory (potentially thousands of frames) to a manageable set that captures the essential motion.
+- Export as a compact binary or JSON format: an array of frames, each frame an array of C-alpha positions. Strip solvent, keep protein + ligand + optionally lipid headgroups.
+- The output file ships in `public/` and is loaded at runtime (or lazy-loaded when the protein scale mounts).
+
+**This step produces a command and instructions for Zara to run** — the actual processing happens in Zara's environment where MDAnalysis and the trajectory files live. The output is committed to the repo.
+
+### 6.3 Protein scene geometry
+
+Build `src/scales/protein/ProteinScene.tsx`. The scene renders the 5-HT2A receptor complex from real structural data.
+
+- **Receptor body:** Ribbon/tube geometry built from the parsed backbone trace. TubeGeometry segments along Catmull-Rom splines through C-alpha positions, with width modulated by secondary structure (wider for helices, narrow for coils). The seven transmembrane helices of the GPCR should be visually prominent. One merged geometry, one draw call.
+- **Membrane:** A translucent disc or plane at the membrane boundary. Semi-transparent, with a subtle procedural ripple (vertex displacement noise). This contextualizes the receptor as membrane-embedded without dominating the scene. Rendered with alpha blending, behind the protein. 1 draw call.
+- **G-protein complex:** The Gi/Gq subunits rendered as a simpler ribbon trace below the membrane. Slightly dimmer than the receptor to establish visual hierarchy. 1 draw call.
+- **Ligand (psilocin):** A small glowing marker at the binding site. Bright cyan accent. Could be a sphere, a small ball-and-stick, or just a luminous point. 1 draw call.
+- **Overall aesthetic:** The protein should feel like a high-quality molecular visualization — not a biology textbook illustration, but something that reads as real data rendered beautifully. Cyan accent lighting (#56b6c2). Cooler and sharper than chromatin.
+
+### 6.4 Trajectory animation
+
+The scroll position drives the trajectory frame. As the visitor scrolls through the protein scale's depth band, the protein conformation smoothly interpolates between the representative frames extracted in 6.2.
+
+- Vertex positions lerp between adjacent keyframes based on `scaleProgress` (the local 0-1 progress through the protein band). This means scrolling forward advances the simulation in time, and scrolling backward rewinds it.
+- The motion should be subtle — the overall fold is stable, but loops flex, helices shift slightly, the ligand wobbles in its binding pocket. This is what MD trajectories actually look like: not dramatic unfolding, but continuous thermal breathing.
+- A slow time-driven ambient pulse layers on top of the scroll-driven frame (similar to the chromatin fiber's breathing). This keeps the protein alive when the user pauses scrolling.
+- Under reduced motion: the protein is static at the middle frame. No interpolation, no pulse.
+
+### 6.5 Protein shading and atmosphere
+
+Custom ShaderMaterial following established patterns.
+
+- **Lighting:** Cyan key light, cool hemisphere ambient. Sharper and colder than chromatin. The post-processing gradient continues its descent — less bloom than chromatin, less grain, colder fog.
+- **Protein surface:** Per-residue coloring options (chain-based, or secondary-structure-based — helices one hue, sheets another, coils a third). All within the cyan register. Subtle fresnel rim.
+- **Membrane:** Low-opacity, slightly warm-tinted (a hint of the lipid bilayer's organic nature against the cool protein). Procedural noise displacement for the ripple.
+- **Atmosphere:** Sparse cyan drift motes. Fainter than chromatin's. The scene should feel clean and precise — a step toward the digital clarity of the code scale.
+
+### 6.6 Scene-native protein annotations
+
+Build `src/scales/protein/ProteinAnnotations.tsx`. Same pattern as chromatin/arbor annotations.
+
+Two Tier 1 projects anchor to the scene:
+- **5ht2a-md:** "Post-synaptic CNS membrane protein MD" — anchor near the receptor body or ligand binding site.
+- **mpro-analysis:** "MPro allosteric pathway analysis" — anchor at the G-protein interface or a secondary position on the structure.
+
+Focus interaction: clicking an annotation anchor pivots the camera toward that region of the structure. The trajectory animation could emphasize the focused region (e.g., when focused on the binding site, the ligand's motion is more prominent). Non-focused regions dim.
+
+Publication cards show: title, one-liner, tags, links (GitHub where available). Same luminous annotation register as the arbor and chromatin.
+
+### 6.7 Protein intro overlay
+
+Build `src/scales/protein/ProteinIntro.tsx`. Same resolve-from-haze pattern. Reads prose from `content/sections/protein.md`. Cyan-register lens treatment.
+
+### 6.8 Chromatin-to-protein transition
+
+Standard crossfade-with-z-motion at the chromatin/protein boundary. Fog shifts from neutral blue toward cyan. The chromatin fiber dissolves as the protein structure emerges from the haze.
+
+### 6.9 Integration test
+
+Scroll from chromatin into protein. The receptor complex renders from real PDB data. Scrolling through the band drives the trajectory animation — the protein breathes. Click each project anchor — camera pivots, card appears. Links work. The warm-to-cool gradient is continuous.
+
+**Verify:** The protein is recognizably a real molecular structure (not an abstract blob). Trajectory animation is smooth and subtle. Both project annotations are accessible. Performance stays under budget (target: under 12 draw calls — protein body 1, membrane 1, G-protein 1, ligand 1, atmosphere 2-3, annotations are HTML).
+
+### Phase 6 done criteria
+
+- Protein structure rendered from real PDB data (9AS8)
+- Trajectory animation driven by scroll position from processed DCD data
+- Membrane rendered as translucent contextual element
+- Scene-native annotations for both structural biology projects
+- Protein intro overlay resolves from haze
+- Chromatin-to-protein transition works
+- Post-processing continues the cool-ward gradient
+- PDB parser and trajectory processing pipeline documented and reproducible
+- No-WebGL fallback shows the full document version from Phase 1
+
+---
+
+## Phase 7: code/terminal scale
+
+> **Goal:** An interactive terminal scene rendered as 3D geometry in the macOS/iTerm2 aesthetic. Software projects are navigated through scroll-driven terminal commands, not HTML document sections. The terminal is the structure.
+> **Estimate:** 5-7 days.
+
+### Prerequisites
+
+- Phase 6 complete
+
+### 7.1 Terminal window geometry
+
+Build `src/scales/code/CodeScene.tsx`. The scene is a 3D terminal window in the iTerm2/macOS aesthetic, rendered as geometry in the R3F canvas.
+
+- **Window chrome:** A rounded-rect plane (or extruded shape) with macOS title bar — three traffic-light dots (close/minimize/maximize), a centered title ("zara@macbook ~ %"), and the characteristic dark title bar with subtle separation from the content area. Rendered as a ShaderMaterial with the chrome elements drawn procedurally in the fragment stage (no texture, no HTML).
+- **Terminal body:** A dark plane below the title bar. This is the surface where terminal output renders. The green-on-dark Atom One Dark terminal palette (#98c379 text on #21252b background).
+- **Window depth:** The terminal has slight 3D depth — a thin extruded edge giving it physical presence in the scene, not a flat card. Subtle shadow/ambient occlusion at the edges.
+- **Scene environment:** The terminal floats in a dark void with faint atmospheric elements — sparse green-tinted grid lines receding into depth behind the window, or subtle code-rain particles at very low opacity in the background. The terminal window is the hero; the environment is secondary atmosphere.
+
+### 7.2 Terminal text rendering
+
+Terminal output needs to render inside the 3D window. Approaches (evaluate during implementation):
+
+- **SDF text rendering:** Generate a signed-distance-field font atlas from Fira Code at build time. Render text as instanced quads with an SDF fragment shader. This gives crisp text at any camera distance and integrates with the post-processing pipeline (bloom on the text gives the authentic terminal glow).
+- **Canvas texture:** Render terminal text to a 2D canvas, upload as a texture onto the terminal body plane. Simpler but less sharp at close camera distances and doesn't bloom per-character.
+- **Hybrid:** Use drei's `Text` component (which uses troika-three-text / MSDF) for the terminal text, positioned as children of the terminal window group. This gives SDF quality with less custom infrastructure.
+
+Whichever approach: text must be Fira Code, must support Atom One Dark syntax colors (green, blue, yellow, magenta, red, cyan, white for different token types), and must feel like a real terminal — not a screenshot texture.
+
+### 7.3 Scroll-driven command sequence
+
+The core interaction: **scrolling through the code scale's depth band plays a choreographed terminal session.** The visitor doesn't need to type — commands appear and execute as they scroll, like watching a recording of a terminal session at scroll speed.
+
+The command sequence tells the story of the software portfolio:
+
+```
+zara@macbook ~ % ls ~/projects/
+cleave/    metaencode/    gptportal/    ao3-explorer/    ...
+
+zara@macbook ~ % cat cleave/README.md
+# Cleave
+Self-hosted CUT&RUN / RNA-seq analysis platform...
+[tags: React, FastAPI, PostgreSQL]
+
+zara@macbook ~ % cat metaencode/README.md
+# MetaENCODE
+Interactive search + exploration of ENCODE metadata...
+[tags: SBERT, UMAP, search]
+
+zara@macbook ~/projects % ls -la
+total 6
+drwxr-xr-x  gptportal/        400 ★   Multi-provider AI chat
+drwxr-xr-x  ao3-explorer/     150 MAU  Fanfiction analytics
+drwxr-xr-x  yeast-msa/        ---      S. cerevisiae alignment
+drwxr-xr-x  crime-analysis/   ---      Chicago crime viz
+drwxr-xr-x  webreg/           ---      UCSD enrollment alerts
+```
+
+- Each command appears character-by-character (typed effect) as the scroll position advances through a sub-range of the code band. The output appears below it line-by-line.
+- The `cat` commands show Tier 1 software project details as terminal-styled output — title, one-liner, tags, links (rendered as `[GitHub]`, `[Demo]` terminal-style markers that are actually clickable).
+- The `ls -la` command shows the Tier 2 directory listing — same data as `TerminalListing.tsx` but rendered in the 3D terminal, not as HTML.
+- **Autocomplete suggestions:** Before each command types out, a brief autocomplete ghost appears (faint gray text suggesting the command), then the full command types over it. This is a familiar terminal UX detail.
+- **Scroll pacing:** Each command+output block maps to a sub-range of the code band's scroll depth. The total sequence is paced so a smooth scroll reveals the full portfolio at a readable speed. Scrolling backward rewinds the session.
+
+### 7.4 Interactive elements within the terminal
+
+Project names and links within the terminal output are interactive:
+
+- **Hover:** A project name highlights (brighter, underlined, cursor change). A faint glow emanates from the highlighted text (bloom pickup).
+- **Click:** Opens the project's GitHub link or demo in a new tab. The terminal shows a brief `opening...` feedback line.
+- **Keyboard:** Tab cycles through interactive elements within the visible terminal output. Enter activates.
+- All interactive elements are accessible (proper roles, labels). The terminal aesthetic doesn't sacrifice usability.
+
+### 7.5 Terminal atmosphere and shading
+
+- **Terminal glow:** The text has a subtle bloom — green characters glow faintly, giving the CRT/phosphor feel without the heavy scanline cliche. Controlled via the post-processing bloom threshold: terminal text is rendered slightly above the HDR threshold so bloom picks it up naturally.
+- **Window material:** The title bar has a subtle metallic/brushed finish. The terminal body is matte dark. The traffic-light dots are small, precise circles with correct macOS colors (red, yellow, green).
+- **Cursor:** A blinking block cursor at the current input position. Blinks on a timer (standard 530ms period). Position advances as commands type out.
+- **Post-processing:** Minimal bloom, no grain, no vignette. This is the digital clarity end of the gradient. The scene should feel clean, precise, and technical.
+
+### 7.6 Protein-to-code transition
+
+The protein structure dissolves as the terminal window emerges. The fog shifts from cyan to the dark, low-fog code register. The aesthetic jump here is intentional — this is where the descent crosses from biological to digital. The transition should feel like "zooming past the molecular into the computational."
+
+### 7.7 Integration test
+
+Scroll from protein into the code scale. The terminal window appears. Scrolling through the band plays the command sequence. Project names are clickable. The typing animation is smooth and well-paced. Scrolling backward rewinds cleanly.
+
+**Verify:** All Tier 1 and Tier 2 software projects appear in the terminal sequence. Interactive links work. The terminal feels like a real macOS terminal, not a CSS mockup. Performance stays under budget.
+
+### Phase 7 done criteria
+
+- Terminal window rendered as 3D geometry with macOS/iTerm2 chrome
+- Scroll-driven command sequence plays the full software portfolio
+- Text renders in Fira Code with Atom One Dark syntax colors
+- Autocomplete ghosts and typing animation feel authentic
+- Project names and links are interactive and accessible
+- Cursor blinks, output scrolls, the terminal feels alive
+- Protein-to-code transition works
+- Post-processing at digital-clarity end of the gradient
+- No-WebGL fallback shows the Phase 1 HTML terminal listing
+
+---
+
+## Phase 8: expression/contact scale
+
+> **Goal:** An outgoing-signal scene where contact information radiates outward from a central source. The `mail zara` terminal form is the anchor interaction. The descent concludes with a sense of signal leaving the system.
+> **Estimate:** 3-5 days.
+
+### Prerequisites
+
+- Phase 7 complete
+
+### 8.1 Signal origin geometry
+
+Build `src/scales/expression/ExpressionScene.tsx`. The concept: the descent has gone from macro (tissue) to micro (protein) to digital (code), and now the signal goes outward — the visitor has reached the contact layer, where information radiates back out into the world.
+
+- **Central node:** A small, bright emissive point or compact geometric form at the scene's center. This is the origin of the outgoing signals. Could be a stylized cursor, a pulsing dot, or a small terminal prompt glyph (the `%` or `$`).
+- **Signal lines:** Thin luminous lines radiating outward from the central node in multiple directions. Each line represents a contact channel (email, GitHub, LinkedIn, Bluesky, resume). Lines extend outward and fade into the distance. They pulse periodically — a wave of brightness traveling from center to periphery, suggesting data transmission.
+- **Signal aesthetics:** The lines use the green (#98c379) register, continuing the code scale's palette. Each line could carry a distinct secondary tint (GitHub's contribution green, LinkedIn's blue, email's amber) as a subtle color accent at its terminus, but the dominant palette stays in the code register.
+- **Particle trails:** Sparse particles travel along the signal lines, moving outward. Small, fast, point-geometry. Like data packets leaving the system. One draw call (instanced points on the line paths).
+- **CRT/scanline overlay:** The existing CRT scanline aesthetic from the HTML version carries into the 3D scene. Horizontal scanlines rendered as a full-viewport post-processing effect or a screen-space overlay plane. Very low opacity — a texture, not an obstruction.
+
+### 8.2 Contact annotations
+
+Build `src/scales/expression/ExpressionAnnotations.tsx`. Contact links are scene-native annotations anchored to the terminal endpoints of the signal lines:
+
+- Each signal line terminates at a point where the contact annotation floats — "email" at one terminus, "GitHub" at another, etc.
+- The annotations are in the luminous type register: label + icon (if appropriate) + the actual link/handle. All interactive.
+- Focus interaction: clicking a signal line or its annotation brightens that line (the signal pulse intensifies) and dims the others. The annotation expands to show more detail (email address, GitHub handle, etc.).
+- The camera pivots slightly toward the focused signal line.
+- Keyboard-navigable: Tab cycles through contact links.
+
+### 8.3 Terminal mail integration
+
+The `mail zara` interaction from the Phase 1 HTML version is elevated into the scene register:
+
+- A small terminal prompt anchored near the central node or floating below it: `$ mail zara`. This is a scene-native interactive element.
+- Clicking it opens the terminal mail form. The form itself can remain as an HTML overlay (it has text inputs and a submit button — these are better as real HTML form elements for accessibility and mobile input). But the overlay should be styled to match the scene's aesthetic: dark background, green terminal text, Fira Code, scanline texture, sharp corners.
+- The form triggers and submission logic (Formspree via `useTerminalMail.ts`) remain unchanged from Phase 1.
+
+### 8.4 Expression intro and closing
+
+Build `src/scales/expression/ExpressionIntro.tsx`. This is the closing statement of the portfolio. The intro overlay reads prose from `content/sections/expression.md`. It resolves from the scene haze and clears before the contact annotations arrive.
+
+The closing should feel like an ending — a warm return after the descent. The prose occupies a brief depth window, then the contact channels radiate outward and the visitor has arrived at the bottom of the descent.
+
+### 8.5 Code-to-expression transition
+
+The terminal window from the code scale fades out. The signal lines emerge from where the terminal cursor was — the last command prompt becomes the origin point of the outgoing signals. This connects the two scales narratively: the code produced the signal, and now the signal goes out. Fog lifts slightly (the expression scale is the most open/sparse of the digital scales).
+
+### 8.6 Scroll-to-top and portfolio loop
+
+At the bottom of the expression scale, a subtle visual cue invites the visitor to scroll back up or click a "return to surface" control. This loops the descent — the visitor can re-ascend through all scales. The depth indicator already supports click-to-jump for any scale.
+
+An optional warm color return at the very bottom — the accent hue shifts slightly back toward amber as a bookend, echoing the tissue scale's warmth. This is a single CSS custom property shift, not a new scene.
+
+### 8.7 Integration test
+
+Scroll from code into expression. Signal lines radiate outward. Contact annotations are visible and interactive. The `mail zara` form works. Links open correctly. The descent feels complete.
+
+**Verify:** All contact links are accessible as scene-native annotations. The `mail zara` form submits successfully. The outgoing-signal aesthetic feels like a natural conclusion to the descent. Performance stays under budget (target: under 10 draw calls — central node 1, signal lines 1, particles 1, scanline overlay 1, atmosphere 2-3).
+
+### Phase 8 done criteria
+
+- Signal-origin scene renders with radiating contact lines
+- Contact links are scene-native annotations at signal termini
+- `mail zara` terminal form works in the scene register
+- Expression intro overlay resolves and clears
+- Code-to-expression transition connects terminal cursor to signal origin
+- CRT scanline overlay is subtle and atmospheric
+- Scroll-to-top / return-to-surface control present
+- No-WebGL fallback shows the Phase 1 HTML contact section
+
+---
+
+## Phase 8.5: transitions and post-processing gradient verification
+
+> **Goal:** All transitions between adjacent scales work end-to-end. The full post-processing gradient is continuous from tissue (warm, heavy bloom) to expression (cool, clean). A complete scroll from top to bottom feels like one unbroken descent.
+> **Estimate:** 1-2 days.
+
+### Prerequisites
+
+- Phase 8 complete
+
+### 8.5.1 Transition sweep
+
+Scroll the full descent in one smooth motion. Verify each transition:
+
+- Approach → tissue (overture zoom, already built)
+- Tissue → cellular (cortex breakthrough, already built)
+- Cellular → chromatin (crossfade, Phase 5)
+- Chromatin → protein (crossfade, Phase 6)
+- Protein → code (aesthetic jump, Phase 7)
+- Code → expression (signal-origin emergence, Phase 8)
+
+Each transition should feel distinct but part of the same system. No jarring cuts, no visible seams, no frames where both scenes are at awkward half-opacity.
+
+### 8.5.2 Post-processing gradient
+
+Verify the full gradient across the descent:
+
+| Scale | Bloom | Grain | Vignette | Fog density | Color temperature |
+| --- | --- | --- | --- | --- | --- |
+| Tissue | Heavy, golden | Visible film grain | Strong | Dense, warm | Warm gold-amber |
+| Cellular | Moderate, rose-tinted | Light grain | Moderate | Medium, warm-cooling | Magenta-rose |
+| Chromatin | Moderate, neutral | Minimal grain | Light | Medium, neutral | Blue (home base) |
+| Protein | Light, cyan | Near-zero grain | Light | Light, cool | Cyan |
+| Code | Minimal, green | None | None | Very light | Green-digital |
+| Expression | Minimal, green | None | None | Sparse | Green with warm bookend |
+
+The values should interpolate smoothly within transition zones, not step between presets.
+
+### 8.5.3 Reduced motion verification
+
+Toggle reduced motion on. Scroll the full descent. Every scene should be static or absent, all transitions instant, all content accessible. The color gradient and typography shifts should still work (they're position-driven, not animation-driven).
+
+**Verify:** The full descent reads as one continuous experience. The temperature shift from warm to cool is perceptible and smooth. Reduced motion provides a complete, dignified experience.
+
+---
+
+## Phase 9: loading sequence and polish
 
 > **Goal:** The typed intro and zoom-in sequence work. Depth indicator is fully polished. Favicon, OG tags, 404 page, and metadata are in place. The site feels finished.
 > **Estimate:** 3-5 days.
 
 ### Prerequisites
 
-- Phase 5 complete
+- Phase 8.5 complete
 - Typed intro text: use placeholder text initially (per the content constraint). Zara writes the real intro after seeing the loading sequence in action.
 
-### 6.1 Loading sequence
+### 9.1 Loading sequence
 
 Build `src/components/LoadingSequence.tsx`. On initial load:
 1. Dark screen, typed text sequence (content from a config or content file)
@@ -477,21 +830,21 @@ Build `src/components/LoadingSequence.tsx`. On initial load:
 
 The sequence blocks scroll until complete. It plays every visit (deliberate creative choice).
 
-### 6.2 Favicon and metadata
+### 9.2 Favicon and metadata
 
 Create a themed `favicon.svg` (simpler is better; an abstract neuron branch, initials, or a minimal brain silhouette).
 
 Add meta tags to `index.html`: title, description, OG image, OG title, OG description, Twitter card, canonical URL. The OG image should be a static render or screenshot of the hero section.
 
-### 6.3 404 page
+### 9.3 404 page
 
 Create a themed 404 route. Suggestion: "you've descended past the observable scale" with a link back to the top. Styled in the terminal register (Fira Code, dark background, green text).
 
-### 6.4 Analytics stubs
+### 9.4 Analytics stubs
 
 Wire `useTrackEvent` to log scale transitions, dendrite branch clicks, and scroll depth milestones (25%, 50%, 75%, 100%). All calls go to a no-op by default. When a provider is configured, swap the no-op for the real SDK.
 
-### 6.5 Polish pass
+### 9.5 Polish pass
 
 - Depth indicator mobile styling (dots only, no line)
 - Keyboard focus indicators styled to match scale accent colors
@@ -500,9 +853,9 @@ Wire `useTrackEvent` to log scale transitions, dendrite branch clicks, and scrol
 - Resume link in the depth indicator area or expression section
 - Print stylesheet (optional, but nice: the HTML content layer prints cleanly)
 
-**Verify:** Cold load the site. Typed intro plays. Zoom-in to hero. Scroll through entire descent. All 6 scales, all transitions, all content, all interactions work. Sharing the URL on Twitter/LinkedIn shows a proper preview card. The 404 page renders for invalid routes.
+**Verify:** Cold load the site. Typed intro plays. Zoom-in to hero. Scroll through entire descent. All scales, all transitions, all content, all interactions work. Sharing the URL on Twitter/LinkedIn shows a proper preview card. The 404 page renders for invalid routes.
 
-### Phase 6 done criteria
+### Phase 9 done criteria
 
 - Loading sequence plays on every visit
 - Favicon, OG tags, and social preview work
@@ -514,16 +867,16 @@ Wire `useTrackEvent` to log scale transitions, dendrite branch clicks, and scrol
 
 ---
 
-## Phase 7: performance, mobile, and ship
+## Phase 10: performance, mobile, and ship
 
 > **Goal:** Performance validated on real devices. Mobile fallback tested. Accessibility re-audited with 3D active. Bugs fixed. Ship.
 > **Estimate:** 3-5 days.
 
 ### Prerequisites
 
-- Phase 6 complete
+- Phase 9 complete
 
-### 7.1 Performance profiling
+### 10.1 Performance profiling
 
 Test on target devices:
 - Desktop: your dev machine + one Windows machine if available
@@ -532,11 +885,11 @@ Test on target devices:
 
 Use Chrome DevTools Performance tab and `r3f-perf` to measure: FPS, draw calls, GPU memory, frame time. If any scale exceeds the budget (100 draw calls, sub-60fps on desktop), simplify that scale's geometry or reduce instance counts.
 
-### 7.2 Mobile fallback verification
+### 10.2 Mobile fallback verification
 
 Force the fallback path on a capable device (override GPU detection). Verify: all content is accessible, the color gradient works via CSS, typography shifts work, depth indicator works, no Canvas rendered, no WebGL errors in console.
 
-### 7.3 Accessibility re-audit
+### 10.3 Accessibility re-audit
 
 Re-run the Phase 1 accessibility tests with the full 3D layer active:
 - Canvas has `aria-hidden="true"`
@@ -545,22 +898,22 @@ Re-run the Phase 1 accessibility tests with the full 3D layer active:
 - Reduced motion toggle disables all 3D animations
 - Color contrast maintained at every scale
 
-### 7.4 Cross-browser testing
+### 10.4 Cross-browser testing
 
 Test in Chrome, Firefox, Safari (WebKit has some Three.js quirks). Verify WebGL context creation, font rendering, and scroll behavior in each.
 
-### 7.5 Final deployment
+### 10.5 Final deployment
 
 - Verify production build size (`npm run build`, check `dist/`)
 - Ensure cache headers are correct for hashed assets
 - Run Lighthouse: target 90+ Performance, 95+ Accessibility, 100 Best Practices
 - Test the production URL on multiple devices
 
-### 7.6 Bug fixes and polish
+### 10.6 Bug fixes and polish
 
-Address anything found in 7.1-7.5.
+Address anything found in 10.1-10.5.
 
-### Phase 7 done criteria
+### Phase 10 done criteria
 
 - 60fps on target desktop hardware
 - 30+ fps on capable mobile devices
@@ -585,6 +938,8 @@ This is a visual, interactive project. The testing approach is different from a 
 - Depth store: boundary calculations, scale transitions, edge cases (0, 1, exact boundaries)
 - Scale manager: correct scale returned for any depth value
 - L-system generator: output is a valid tree structure, respects parameters
+- PDB parser: correct backbone extraction, chain boundaries, residue counts
+- Trajectory processor: correct frame clustering, coordinate export, round-trip fidelity
 - Utility functions: lerp, clamp, remap, spline math
 - URL fragment sync: correct fragment for each scale, round-trip
 
