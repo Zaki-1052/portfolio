@@ -1554,14 +1554,18 @@ hr {
 .arbor-intro {
   display: none;
 }
-[data-webgl='active'] .arbor-intro {
+/* Shown only under WebGL AND only while in its depth window (JS sets
+   data-active). The `display` toggle is the presence gate: fully out of render +
+   a11y when outside the window, dropped entirely when idle, and it can't fight
+   the no-WebGL fallback (which keeps .arbor-intro display:none). The fade itself
+   is opacity — on the text (.arbor-intro__inner) and the lens gradient
+   (::before via --lens-alpha) below — never on this container. */
+[data-webgl='active'] .arbor-intro[data-active='true'] {
   display: block;
   position: fixed;
   inset: 0;
   z-index: var(--z-overlay);
   pointer-events: none;
-  opacity: 0; /* JS (ArborIntro tick) drives it */
-  visibility: hidden; /* JS toggles it out of the a11y tree when faded */
 }
 .arbor-intro__col {
   position: absolute;
@@ -1571,35 +1575,41 @@ hr {
   width: min(620px, 82vw);
   text-align: left;
 }
-/* Cooled lens: a feathered tonal-crush of the lava behind the text. The melt is
-   a bright-cream / dark-navy checkerboard, so no flat scrim reads everywhere;
-   instead we pull the BRIGHTNESS of whatever sits behind the column down (cream
-   crushed toward navy) and dissolve the edges into the scene with a radial mask
-   — no opaque fill, no rectangle. Texture and the emerging tree stay visible,
-   just cooled. The crush amount (--lens-b/-s, set per-frame by ArborIntro) eases
-   from none up to full WITH the reveal so the box develops gradually rather than
-   popping in; it also fades with the container's envelope opacity. */
+/* Cooled lens: a soft, feathered dark pool behind the text. The melt is a
+   bright-cream / dark-navy checkerboard, so we darken the region enough that
+   light text reads over the cream patches; the radial gradient fades to
+   transparent so it's an edgeless pool, not a rectangle, and its semi-
+   transparent center still lets the lava texture show faintly through. Strength
+   (--lens-alpha, set per-frame by ArborIntro = the envelope) eases 0 → 1 so it
+   develops with the reveal. NB: this is a PAINTED gradient, not a
+   backdrop-filter — a backdrop-filter over the WebGL canvas drew unreliably
+   (blank until a scrub forced a re-composite), so the cooling is done with plain
+   compositing, which paints on the first frame every time. */
 .arbor-intro__col::before {
   content: '';
   position: absolute;
-  inset: -36px -52px;
+  inset: -40px -56px;
   z-index: -1;
   border-radius: var(--radius-organic, 16px);
-  backdrop-filter: brightness(var(--lens-b, 0.55)) saturate(var(--lens-s, 0.85));
-  -webkit-backdrop-filter: brightness(var(--lens-b, 0.55)) saturate(var(--lens-s, 0.85));
-  -webkit-mask-image: radial-gradient(ellipse 76% 92% at 50% 50%, #000 50%, transparent 84%);
-  mask-image: radial-gradient(ellipse 76% 92% at 50% 50%, #000 50%, transparent 84%);
+  background: radial-gradient(
+    ellipse 78% 94% at 50% 50%,
+    rgba(10, 12, 18, 0.82) 0%,
+    rgba(10, 12, 18, 0.55) 46%,
+    rgba(10, 12, 18, 0) 82%
+  );
+  opacity: var(--lens-alpha, 0);
   pointer-events: none;
 }
 /* Only the text block resolves from haze (blur + rise, driven by JS). An
    inherited ink halo backstops the lens so glyphs stay legible even over the
    brightest cooled patches — a tight dark rim plus a soft outer glow, no box. */
 .arbor-intro__inner {
+  opacity: 0; /* JS fades the TEXT here — kept off the lens's ancestor chain */
   text-shadow:
     0 1px 2px rgba(8, 10, 16, 0.9),
     0 0 4px rgba(8, 10, 16, 0.85),
     0 0 16px rgba(8, 10, 16, 0.5);
-  will-change: transform, filter;
+  will-change: opacity, transform, filter;
 }
 .arbor-intro__title {
   margin: 0 0 var(--space-4);

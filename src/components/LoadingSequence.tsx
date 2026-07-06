@@ -24,7 +24,7 @@ const PUSH_SECONDS = 2.5;
 const OVERLAY_FADE_SECONDS = 0.8;
 // The finished last line holds for a beat (cursor still blinking) before the
 // flight begins — the sequence lands, breathes, then descends.
-const TYPED_HOLD_MS = 800;
+const TYPED_HOLD_MS = 850;
 
 export function LoadingSequence() {
   const phase = useIntroStore((s) => s.phase);

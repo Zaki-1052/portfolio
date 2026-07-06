@@ -15,7 +15,7 @@ import { MarkdownRenderer } from '@/content/markdown';
 import { getSection } from '@/content/loader';
 import { useDepthStore } from '@/stores/depth';
 import { useMotionStore } from '@/stores/motion';
-import { lerp, smoothstep } from '@/utils/math';
+import { smoothstep } from '@/utils/math';
 
 // Depth window (canonical 0..1). Reveal as the cortex breakthrough settles and
 // the embers drain; clear exactly as ArborAnnotations begins its reveal (0.33),
@@ -29,11 +29,6 @@ const FADE_END = 0.33;
 // this much lower and this much blurrier, then sharpens/settles as it peaks.
 const MAX_RISE_PX = 14;
 const MAX_BLUR_PX = 5;
-
-// The cooled lens's crush at FULL envelope. It eases up from brightness 1 /
-// saturate 1 (no crush) so the box develops with the text instead of popping in.
-const LENS_BRIGHTNESS = 0.55;
-const LENS_SATURATE = 0.85;
 
 function introEnvelope(depth: number): number {
   return (
@@ -64,15 +59,18 @@ export function ArborIntro() {
       lastReduced = reduced;
 
       const envelope = introEnvelope(depth);
-      container.style.opacity = envelope.toFixed(3);
-      // A fully faded overlay leaves the a11y tree and stops intercepting.
-      container.style.visibility = envelope <= 0.001 ? 'hidden' : 'visible';
-      // Ease the lens's crush with the envelope (the ::before reads these
-      // inherited custom props) so the cooled box develops gradually, in
-      // lockstep with the text, instead of fading in at full strength.
-      container.style.setProperty('--lens-b', lerp(1, LENS_BRIGHTNESS, envelope).toFixed(3));
-      container.style.setProperty('--lens-s', lerp(1, LENS_SATURATE, envelope).toFixed(3));
-      if (envelope <= 0.001) return;
+      // Presence gate: data-active flips the overlay's `display` (globals.css)
+      // so it's fully out of render + a11y outside its window, and it can't fight
+      // the no-WebGL fallback (which keeps it display:none).
+      const active = envelope > 0.001;
+      container.dataset.active = active ? 'true' : 'false';
+      // Fade the text via its own layer's opacity.
+      inner.style.opacity = envelope.toFixed(3);
+      // Fade the lens (a painted dark gradient — see globals.css; deliberately
+      // NOT a backdrop-filter, which drew unreliably over the WebGL canvas) via
+      // its own opacity. The ::before inherits this custom prop.
+      container.style.setProperty('--lens-alpha', envelope.toFixed(3));
+      if (!active) return;
 
       if (reduced) {
         // No blur/rise under reduced motion — the scrubbed opacity fade stays
@@ -83,8 +81,8 @@ export function ArborIntro() {
       }
       const rise = (1 - envelope) * MAX_RISE_PX;
       const blur = (1 - envelope) * MAX_BLUR_PX;
-      // The cooled-lens backdrop lives on the (static) column; only this text
-      // block resolves from haze, so the blur and the backdrop never fight.
+      // The lens gradient lives on the (static) column; only this text block
+      // resolves from haze (blur + rise), so the two never fight.
       inner.style.transform = `translateY(${rise.toFixed(1)}px)`;
       inner.style.filter = `blur(${blur.toFixed(2)}px)`;
     };

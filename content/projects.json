@@ -2,40 +2,40 @@
   "tier1": [
     {
       "id": "hic-pipeline",
-      "title": "Hi-C chromatin conformation pipeline",
+      "title": "Hi-C chromatin conformation",
       "domain": "Epigenetics",
       "branch": "epigenetics",
-      "oneLiner": "Performed differential analysis on Hi-C loops, TADs, & compatments between conditions at two timepoints; clustered and annotated loop anchors/spans.",
+      "oneLiner": "Performed differential analysis on Hi-C loops, TADs, & compatments between conditions at two timepoints; clustered and annotated loop anchors/spans to identify mechanisms.",
       "tags": ["Juicer", "mariner/edgeR", "Homer"],
       "links": { "github": "https://github.com/Zaki-1052/mariner_hi-c" },
       "scale": "chromatin"
     },
     {
       "id": "methylation-pipeline",
-      "title": "DNA methylation (Biomodal DUET evoC)",
+      "title": "DNA methylation (Biomodal)",
       "domain": "Epigenetics",
       "branch": "epigenetics",
-      "oneLiner": "Profiled simultaneous hypermethylation / hypo-hydroxymethylation at euchromatic, coordinated, & neuronal/synaptic gene bodies with histone modifications.",
+      "oneLiner": "Profiled simultaneous hypermethylation / hypo-hydroxymethylation at euchromatic, coordinated, & neuronal/synaptic gene bodies with histone modification and expression data.",
       "tags": ["5mC/5hmC", "DMRs", "ROC"],
       "links": { "github": "https://github.com/Zaki-1052/mariner_hi-c/biomodal" },
       "scale": "chromatin"
     },
     {
       "id": "5ht2a-md",
-      "title": "Post-synaptic CNS membrane protein MD",
+      "title": "Post-synaptic CNS membrane protein MD (Biochemcore)",
       "domain": "Structural Biology",
       "branch": "structural",
-      "oneLiner": "Modeled the 5-HT2A recepter bound to psilocin coupled to Gi/Gq proteins; differentially analyzed RMSD/RMSF, lipid contacts, & molecular dynamics.",
+      "oneLiner": "Modeled the 5-HT2A recepter bound to psilocin and coupled to the Gi/Gq proteins; differentially analyzed RMSD/RMSF, lipid order contacts, & molecular dynamics to identify selectively biased agonism mechanisms.",
       "tags": ["MDAnalysis", "OpenMM", "PyMol"],
       "links": {},
       "scale": "protein"
     },
     {
       "id": "mpro-analysis",
-      "title": "MPro allosteric pathway analysis",
+      "title": "MPro allosteric pathway analysis (in progress)",
       "domain": "Structural Biology",
       "branch": "structural",
-      "oneLiner": "Refactored and ran analysis on the COVID main protease at the Amaro Lab; used WISP to identify suboptimal communication pathways across proteins.",
+      "oneLiner": "Refactored and ran analysis on the COVID main protease at the Amaro Lab; used WISP to identify suboptimal communication pathways across three different protein states.",
       "tags": ["Jupyter", "WISP", "VMD"],
       "links": { "github": "https://github.com/Zaki-1052/MPro-Analysis" },
       "scale": "protein"
@@ -45,7 +45,7 @@
       "title": "Cleave",
       "domain": "Software",
       "branch": "software",
-      "oneLiner": "Self-hosted CUTRUN and RNA-seq Bioinformatics GUI platform; runs full FASTQ trimming, QC, alignment, peak-calling, Diffbind, normalization, & figure generation pipelines. Enables automatic processing of large datasets and accessible collaboration between lab members.",
+      "oneLiner": "Self-hosted CUTRUN and RNA-seq Bioinformatics GUI platform; runs full FASTQ trimming, QC, alignment, peak-calling, Diffbind, normalization, & figure generation pipelines. Enables automatic processing of large datasets and collaboration between lab members.",
       "tags": ["React", "FastAPI", "PostgreSQL"],
       "links": { "github": "https://github.com/Zaki-1052/cleave" },
       "scale": "code"
@@ -55,7 +55,7 @@
       "title": "MetaENCODE",
       "domain": "Software",
       "branch": "software",
-      "oneLiner": "Interactive web app to help researchers discover related biological datasets from the Encyclopedia of DNA Elements (ENCODE) through metadata-driven similarity scoring. Allows visualization of relationships between epigenetic data. Collaboration with DS3 x UBIC.",
+      "oneLiner": "Interactive web app to help researchers discover related biological datasets from the Encyclopedia of DNA Elements (ENCODE) through metadata-driven similarity scoring. Allows visualization of relationships between epigenetic data. Collaboration w/ DS3 x UBIC.",
       "tags": ["SBERT", "UMAP", "search"],
       "links": { "github": "https://github.com/Zaki-1052/MetaEncode" },
       "scale": "code"
