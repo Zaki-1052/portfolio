@@ -23,6 +23,7 @@ uniform sampler2D uCoilTex; // baked coil field: r crisp, g blurred (C1), b mott
 // -- macro form (see shell-params.ts for the shipped values) --
 uniform vec3 uShapeDims; // superellipsoid semi-axes: X width, Y height, Z length
 uniform float uBoxiness; // 2 = ellipsoid; higher = slab-like halves, steeper walls
+uniform float uCrownRound; // 0..1 — eases the top pole toward a pure-ellipsoid dome (sides keep uBoxiness)
 uniform float uShoulderY; // unit-y of the widest shoulder line
 uniform float uShoulderBulge; // how strongly the shoulders bulge
 uniform float uBaseTuck; // underside pull-in (top-heavy mass distribution)

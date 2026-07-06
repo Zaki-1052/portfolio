@@ -10,17 +10,20 @@ tissue→cellular **melt**, resolving out of the haze with the tree and clearing
 before the labels arrive.
 
 - **New:** `src/scales/cellular/ArborIntro.tsx` — fixed, `pointer-events:none`
-  overlay column. Opacity/blur/rise driven by a `smoothstep` depth **envelope**
-  on the gsap ticker (no React re-render; early-outs when depth + reduced-motion
-  are unchanged; `visibility:hidden` when faded). Reads the same
-  `getSection('cellular')` prose via `MarkdownRenderer`. Mirrors the
-  `ArborAnnotations` imperative-envelope pattern.
+  overlay. `.arbor-intro` (container) → `.arbor-intro__col` (static centered box,
+  holds the lens `::before`) → `.arbor-intro__inner` (the text that
+  resolves-from-haze). Opacity + the resolve blur/rise + the lens crush amount all
+  driven by one `smoothstep` depth **envelope** on the gsap ticker (no React
+  re-render; early-outs when depth + reduced-motion are unchanged;
+  `visibility:hidden` when faded). Reads the same `getSection('cellular')` prose
+  via `MarkdownRenderer`. Mirrors the `ArborAnnotations` imperative-envelope pattern.
 - **Modified:** `src/scales/cellular/CellularContent.tsx` — render `<ArborIntro />`
   beside `<ArborAnnotations />` (import added).
 - **Modified:** `src/styles/globals.css` — new `.arbor-intro` block (WebGL-gated,
   `--z-overlay`), centered `.arbor-intro__col` (`min(620px,82vw)`, left-aligned,
-  Lora serif title), and a self-contained centered radial scrim via
-  `.arbor-intro__col::before`.
+  Lora serif title), the **cooled-lens** `.arbor-intro__col::before`, the
+  ink-halo `.arbor-intro__inner`, a brightened `.arbor-intro .prose`, and a
+  matching `[data-scale='tissue'] .prose` brighten for the hero.
 
 ## Decisions made
 
@@ -43,6 +46,17 @@ before the labels arrive.
   visible. An inherited `text-shadow` ink halo on `.arbor-intro__inner` backstops
   the glyphs. The resolve-from-haze blur/rise moved off the column onto
   `.arbor-intro__inner` so it can't fight the backdrop filter.
+- **Lens develops (not pops):** the lens crush is eased with the envelope, not
+  held at full strength — `ArborIntro` writes two inherited custom props per frame
+  (`--lens-b` brightness 1→0.55, `--lens-s` saturate 1→0.85, via `lerp`) that the
+  `::before` reads. Early in the reveal the lens is ~invisible (brightness ~1) and
+  deepens in lockstep with the text, so the box no longer arrives as an abrupt
+  fixed-strength shape ahead of the text.
+- **Prose brightness:** the overlay body was stepped from `--text-body` (#abb2bf,
+  dull over the warm melt) up to `--text-strong` (#d7dae0) via a scoped
+  `.arbor-intro .prose` rule. The global `.prose` token is untouched. The tissue
+  **hero** prose was brought to the same level (`[data-scale='tissue'] .prose`) so
+  the two match; other scales keep the standard body color.
 - **Placement:** centered column; per user, horizontal placement de-prioritized
   since the overlay fades out mid-descent and never has to dodge the tree.
 - **A11y:** overlay is NOT `aria-hidden` — it carries the real prose in the WebGL
@@ -51,17 +65,20 @@ before the labels arrive.
 
 ## Verification
 
-- `npm run typecheck` clean, `npm run lint` clean.
-- Manual (pending, user checks UI): `npm run dev`, scroll the tissue→cellular
-  seam — intro resolves from haze over the scrim, holds while lingering, clears
-  before the project labels; scrubbing back reverses cleanly; reduce-motion drops
-  blur+rise; no-WebGL fallback still shows the same prose in `.cellular-doc`.
+- `npm run typecheck` clean, `npm run lint` clean (re-run after each refinement).
+- Manual (user checked UI iteratively via screenshots across the session): intro
+  resolves from haze, holds while lingering, clears before the project labels; the
+  cooled lens keeps text legible over both cream and navy patches and now develops
+  gradually rather than popping in; brightened prose reads better over the melt.
 
 ## Open items
 
-- Tune the four envelope constants in `ArborIntro.tsx` against the live scene if
-  the reveal should start earlier/later relative to where the tree visibly
-  resolves.
+- Tune the four envelope constants in `ArborIntro.tsx` if the reveal should start
+  earlier/later vs. where the tree visibly resolves. Related knobs now live at the
+  top of the file too: `MAX_RISE_PX`/`MAX_BLUR_PX` (haze resolve) and
+  `LENS_BRIGHTNESS`/`LENS_SATURATE` (full-strength lens crush).
+- If the lens should trail the text even more deliberately, give it its own
+  slightly-later envelope instead of sharing the text's `REVEAL_START/END`.
 
 ## Key file paths
 

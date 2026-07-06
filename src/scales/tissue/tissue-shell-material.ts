@@ -37,6 +37,7 @@ export const SurfaceShellMaterial = shaderMaterial(
     // tissue-preview leva panel drives these live for iteration) --
     uShapeDims: new Vector3(P.dimX, P.dimY, P.dimZ),
     uBoxiness: P.boxiness,
+    uCrownRound: P.crownRound,
     uShoulderY: P.shoulderY,
     uShoulderBulge: P.shoulderBulge,
     uBaseTuck: P.baseTuck,

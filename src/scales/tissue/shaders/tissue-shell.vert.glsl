@@ -33,7 +33,13 @@ vec3 toBase(vec3 sp) {
   vec3 u = normalize(sp);
   vec3 P = sp * uShapeDims * radialProfile(u.y);
   vec3 d = max(abs(normalize(P)), vec3(1e-4));
-  float n = uBoxiness;
+  // Crown rounding: near the +Y pole, ease the exponent toward a pure ellipsoid
+  // (2.0) so the top domes instead of reading as a flat slab face. Gated to the
+  // upper region by u.y, so the side walls keep full uBoxiness — the top's
+  // roundness is decoupled from the slab-halves character. min() keeps the top
+  // from ever going boxier than the sides.
+  float crownK = uCrownRound * smoothstep(0.25, 0.9, u.y);
+  float n = mix(uBoxiness, min(uBoxiness, 2.0), crownK);
   float f = pow(pow(d.x, n) + pow(d.y, n) + pow(d.z, n), -1.0 / n);
   vec3 nrm = normalize(u / uShapeDims);
   return P * f + nrm * baseForm(sp);

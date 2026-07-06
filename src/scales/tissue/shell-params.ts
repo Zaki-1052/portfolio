@@ -14,6 +14,10 @@ export interface ShellParams {
   dimY: number;
   dimZ: number;
   boxiness: number;
+  // Crown rounding: 0 = full boxiness at the top (slab face); 1 = the top pole
+  // eases to a pure-ellipsoid dome. Gated to the upper region, so the side
+  // walls keep uBoxiness — top roundness decoupled from the slab-halves look.
+  crownRound: number;
   // Vertical mass distribution: where the widest shoulder sits (unit y), how
   // strongly it bulges, how much the underside tucks in, and the flat-base
   // squash.
@@ -69,6 +73,7 @@ export const SHELL_PRESETS: Record<'loaf' | 'crown' | 'bluff', ShellParams> = {
     dimY: 0.78,
     dimZ: 1.32,
     boxiness: 2.0,
+    crownRound: 0,
     shoulderY: 0.1,
     shoulderBulge: 0.0,
     baseTuck: 0.0,
@@ -102,6 +107,7 @@ export const SHELL_PRESETS: Record<'loaf' | 'crown' | 'bluff', ShellParams> = {
     dimY: 1.02,
     dimZ: 1.28,
     boxiness: 2.3,
+    crownRound: 0.12,
     shoulderY: 0.3,
     shoulderBulge: 0.14,
     baseTuck: 0.3,
@@ -132,6 +138,7 @@ export const SHELL_PRESETS: Record<'loaf' | 'crown' | 'bluff', ShellParams> = {
     dimY: 1.08,
     dimZ: 1.22,
     boxiness: 2.9,
+    crownRound: 0,
     shoulderY: 0.35,
     shoulderBulge: 0.16,
     baseTuck: 0.34,
@@ -167,6 +174,7 @@ export const SHELL_DEFAULTS: ShellParams = SHELL_PRESETS.crown;
 export interface ShellParamUniforms {
   uShapeDims: Vector3;
   uBoxiness: number;
+  uCrownRound: number;
   uShoulderY: number;
   uShoulderBulge: number;
   uBaseTuck: number;
@@ -200,6 +208,7 @@ export interface ShellParamUniforms {
 export function applyShellParams(m: ShellParamUniforms, p: ShellParams, stalkOn = false): void {
   m.uShapeDims.set(p.dimX, p.dimY, p.dimZ);
   m.uBoxiness = p.boxiness;
+  m.uCrownRound = p.crownRound;
   m.uShoulderY = p.shoulderY;
   m.uShoulderBulge = p.shoulderBulge;
   m.uBaseTuck = p.baseTuck;

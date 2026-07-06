@@ -28,6 +28,7 @@ export function useShellControls(initial: ShellParams, collapsed: boolean): Shel
         dimY: { value: initial.dimY, min: 0.5, max: 1.4, step: 0.01 },
         dimZ: { value: initial.dimZ, min: 0.8, max: 1.7, step: 0.01 },
         boxiness: { value: initial.boxiness, min: 1.6, max: 3.5, step: 0.05 },
+        crownRound: { value: initial.crownRound, min: 0, max: 1, step: 0.01 },
         shoulderY: { value: initial.shoulderY, min: -0.5, max: 0.8, step: 0.01 },
         shoulderBulge: { value: initial.shoulderBulge, min: 0, max: 0.3, step: 0.005 },
         baseTuck: { value: initial.baseTuck, min: 0, max: 0.5, step: 0.01 },

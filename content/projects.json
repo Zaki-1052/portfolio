@@ -45,7 +45,7 @@
       "title": "Cleave",
       "domain": "Software",
       "branch": "software",
-      "oneLiner": "Self-hosted CUTRUN and RNA-seq Bioinformatics GUI platform; runs full FASTQ, alignment, peak-calling, Diffbind, normalization, & figure generation pipelines.",
+      "oneLiner": "Self-hosted CUTRUN and RNA-seq Bioinformatics GUI platform; runs full FASTQ trimming, QC, alignment, peak-calling, Diffbind, normalization, & figure generation pipelines. Enables automatic processing of large datasets and accessible collaboration between lab members.",
       "tags": ["React", "FastAPI", "PostgreSQL"],
       "links": { "github": "https://github.com/Zaki-1052/cleave" },
       "scale": "code"
@@ -55,7 +55,7 @@
       "title": "MetaENCODE",
       "domain": "Software",
       "branch": "software",
-      "oneLiner": "Interactive web app to help researchers discover related biological datasets from the Encyclopedia of DNA Elements through metadata-driven similarity scoring",
+      "oneLiner": "Interactive web app to help researchers discover related biological datasets from the Encyclopedia of DNA Elements (ENCODE) through metadata-driven similarity scoring. Allows visualization of relationships between epigenetic data. Collaboration with DS3 x UBIC.",
       "tags": ["SBERT", "UMAP", "search"],
       "links": { "github": "https://github.com/Zaki-1052/MetaEncode" },
       "scale": "code"
