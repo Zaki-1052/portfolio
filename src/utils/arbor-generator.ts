@@ -98,7 +98,8 @@ export const ARBOR_GROWTH_DEFAULTS: ArborGrowthParams = {
   minorLimbs: 4,
   minorScale: 0.45,
   tailSegments: 6,
-  tailLength: 2.0, // short — its end wisps must live inside the settle frame
+  tailLength: 5.0, // trailing filament below the hub — framed by the settle knot
+  // (dev panel min must stay ≤ this or leva silently clamps dev ≠ prod)
   hubScale: 2.35,
   waviness: 0.7,
   punctaSpacing: 0.55,

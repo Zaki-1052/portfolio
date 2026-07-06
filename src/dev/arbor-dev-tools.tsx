@@ -44,7 +44,7 @@ export function useArborControls(initial: ArborParams, collapsed: boolean): Arbo
         minorLimbs: { value: initial.minorLimbs, min: 0, max: 5, step: 1 },
         minorScale: { value: initial.minorScale, min: 0.2, max: 0.8, step: 0.01 },
         tailSegments: { value: initial.tailSegments, min: 0, max: 14, step: 1 },
-        tailLength: { value: initial.tailLength, min: 5, max: 24, step: 0.1 },
+        tailLength: { value: initial.tailLength, min: 0, max: 24, step: 0.1 },
         hubScale: { value: initial.hubScale, min: 1.1, max: 3.2, step: 0.05 },
         waviness: { value: initial.waviness, min: 0, max: 1.2, step: 0.01 },
         punctaSpacing: { value: initial.punctaSpacing, min: 0.4, max: 2.5, step: 0.05 },
