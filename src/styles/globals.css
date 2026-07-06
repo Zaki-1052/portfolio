@@ -584,6 +584,13 @@ hr {
   max-width: var(--measure-wide);
 }
 
+/* Hero body matches the cellular melt overlay's brightness — the muted
+   --text-body reads dull over the warm tissue surface. Scoped to tissue so the
+   other scales keep the standard body color. */
+[data-scale='tissue'] .prose {
+  color: var(--text-strong);
+}
+
 /* ---- Micro eyebrow label (scale · magnification) ---- */
 
 .eyebrow {
@@ -1534,6 +1541,76 @@ hr {
   margin: 0 0 var(--space-6);
   font-size: var(--text-3xl);
   max-width: 20ch;
+}
+
+/* ============================================================
+   ARBOR INTRO — the band's intro prose, surfaced in the WebGL register
+   during the tissue→cellular melt. A fixed, click-through overlay whose
+   opacity/blur/rise are driven by a depth envelope on the gsap ticker
+   (ArborIntro.tsx): it resolves out of the haze with the tree, then clears
+   before the annotation labels arrive at 0.33. The no-WebGL fallback keeps
+   this same prose in .cellular-doc (which this rule leaves untouched).
+   ============================================================ */
+.arbor-intro {
+  display: none;
+}
+[data-webgl='active'] .arbor-intro {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  pointer-events: none;
+  opacity: 0; /* JS (ArborIntro tick) drives it */
+  visibility: hidden; /* JS toggles it out of the a11y tree when faded */
+}
+.arbor-intro__col {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(620px, 82vw);
+  text-align: left;
+}
+/* Cooled lens: a feathered tonal-crush of the lava behind the text. The melt is
+   a bright-cream / dark-navy checkerboard, so no flat scrim reads everywhere;
+   instead we pull the BRIGHTNESS of whatever sits behind the column down (cream
+   crushed toward navy) and dissolve the edges into the scene with a radial mask
+   — no opaque fill, no rectangle. Texture and the emerging tree stay visible,
+   just cooled. The crush amount (--lens-b/-s, set per-frame by ArborIntro) eases
+   from none up to full WITH the reveal so the box develops gradually rather than
+   popping in; it also fades with the container's envelope opacity. */
+.arbor-intro__col::before {
+  content: '';
+  position: absolute;
+  inset: -36px -52px;
+  z-index: -1;
+  border-radius: var(--radius-organic, 16px);
+  backdrop-filter: brightness(var(--lens-b, 0.55)) saturate(var(--lens-s, 0.85));
+  -webkit-backdrop-filter: brightness(var(--lens-b, 0.55)) saturate(var(--lens-s, 0.85));
+  -webkit-mask-image: radial-gradient(ellipse 76% 92% at 50% 50%, #000 50%, transparent 84%);
+  mask-image: radial-gradient(ellipse 76% 92% at 50% 50%, #000 50%, transparent 84%);
+  pointer-events: none;
+}
+/* Only the text block resolves from haze (blur + rise, driven by JS). An
+   inherited ink halo backstops the lens so glyphs stay legible even over the
+   brightest cooled patches — a tight dark rim plus a soft outer glow, no box. */
+.arbor-intro__inner {
+  text-shadow:
+    0 1px 2px rgba(8, 10, 16, 0.9),
+    0 0 4px rgba(8, 10, 16, 0.85),
+    0 0 16px rgba(8, 10, 16, 0.5);
+  will-change: transform, filter;
+}
+.arbor-intro__title {
+  margin: 0 0 var(--space-4);
+  font-family: var(--font-serif);
+  font-size: var(--text-3xl);
+  max-width: 18ch;
+}
+/* The muted --text-body reads dull against the warm melt; step the body up to
+   the palette's bright foreground (scoped to this overlay only). */
+.arbor-intro .prose {
+  color: var(--text-strong);
 }
 
 /* ============================================================

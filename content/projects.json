@@ -5,8 +5,8 @@
       "title": "Hi-C chromatin conformation pipeline",
       "domain": "Epigenetics",
       "branch": "epigenetics",
-      "oneLiner": "Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod.",
-      "tags": ["R", "mariner/edgeR", "Hi-C"],
+      "oneLiner": "Performed differential analysis on Hi-C loops, TADs, & compatments between conditions at two timepoints; clustered and annotated loop anchors/spans.",
+      "tags": ["Juicer", "mariner/edgeR", "Homer"],
       "links": { "github": "https://github.com/Zaki-1052/mariner_hi-c" },
       "scale": "chromatin"
     },
@@ -15,9 +15,9 @@
       "title": "DNA methylation (Biomodal DUET evoC)",
       "domain": "Epigenetics",
       "branch": "epigenetics",
-      "oneLiner": "Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod.",
+      "oneLiner": "Profiled simultaneous hypermethylation / hypo-hydroxymethylation at euchromatic, coordinated, & neuronal/synaptic gene bodies with histone modifications.",
       "tags": ["5mC/5hmC", "DMRs", "ROC"],
-      "links": { "github": "https://github.com/Zaki-1052/mariner_hi-c" },
+      "links": { "github": "https://github.com/Zaki-1052/mariner_hi-c/biomodal" },
       "scale": "chromatin"
     },
     {
@@ -25,8 +25,8 @@
       "title": "Post-synaptic CNS membrane protein MD",
       "domain": "Structural Biology",
       "branch": "structural",
-      "oneLiner": "Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod.",
-      "tags": ["MD", "AMBER", "structural"],
+      "oneLiner": "Modeled the 5-HT2A recepter bound to psilocin coupled to Gi/Gq proteins; differentially analyzed RMSD/RMSF, lipid contacts, & molecular dynamics.",
+      "tags": ["MDAnalysis", "OpenMM", "PyMol"],
       "links": {},
       "scale": "protein"
     },
@@ -35,8 +35,8 @@
       "title": "MPro allosteric pathway analysis",
       "domain": "Structural Biology",
       "branch": "structural",
-      "oneLiner": "Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod.",
-      "tags": ["Python", "WISP", "ChimeraX"],
+      "oneLiner": "Refactored and ran analysis on the COVID main protease at the Amaro Lab; used WISP to identify suboptimal communication pathways across proteins.",
+      "tags": ["Jupyter", "WISP", "VMD"],
       "links": { "github": "https://github.com/Zaki-1052/MPro-Analysis" },
       "scale": "protein"
     },
@@ -45,7 +45,7 @@
       "title": "Cleave",
       "domain": "Software",
       "branch": "software",
-      "oneLiner": "Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod.",
+      "oneLiner": "Self-hosted CUTRUN and RNA-seq Bioinformatics GUI platform; runs full FASTQ, alignment, peak-calling, Diffbind, normalization, & figure generation pipelines.",
       "tags": ["React", "FastAPI", "PostgreSQL"],
       "links": { "github": "https://github.com/Zaki-1052/cleave" },
       "scale": "code"
@@ -55,7 +55,7 @@
       "title": "MetaENCODE",
       "domain": "Software",
       "branch": "software",
-      "oneLiner": "Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod.",
+      "oneLiner": "Interactive web app to help researchers discover related biological datasets from the Encyclopedia of DNA Elements through metadata-driven similarity scoring",
       "tags": ["SBERT", "UMAP", "search"],
       "links": { "github": "https://github.com/Zaki-1052/MetaEncode" },
       "scale": "code"
@@ -65,35 +65,35 @@
     {
       "id": "gptportal",
       "title": "GPTPortal",
-      "oneLiner": "Lorem ipsum dolor sit amet, consectetur adipiscing.",
+      "oneLiner": "My first project -- an initially simple Node.js/Express portal to query various LLM APIs with integrated embeddings -- blew up and encouraged me to keep building.",
       "stars": 400,
       "links": { "github": "https://github.com/Zaki-1052/GPTPortal" }
     },
     {
       "id": "ao3-explorer",
       "title": "AO3-Explorer",
-      "oneLiner": "Lorem ipsum dolor sit amet, consectetur adipiscing.",
+      "oneLiner": "A small React/TS SPA to scrape my reading history and organize three years worth (400M+ words) into categories with fun visualizations gained a stable following.",
       "metric": "◇ 150 MAU",
       "links": { "github": "https://github.com/Zaki-1052/AO3-History-Explorer" }
     },
     {
       "id": "yeast-msa",
       "title": "YeastMSA",
-      "oneLiner": "Lorem ipsum dolor sit amet, consectetur adipiscing.",
+      "oneLiner": "Multiple sequence alignment and variant analysis, with subsequent network and sterol comparisons revealed some intriguing patterns in ergostatic yeast pathways.",
       "metric": "Itay-Budin Lab",
       "links": { "github": "https://github.com/Zaki-1052/Yeast_MSA" }
     },
     {
       "id": "crime-analysis",
       "title": "Crime-Analysis",
-      "oneLiner": "Lorem ipsum dolor sit amet, consectetur adipiscing.",
+      "oneLiner": "My first data analysis pipeline; I aggregated government data for a research report on the intersectionality between incarceration, crime rates, & political leanings.",
       "metric": "R",
       "links": { "github": "https://github.com/Zaki-1052/Crime_Analysis" }
     },
     {
       "id": "webreg",
       "title": "WebReg",
-      "oneLiner": "Lorem ipsum dolor sit amet, consectetur adipiscing.",
+      "oneLiner": "I learned enough Rust to set up a server that polled my enrollment system to check for waitlisted spots and automically enroll me in the classes I wanted first.",
       "metric": "Rust",
       "links": { "github": "https://github.com/Zaki-1052/WebReg-Auto-Enroller" }
     }

@@ -17,6 +17,7 @@ import { useBranchFocusStore } from '@/stores/branch-focus';
 import { useDepthStore } from '@/stores/depth';
 import { BRANCH_META, BRANCH_ORDER, type BranchKey } from '@/content/branch-order';
 import { ArborAnnotations } from './ArborAnnotations';
+import { ArborIntro } from './ArborIntro';
 
 export function CellularContent() {
   const focusedBranch = useBranchFocusStore((s) => s.focusedBranch);
@@ -42,6 +43,7 @@ export function CellularContent() {
           Canvas owns the band. */}
       <div className="arbor-runway arbor-runway--arrival" aria-hidden="true" />
       <div className="arbor-runway arbor-runway--index" aria-hidden="true" />
+      <ArborIntro />
       <ArborAnnotations />
 
       <div className="cellular-doc">
