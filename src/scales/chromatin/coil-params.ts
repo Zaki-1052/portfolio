@@ -9,9 +9,10 @@ import type { Color } from 'three';
 import { COIL_GROWTH_DEFAULTS, type CoilGrowthParams } from '@/utils/coil-generator';
 
 export interface CoilLookParams {
-  /** Bead body: warm dark base carrying the band's rose register. */
+  /** Bead body: desaturated dark slate — a believable material tone; the
+   *  band's blue lives in the lighting and rim, not a dyed bead. */
   beadBaseColor: string;
-  /** Rose rim + how tight it hugs the bead silhouette. Beads are chunky
+  /** Accent rim + how tight it hugs the bead silhouette. Beads are chunky
    *  ellipsoids (not thin cylinders), so the power sits looser than the
    *  arbor limbs'. */
   beadFresnelColor: string;
@@ -45,18 +46,20 @@ export type CoilParams = CoilGrowthParams & CoilLookParams;
  */
 export const COIL_ORIGIN: readonly [number, number, number] = [0, -26, -40];
 
-// The neutral-midpoint register: rose accents over a warm dark bead body,
-// cool blue-rose threads — the visual equilibrium between the warm shell
-// and the cold digital bands.
+// The home-base register (2026-07-07 palette revision, user-directed: blue
+// restored to this band per the master plan; rose moved down one band): the
+// band accent blue over a desaturated slate bead body, faintly-blue-glowing
+// threads — the calm equilibrium between the warm shell and the cold digital
+// bands. Distinct from the second band's ELECTRIC blue: this one is quiet.
 const LOOK_DEFAULTS: CoilLookParams = {
-  beadBaseColor: '#55404e',
-  beadFresnelColor: '#d57aa5',
+  beadBaseColor: '#434a56',
+  beadFresnelColor: '#61afef',
   beadFresnelPower: 3.4,
   grooveAmp: 0.45,
   grooveFreq: 5,
   locusGlow: 0.25,
   driftAmp: 0.1,
-  linkerColor: '#8b6a9e',
+  linkerColor: '#7aa5d8',
   linkerOpacity: 0.6,
   linkerWidth: 0.04,
   linkerWaveAmp: 0.02,

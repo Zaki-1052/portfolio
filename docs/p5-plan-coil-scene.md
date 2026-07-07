@@ -21,6 +21,15 @@ The band owns canonical depth **[0.43, 0.57)** (verified:
 scale-manager.ts:28). CSS accent is rose `#d57aa5` (`--aod-rose`), fog
 `#2b3038`, heading font is Inter (sans), grain low.
 
+> **Palette revision (2026-07-07, user-directed):** this band's register is
+> now the home-base BLUE — accent `#61afef` (`--aod-blue`) over desaturated
+> slate beads `#434a56`, threads `#7aa5d8` — restoring the master plan's
+> vision for the third band. The rose register (`#d57aa5`) moved down one
+> band to the fourth. Rose color values quoted elsewhere in this document are
+> superseded; the blessed values live in `coil-params.ts` and `globals.css`.
+> Growth defaults also tightened (pitch 0.55→0.5, beads 96→106) in the 5.1
+> sign-off pass for a denser packed read. Fog anchor `#2b3038` unchanged.
+
 ---
 
 ## Creative decisions (user-locked, do not relitigate)

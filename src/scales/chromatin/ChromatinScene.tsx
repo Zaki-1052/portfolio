@@ -12,15 +12,15 @@ import { smoothstep } from '@/utils/math';
 import { COIL_ORIGIN } from './coil-params';
 import { CoilMesh } from './CoilMesh';
 
-// Sparse cool-rose motes suspended around the cluster — fainter and stiller
+// Sparse blue-tinted motes suspended around the cluster — fainter and stiller
 // than the arbor's warm field (this band is the neutral equilibrium point).
 // One config, one draw call: no separate atmosphere module needed yet.
 const COIL_DRIFT: DriftConfig = {
   count: 340,
   rInner: 2.5,
   rOuter: 20,
-  color: '#d57aa5',
-  palette: ['#d57aa5', '#b98bc4', '#8d94cf', '#c9a3bd'],
+  color: '#7fb4e8',
+  palette: ['#61afef', '#7fb4e8', '#8d94cf', '#6fc7d8'],
   size: [0.26, 0.42],
   wobble: 0.55,
   rise: 0.05,

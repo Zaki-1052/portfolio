@@ -1,6 +1,6 @@
 // src/scales/chromatin/shaders/coil-bead.frag.glsl
 // Bead SHADING stage — the arbor trunk's craft register settled into the
-// band's neutral midpoint: hemisphere ambient + wrapped key + rose fresnel
+// band's neutral midpoint: hemisphere ambient + wrapped key + accent fresnel
 // rim, hand-set (a custom ShaderMaterial gets no scene lights), manual exp2
 // fog against the live scene fog mirror, uOpacity content-phase reveal.
 // Wrapped-thread grooves band around each bead's own thread axis (vGroove),
@@ -56,12 +56,13 @@ void main() {
   float diff = wrap * wrap;
   float hemi = 0.5 + 0.5 * N.y;
   vec3 ambient = mix(vec3(0.09, 0.09, 0.13), vec3(0.21, 0.21, 0.28), hemi);
-  vec3 keyCol = vec3(0.98, 0.9, 0.96) * 0.8;
+  vec3 keyCol = vec3(0.9, 0.95, 1.0) * 0.8;
   vec3 color = albedo * (ambient + keyCol * diff);
 
-  // Rose rim — separates the dark discs from the haze and feeds bloom. Kept
-  // low-weight: small beads under the band's bloom wash solid pink if the
-  // rim dominates (verified in preview), and the grooves must stay legible.
+  // Accent rim — separates the dark discs from the haze and feeds bloom.
+  // Kept low-weight: small beads under the band's bloom wash to a solid
+  // accent tint if the rim dominates (verified in preview), and the grooves
+  // must stay legible.
   // The ridge modulation keeps the winding visible inside the rim itself.
   float ndv = max(dot(N, V), 0.0);
   float fresnel = pow(max(1.0 - ndv, 0.0), uFresnelPower);

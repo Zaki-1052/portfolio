@@ -54,11 +54,14 @@ export interface CoilNode {
 // Dense-cluster defaults per the phase design spec: tight pitch relative to
 // bead size so adjacent turns press close (the compressed, crystalline read),
 // while along-thread spacing leaves short taut threads visible between discs.
+// Pitch/count tightened 0.55/96 → 0.5/106 in the 5.1 sign-off pass — closes
+// the vertical gaps between turns without hitting the spacing floor
+// (natural spacing ≈ 1.01 > 0.945 floor at these values).
 export const COIL_GROWTH_DEFAULTS: CoilGrowthParams = {
   seed: 11,
-  beadCount: 96,
+  beadCount: 106,
   coilRadius: 2.8,
-  coilPitch: 0.55,
+  coilPitch: 0.5,
   coilTurns: 6,
   beadRadius: 0.45,
   beadAspect: 0.6,
