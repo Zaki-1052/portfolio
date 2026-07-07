@@ -3,9 +3,9 @@
 > **Language convention (STRICT, same as all phases):** all code, comments,
 > docs, commit messages, and session logs use ONLY neutral geometric/design
 > vocabulary — "coil," "fiber," "bead," "thread," "spool," "strand," "loop,"
-> "arc," "region," "locus," "cluster." No domain-specific or anatomical terms
-> anywhere. This is a pure 3D rendering / UI design task. The existing
-> `'chromatin'` scale identifier stays (wired end-to-end in the engine).
+> "arc," "region," "locus," "cluster." No domain-specific terms anywhere.
+> This is a pure 3D rendering / UI design task. The third-band scale
+> identifier in the engine stays as-is (wired end-to-end).
 
 ## Context
 
@@ -79,7 +79,7 @@ depth 0.46: cluster resolved, fog clears
 ## Verified load-bearing facts (from codebase exploration)
 
 - **Scene swap is one line**: `SCENE_REGISTRY` in `scene-manager.tsx` — add
-  `chromatin: CoilScene` + a `SCENE_KEYS` entry. Mount window: scene mounts
+  `coil: CoilScene` + a `SCENE_KEYS` entry. Mount window: scene mounts
   at depth 0.37 (margin 0.06), the arbor unmounts at 0.49.
 - **Camera**: `CAMERA_KEYFRAMES` has 16 knots total. Last arbor knot is at
   depth 0.43 (hold). Next knot is at 1.0 (void tail). **No knots between
@@ -107,10 +107,10 @@ depth 0.46: cluster resolved, fog clears
 - **Focus store + camera blend**: `branch-focus.ts` store +
   `camera-focus.ts` blend poses. GSAP tween drives `focusBlend` 0↔1 over
   400ms. `shouldReleaseFocus(depth, focusDepth)` cancels on scroll-away.
-- **CSS properties** already defined for `[data-scale='chromatin']`: accent
+- **CSS properties** already defined for `[data-scale='coil']`: accent
   `--aod-rose`, bg `--aod-bg`, fog `#2b3038`, heading font sans, grain low.
-- **Existing content**: `ChromatinContent.tsx` is document-only (no
-  scene-native register). `content/sections/chromatin.md` has the prose.
+- **Existing content**: `CoilContent.tsx` is document-only (no
+  scene-native register). `content/sections/coil.md` has the prose.
   `content/publications.json` has 2 publications.
 
 ---
@@ -174,7 +174,7 @@ depth 0.46: cluster resolved, fog clears
 
 ---
 
-#### `src/scales/chromatin/coil-params.ts`
+#### `src/scales/coil/coil-params.ts`
 
 Mirrors `arbor-params.ts`: `CoilLookParams` (colors, emission, fog, glow
 widths) + `COIL_ORIGIN: Vec3` (starter `[0, -26, -40]` — puts the cluster in
@@ -191,7 +191,7 @@ Palette:
 
 ---
 
-#### `src/scales/chromatin/coil-geometry.ts` (three-touching, not tested)
+#### `src/scales/coil/coil-geometry.ts` (three-touching, not tested)
 
 Same precedent as `arbor-geometry.ts`:
 
@@ -215,7 +215,7 @@ Same precedent as `arbor-geometry.ts`:
 
 ---
 
-#### Shaders: `src/scales/chromatin/shaders/`
+#### Shaders: `src/scales/coil/shaders/`
 
 **`coil-bead.vert.glsl`:**
 - Instance attributes for compact + unwound positions
@@ -257,7 +257,7 @@ Same precedent as `arbor-geometry.ts`:
 
 ---
 
-#### `src/scales/chromatin/CoilMesh.tsx`
+#### `src/scales/coil/CoilMesh.tsx`
 
 Assembles 4 draw calls from generator output + live params. Per-frame uniform
 writes mirror `ArborMesh.tsx` pattern:
@@ -272,7 +272,7 @@ focus state.
 
 ---
 
-#### `src/scales/chromatin/CoilScene.tsx`
+#### `src/scales/coil/CoilScene.tsx`
 
 Top-level scene component (sibling pattern to `CellularScene.tsx`):
 - Mounts `<CoilMesh/>` at `COIL_ORIGIN`
@@ -282,7 +282,7 @@ Top-level scene component (sibling pattern to `CellularScene.tsx`):
 
 ---
 
-#### `src/scales/chromatin/coil-fog.ts` (pure) + test
+#### `src/scales/coil/coil-fog.ts` (pure) + test
 
 Same pattern as `arbor-fog.ts`. Two pure functions:
 
@@ -299,7 +299,7 @@ symmetry with the cellular fog window (no overlap).
 
 ---
 
-#### `src/scales/chromatin/coil-anchors.ts` (pure) + test
+#### `src/scales/coil/coil-anchors.ts` (pure) + test
 
 `REGION_ANCHORS: [Vec3, Vec3]` computed from `generateCoil(COIL_GROWTH_DEFAULTS)`
 + `regionAnchor` + `COIL_ORIGIN`. Single source of truth for annotation
@@ -309,7 +309,7 @@ Tests: 2 distinct anchors, plausible bounding box, deterministic.
 
 ---
 
-#### `src/scales/chromatin/CoilAnnotations.tsx`
+#### `src/scales/coil/CoilAnnotations.tsx`
 
 Same architectural pattern as `ArborAnnotations.tsx`:
 - Imperative positioning on gsap ticker via `getCameraPose()` + `worldToScreen()`
@@ -327,12 +327,12 @@ Same architectural pattern as `ArborAnnotations.tsx`:
 
 ---
 
-#### `src/scales/chromatin/CoilIntro.tsx`
+#### `src/scales/coil/CoilIntro.tsx`
 
 Same pattern as `ArborIntro.tsx`:
 - Fixed click-through column
 - Depth envelope: reveal 0.435→0.46, fade 0.475→0.50
-- Reads prose from `content/sections/chromatin.md`
+- Reads prose from `content/sections/coil.md`
 - "Cooled lens" backdrop for legibility
 - Blur/rise resolve-from-haze animation (frozen under reduced motion)
 - Clears before CoilAnnotations arrives
@@ -361,7 +361,7 @@ anchor, fov ~42–46. Reuses `blendCameraSample()`.
 
 ### Modified files
 
-- **`scene-manager.tsx`** — registry: `chromatin: CoilScene` + `SCENE_KEYS`
+- **`scene-manager.tsx`** — registry: `coil: CoilScene` + `SCENE_KEYS`
   entry (`'coil'`).
 - **`camera-keyframes.ts`** — insert 4 knots between depth 0.43 and 0.57:
 
@@ -376,14 +376,14 @@ anchor, fov ~42–46. Reuses `blendCameraSample()`.
 
 - **`scene-atmosphere.tsx`** — after the arbor fog block: import + compose
   `coilFogDensityDeltaFor` and `coilFogColorBlendT`.
-- **`ChromatinContent.tsx`** — rework to dual-register pattern:
+- **`CoilContent.tsx`** — rework to dual-register pattern:
   - WebGL active: two scroll runways (arrival ~140vh, index ~130vh),
-    `CoilIntro` + `CoilAnnotations` overlays, `.chromatin-doc` is
+    `CoilIntro` + `CoilAnnotations` overlays, `.coil-doc` is
     `display:none`
   - No WebGL: runways collapse, full document version renders
   - `hideBadge` on ScaleSection
-- **`globals.css`** — `.chromatin-runway--arrival`, `.chromatin-runway--index`
-  in the scroll runways block. `.chromatin-doc` display:none rule under
+- **`globals.css`** — `.coil-runway--arrival`, `.coil-runway--index`
+  in the scroll runways block. `.coil-doc` display:none rule under
   `[data-webgl='active']`.
 - **`app.tsx`** — lazy DEV-gated `CoilDevTools` mount (if dev panel is built).
 - **`camera-controller.tsx`** — if using a separate coil-focus store: add the
@@ -393,7 +393,7 @@ anchor, fov ~42–46. Reuses `blendCameraSample()`.
 
 - `coil-live-params.ts` — null-by-default override channel
 - `coil-dev-tools.tsx` — leva panel with growth + look sliders
-- `chromatin-preview.html` + `chromatin-preview.tsx` — isolated preview
+- `coil-preview.html` + `coil-preview.tsx` — isolated preview
   (same pattern as cellular-preview)
 
 ---
@@ -413,7 +413,7 @@ Suite green.
 
 ### Stage 5.2 — Look-dev + tuning harness
 
-Build: `coil-live-params.ts`, `coil-dev-tools.tsx`, `chromatin-preview.html`.
+Build: `coil-live-params.ts`, `coil-dev-tools.tsx`, `coil-preview.html`.
 Tune: bead surface grooves, linker shimmer, drift amplitude, color balance.
 
 **5.2 checkpoint:** Preview + live-site scrub at dpr 2. Bless a look → freeze
@@ -433,7 +433,7 @@ directions. 60fps through the transition overlap.
 
 Build: `coil-focus.ts` store, `coil-anchors.ts`, camera focus poses, loop
 ribbon geometry + shaders, `CoilAnnotations.tsx`, `CoilIntro.tsx`.
-Rework `ChromatinContent.tsx` to dual-register. Wire `uUnwindBlend` +
+Rework `CoilContent.tsx` to dual-register. Wire `uUnwindBlend` +
 `uFocusRegion` in `CoilMesh.tsx`.
 
 **5.4 checkpoint:** Click each publication locus → 500ms unwind, region opens,
@@ -446,14 +446,14 @@ No-WebGL fallback unchanged.
 ## Full file inventory
 
 **New:** `src/utils/coil-generator.ts(+test)` ·
-`src/scales/chromatin/{coil-params, coil-live-params, coil-anchors(+test),
+`src/scales/coil/{coil-params, coil-live-params, coil-anchors(+test),
 coil-geometry, CoilMesh, CoilScene, CoilAnnotations, CoilIntro,
 coil-fog(+test)}.ts[x]` ·
-`src/scales/chromatin/shaders/coil-{bead.vert, bead.frag, linker.vert,
+`src/scales/coil/shaders/coil-{bead.vert, bead.frag, linker.vert,
 linker.frag, ribbon.vert, ribbon.frag}.glsl` ·
 `src/stores/coil-focus.ts(+test)` ·
-`src/dev/{coil-dev-tools, chromatin-preview}.tsx` ·
-`chromatin-preview.html` ·
+`src/dev/{coil-dev-tools, coil-preview}.tsx` ·
+`coil-preview.html` ·
 `docs/p5-plan-coil-scene.md`
 
 **Modified:** `scene-manager.tsx` (registry + keys) ·
@@ -461,7 +461,7 @@ linker.frag, ribbon.vert, ribbon.frag}.glsl` ·
 `camera-controller.tsx` (coil focus blend) ·
 `camera-focus.ts` (region focus poses) ·
 `scene-atmosphere.tsx` (coil fog delta + color blend) ·
-`ChromatinContent.tsx` (dual-register rework) ·
+`CoilContent.tsx` (dual-register rework) ·
 `app.tsx` (dev panel) ·
 `globals.css` (runway classes, display:none rule)
 

@@ -51,6 +51,9 @@ const FlagFlightDevTools = import.meta.env.DEV
       import('@/dev/flag-flight-dev-tools').then((m) => ({ default: m.FlagFlightDevTools })),
     )
   : null;
+const CoilDevTools = import.meta.env.DEV
+  ? lazy(() => import('@/dev/coil-dev-tools').then((m) => ({ default: m.CoilDevTools })))
+  : null;
 const CameraTheatreSpike = theatreEnabled
   ? lazy(() =>
       import('@/engine/camera-theatre-spike').then((m) => ({ default: m.CameraTheatreSpike })),
@@ -219,6 +222,12 @@ export function App() {
       {FlagFlightDevTools && (
         <Suspense fallback={null}>
           <FlagFlightDevTools />
+        </Suspense>
+      )}
+      {/* Coil growth/look sliders ('coil …' folders, same panel). */}
+      {CoilDevTools && (
+        <Suspense fallback={null}>
+          <CoilDevTools />
         </Suspense>
       )}
     </>

@@ -15,7 +15,7 @@
 
 **Phases 0-4 complete. Phase 5 ready.** Phases 0-2 (scaffolding, content layer, scroll engine) shipped the full HTML site with depth-driven theming. Phase 3 shipped the tissue/brain scene (sculpted shell with reaction-diffusion coils, atmosphere system, cortex breakthrough). Phase 4 shipped the cellular/arbor scene (procedural branching tree with fluorescence look, signal pulses, scene-native annotations). The Phase 4 arbor rework established the graphics-first content pattern: under WebGL, HTML document content is `display:none` and all content is scene-native annotations pinned to 3D anchors.
 
-Phases 5-8 (chromatin, protein, code, expression) were revised on 2026-07-06 to match the quality bar and interactivity of the tissue and cellular scenes. Each scale is now its own phase with full specification. Ready for Phase 5 (chromatin).
+Phases 5-8 (coil, structure, code, expression) were revised on 2026-07-06 to match the quality bar and interactivity of the tissue and cellular scenes. Each scale is now its own phase with full specification. Ready for Phase 5 (coil).
 
 ---
 
@@ -406,9 +406,11 @@ Scroll from tissue through the breakthrough into cellular. The tree renders. Cli
 
 ---
 
-## Phase 5: chromatin scale
+## Phase 5: coil scale (third band)
 
-> **Goal:** A polished, interactive chromatin fiber scene in the same graphics-first register as tissue and cellular. Publication content is scene-native — luminous annotations anchored to 3D geometry, not HTML documents overlaying a dimmed backdrop. The cellular-to-chromatin transition works.
+> **Language convention (STRICT):** all code, comments, docs, and session logs use ONLY neutral geometric/design vocabulary — "coil," "fiber," "bead," "thread," "spool," "strand," "loop," "arc," "region," "locus," "cluster." The existing `'chromatin'` scale identifier stays (wired end-to-end in the engine). See `docs/p5-plan-coil-scene.md` for the full design specification.
+
+> **Goal:** A polished, interactive threaded-bead coil scene in the same graphics-first register as tissue and cellular. Publication content is scene-native — luminous annotations anchored to 3D geometry, not HTML documents overlaying a dimmed backdrop. The cellular-to-coil transition works.
 > **Estimate:** 5-7 days.
 
 ### Prerequisites
@@ -417,42 +419,42 @@ Scroll from tissue through the breakthrough into cellular. The tree renders. Cli
 
 ### Content display pattern (Phase 4 precedent, applies to all remaining 3D scales)
 
-The Phase 4 arbor rework established the standing rule: under `[data-webgl='active']`, in-flow HTML document content is `display:none`. The visible content is scene-native — luminous annotations, hairline connectors, and interactive cards pinned to projected 3D anchor points. The no-WebGL fallback keeps the full document version untouched. This is the template. Chromatin and protein adopt it here. See `docs/p4-plan-arbor-scene.md` and `logs/2026-07-05_phase-4-scene-native-rework.md` for the full rationale and implementation reference.
+The Phase 4 arbor rework established the standing rule: under `[data-webgl='active']`, in-flow HTML document content is `display:none`. The visible content is scene-native — luminous annotations, hairline connectors, and interactive cards pinned to projected 3D anchor points. The no-WebGL fallback keeps the full document version untouched. This is the template. The coil and structure bands adopt it here. See `docs/p4-plan-arbor-scene.md` and `logs/2026-07-05_phase-4-scene-native-rework.md` for the full rationale and implementation reference.
 
-### 5.1 Chromatin fiber geometry
+### 5.1 Coil fiber geometry
 
-Build `src/scales/chromatin/ChromatinScene.tsx`. The scene shows a chromatin fiber — nucleosome beads threaded along a coiling linker DNA path. The geometry:
+Build `src/scales/chromatin/CoilScene.tsx`. The scene shows a dense coil — oblate disc beads threaded along a helical fiber path. The geometry:
 
 - **Fiber path:** A Catmull-Rom spline defining the coiled trajectory of the fiber. The path should have enough length and curvature to fill the viewport with a section of fiber that feels like part of a larger structure extending beyond the frame.
-- **Nucleosome beads:** Instanced sphere geometry (InstancedMesh, one draw call) positioned along the spline at regular intervals. Each bead represents a nucleosome core particle — a disc-like cylinder or flattened sphere, not a perfect sphere. Approximate dimensions: wider than tall, suggesting the histone octamer wrapped with DNA.
-- **Linker DNA:** Thin tube geometry connecting beads along the spline path. This is the visible backbone of the fiber.
-- **Fiber topology:** The fiber should show the characteristic solenoid or zigzag packing — beads arranged in a helical pattern around a central axis, not strung flat like a necklace. The 30nm fiber structure is the visual target (evocative, not textbook-accurate).
+- **Disc beads:** Instanced sphere geometry (InstancedMesh, one draw call) positioned along the spline at regular intervals. Each bead is an oblate spheroid — wider than tall, a flattened disc shape. Approximate dimensions: wider than tall, suggesting wrapped thread.
+- **Linker threads:** Thin tube geometry connecting beads along the spline path. This is the visible backbone of the fiber.
+- **Fiber topology:** The fiber should show a solenoid or zigzag packing — beads arranged in a helical pattern around a central axis, not strung flat like a necklace. Dense, tightly packed coiling is the visual target (evocative, not literal).
 
 The fiber gently undulates on a slow time-driven oscillation (breathing motion, like the arbor's signal pulse but slower and more fluid). Scroll position controls the camera's relationship to the fiber, not the fiber's motion.
 
-### 5.2 Chromatin shading and atmosphere
+### 5.2 Coil shading and atmosphere
 
 Follow the established material patterns: custom ShaderMaterial with hand-rolled lighting, manual exp2 fog, no scene lights.
 
-- **Lighting:** Blue accent key (#61afef), cool hemisphere ambient. This is the Atom One Dark "home base" — the visual midpoint of the warm-to-cool gradient. Neutral compared to tissue's golden warmth and protein's cyan chill.
-- **Bead surface:** Subtle procedural texture suggesting the wrapped DNA — fine parallel grooves or a shallow helical ridge on each bead's surface. Not anatomically precise, but enough to read as "wrapped."
-- **Linker DNA:** Slightly emissive, thinner than the beads, glowing faintly blue.
+- **Lighting:** Blue accent key (#61afef), cool hemisphere ambient. This is the Atom One Dark "home base" — the visual midpoint of the warm-to-cool gradient. Neutral compared to tissue's golden warmth and the next band's cyan chill.
+- **Bead surface:** Subtle procedural texture suggesting wrapped thread — fine parallel grooves or a shallow helical ridge on each bead's surface. Enough to read as "wrapped" without being literal.
+- **Linker threads:** Slightly emissive, thinner than the beads, glowing faintly blue.
 - **Atmosphere:** Sparse blue-tinted drift motes (reuse the DriftField pattern from tissue/cellular). Fainter and cooler than the arbor's warm multicolor motes. A faint volumetric haze at distance.
 - **Post-processing:** Neutral register — moderate bloom (less than tissue, comparable to cellular), minimal grain, blue-tinted fog. This is the visual equilibrium point of the descent.
 
-### 5.3 Chromatin conformation interaction (the focus mechanic)
+### 5.3 Coil unwind interaction (the focus mechanic)
 
-The interaction concept: **chromatin conformation change**. This is what the publications are about — Hi-C loops, chromatin structure, BAP1's effect on conformation. The fiber's structure IS the interaction.
+The interaction concept: **structural unwind**. The fiber's compact-to-open state IS the interaction. Clicking a publication locus opens the local region dramatically.
 
-- **Default state:** The fiber is in a compact, coiled conformation. The two publication anchors are visible as luminous markers on specific regions of the fiber — subtle glowing loci that invite interaction.
-- **Focus interaction:** Clicking a publication locus triggers a conformation change — the fiber unwinds and opens at that region, loops forming between distant loci (thin luminous arcs connecting bead positions, suggesting Hi-C contact maps). The unwinding animation reveals the publication card as a scene-native annotation pinned to the opened region. The camera pivots toward the focused region (same GSAP-animated focus pattern as the arbor's branch focus).
-- **Loop visualization:** When a publication is focused, thin glowing lines arc between specific bead pairs, visualizing chromatin loops. These are the structural features the research studies — differential loop calling, TAD boundaries. The loops don't need to be data-accurate; they need to read as "connections between distant regions of the fiber."
-- **Unfocused state:** Non-active regions dim (same opacity reduction pattern as the arbor). Clicking the active region or an escape control returns the fiber to its compact conformation.
-- **Two publications:** "Regulation of chromatin conformation by BAP1" and "Coordinated methylation and hydroxymethylation changes at gene bodies after BAP1 loss." Each anchored to a distinct region of the fiber.
+- **Default state:** The fiber is in a compact, tightly packed conformation. The two publication anchors are visible as luminous markers on specific regions of the fiber — subtle glowing loci that invite interaction.
+- **Focus interaction:** Clicking a publication locus triggers an unwind — the fiber opens at that region, loop arcs forming between distant loci (thin luminous ribbon streams connecting bead positions). The unwinding animation reveals the publication card as a scene-native annotation pinned to the opened region. The camera pivots toward the focused region (same GSAP-animated focus pattern as the arbor's branch focus).
+- **Loop visualization:** When a publication is focused, thick ribbon-like streams of light arc between specific bead pairs. Particles travel along each ribbon suggesting data transmission. These read as "connections between distant regions of the fiber."
+- **Unfocused state:** Non-active regions dim (same opacity reduction pattern as the arbor). Clicking the active region or an escape control returns the fiber to its compact state.
+- **Two publications:** Titles pulled from `content/publications.json`. Each anchored to a distinct region of the fiber.
 
 ### 5.4 Scene-native publication annotations
 
-Build `src/scales/chromatin/ChromatinAnnotations.tsx`. Same architectural pattern as `ArborAnnotations.tsx`:
+Build `src/scales/chromatin/CoilAnnotations.tsx`. Same architectural pattern as `ArborAnnotations.tsx`:
 
 - Luminous pure-type labels + hairline connectors pinned to projected 3D anchor points on the fiber.
 - Positioned imperatively on the gsap ticker (no React re-renders per frame).
@@ -460,27 +462,27 @@ Build `src/scales/chromatin/ChromatinAnnotations.tsx`. Same architectural patter
 - Keyboard-navigable (Esc to unfocus, Tab between publications).
 - Scroll-release hint on first focus.
 
-### 5.5 Chromatin intro overlay
+### 5.5 Coil intro overlay
 
-Build `src/scales/chromatin/ChromatinIntro.tsx`. Same pattern as `ArborIntro.tsx` — a fixed overlay that resolves out of the haze with the fiber and clears before the publication annotations arrive. Reads prose from `content/sections/chromatin.md`. Cooled-lens legibility approach adapted for the blue register.
+Build `src/scales/chromatin/CoilIntro.tsx`. Same pattern as `ArborIntro.tsx` — a fixed overlay that resolves out of the haze with the fiber and clears before the publication annotations arrive. Reads prose from `content/sections/chromatin.md`. Cooled-lens legibility approach adapted for the blue register.
 
-### 5.6 Cellular-to-chromatin transition
+### 5.6 Cellular-to-coil transition
 
-Wire the transition at the cellular/chromatin boundary. The arbor scene fades out via depth-enveloped opacity while the chromatin fiber fades in. The camera advances along z. Fog color shifts from the cellular palette toward the neutral Atom One Dark blue. No cinematic breakthrough here — this is a standard crossfade-with-z-motion, but tuned so the fiber's first beads emerge from the same haze the arbor dissolves into.
+Wire the transition at the cellular/coil boundary. The arbor scene fades out via depth-enveloped opacity while the coil fiber fades in. The camera advances along z. Fog color shifts from the cellular palette toward the neutral Atom One Dark blue. No cinematic breakthrough here — this is a standard crossfade-with-z-motion, but tuned so the fiber's first beads emerge from the same haze the arbor dissolves into.
 
 ### 5.7 Integration and post-processing verification
 
-Scroll from tissue through cellular into chromatin. The fiber renders with blue lighting and neutral post-processing. Click each publication locus — the fiber unwinds, loops appear, publication card anchors to the opened region. Links work. Scroll past chromatin; the fiber fades.
+Scroll from tissue through cellular into the coil band. The fiber renders with blue lighting and neutral post-processing. Click each publication locus — the fiber unwinds, loop ribbons appear, publication card anchors to the opened region. Links work. Scroll past the coil band; the fiber fades.
 
-**Verify:** Both publications are accessible via scene-native annotations. The conformation-change interaction feels fluid (unwind animation 400-600ms). The warm-to-neutral post-processing gradient is continuous through the transition. Performance stays under budget (target: under 15 draw calls for the chromatin scene — instanced beads are 1 draw call, linker tubes 1, loops 1, atmosphere 2-3, annotations are HTML).
+**Verify:** Both publications are accessible via scene-native annotations. The unwind interaction feels fluid (animation 400-600ms). The warm-to-neutral post-processing gradient is continuous through the transition. Performance stays under budget (target: under 15 draw calls for the coil scene — instanced beads 1 draw call, linker tubes 1, loop ribbons 1, atmosphere 2-3, annotations are HTML).
 
 ### Phase 5 done criteria
 
-- Chromatin fiber renders with instanced beads, linker DNA, and solenoid packing
-- Conformation-change interaction works (click locus, fiber unwinds, loops form, card appears)
+- Coil fiber renders with instanced disc beads, linker threads, and solenoid packing
+- Unwind interaction works (click locus, fiber opens, loop ribbons form, card appears)
 - Both publications accessible as scene-native annotations
-- Chromatin intro overlay resolves from haze and clears before annotations
-- Cellular-to-chromatin transition works end-to-end
+- Coil intro overlay resolves from haze and clears before annotations
+- Cellular-to-coil transition works end-to-end
 - Post-processing at neutral midpoint of the warm-to-cool gradient
 - No-WebGL fallback shows the full document version from Phase 1
 - Performance baseline recorded
@@ -529,7 +531,7 @@ Build `src/scales/protein/ProteinScene.tsx`. The scene renders the 5-HT2A recept
 - **Membrane:** A translucent disc or plane at the membrane boundary. Semi-transparent, with a subtle procedural ripple (vertex displacement noise). This contextualizes the receptor as membrane-embedded without dominating the scene. Rendered with alpha blending, behind the protein. 1 draw call.
 - **G-protein complex:** The Gi/Gq subunits rendered as a simpler ribbon trace below the membrane. Slightly dimmer than the receptor to establish visual hierarchy. 1 draw call.
 - **Ligand (psilocin):** A small glowing marker at the binding site. Bright cyan accent. Could be a sphere, a small ball-and-stick, or just a luminous point. 1 draw call.
-- **Overall aesthetic:** The protein should feel like a high-quality molecular visualization — not a biology textbook illustration, but something that reads as real data rendered beautifully. Cyan accent lighting (#56b6c2). Cooler and sharper than chromatin.
+- **Overall aesthetic:** The protein should feel like a high-quality molecular visualization — not a biology textbook illustration, but something that reads as real data rendered beautifully. Cyan accent lighting (#56b6c2). Cooler and sharper than the coil band.
 
 ### 6.4 Trajectory animation
 
@@ -537,21 +539,21 @@ The scroll position drives the trajectory frame. As the visitor scrolls through 
 
 - Vertex positions lerp between adjacent keyframes based on `scaleProgress` (the local 0-1 progress through the protein band). This means scrolling forward advances the simulation in time, and scrolling backward rewinds it.
 - The motion should be subtle — the overall fold is stable, but loops flex, helices shift slightly, the ligand wobbles in its binding pocket. This is what MD trajectories actually look like: not dramatic unfolding, but continuous thermal breathing.
-- A slow time-driven ambient pulse layers on top of the scroll-driven frame (similar to the chromatin fiber's breathing). This keeps the protein alive when the user pauses scrolling.
+- A slow time-driven ambient pulse layers on top of the scroll-driven frame (similar to the coil fiber's breathing). This keeps the protein alive when the user pauses scrolling.
 - Under reduced motion: the protein is static at the middle frame. No interpolation, no pulse.
 
 ### 6.5 Protein shading and atmosphere
 
 Custom ShaderMaterial following established patterns.
 
-- **Lighting:** Cyan key light, cool hemisphere ambient. Sharper and colder than chromatin. The post-processing gradient continues its descent — less bloom than chromatin, less grain, colder fog.
+- **Lighting:** Cyan key light, cool hemisphere ambient. Sharper and colder than the coil band. The post-processing gradient continues its descent — less bloom than the coil band, less grain, colder fog.
 - **Protein surface:** Per-residue coloring options (chain-based, or secondary-structure-based — helices one hue, sheets another, coils a third). All within the cyan register. Subtle fresnel rim.
 - **Membrane:** Low-opacity, slightly warm-tinted (a hint of the lipid bilayer's organic nature against the cool protein). Procedural noise displacement for the ripple.
-- **Atmosphere:** Sparse cyan drift motes. Fainter than chromatin's. The scene should feel clean and precise — a step toward the digital clarity of the code scale.
+- **Atmosphere:** Sparse cyan drift motes. Fainter than the coil band's. The scene should feel clean and precise — a step toward the digital clarity of the code scale.
 
 ### 6.6 Scene-native protein annotations
 
-Build `src/scales/protein/ProteinAnnotations.tsx`. Same pattern as chromatin/arbor annotations.
+Build `src/scales/protein/ProteinAnnotations.tsx`. Same pattern as coil/arbor annotations.
 
 Two Tier 1 projects anchor to the scene:
 - **5ht2a-md:** "Post-synaptic CNS membrane protein MD" — anchor near the receptor body or ligand binding site.
@@ -559,7 +561,7 @@ Two Tier 1 projects anchor to the scene:
 
 Focus interaction: clicking an annotation anchor pivots the camera toward that region of the structure. The trajectory animation could emphasize the focused region (e.g., when focused on the binding site, the ligand's motion is more prominent). Non-focused regions dim.
 
-Publication cards show: title, one-liner, tags, links (GitHub where available). Same luminous annotation register as the arbor and chromatin.
+Publication cards show: title, one-liner, tags, links (GitHub where available). Same luminous annotation register as the arbor and coil scenes.
 
 ### 6.7 Protein intro overlay
 
@@ -567,11 +569,11 @@ Build `src/scales/protein/ProteinIntro.tsx`. Same resolve-from-haze pattern. Rea
 
 ### 6.8 Chromatin-to-protein transition
 
-Standard crossfade-with-z-motion at the chromatin/protein boundary. Fog shifts from neutral blue toward cyan. The chromatin fiber dissolves as the protein structure emerges from the haze.
+Standard crossfade-with-z-motion at the coil/structure boundary. Fog shifts from neutral blue toward cyan. The coil fiber dissolves as the structure scene emerges from the haze.
 
 ### 6.9 Integration test
 
-Scroll from chromatin into protein. The receptor complex renders from real PDB data. Scrolling through the band drives the trajectory animation — the protein breathes. Click each project anchor — camera pivots, card appears. Links work. The warm-to-cool gradient is continuous.
+Scroll from the coil band into the structure band. The receptor complex renders from real PDB data. Scrolling through the band drives the trajectory animation — the protein breathes. Click each project anchor — camera pivots, card appears. Links work. The warm-to-cool gradient is continuous.
 
 **Verify:** The protein is recognizably a real molecular structure (not an abstract blob). Trajectory animation is smooth and subtle. Both project annotations are accessible. Performance stays under budget (target: under 12 draw calls — protein body 1, membrane 1, G-protein 1, ligand 1, atmosphere 2-3, annotations are HTML).
 
@@ -779,7 +781,7 @@ Scroll the full descent in one smooth motion. Verify each transition:
 
 - Approach → tissue (overture zoom, already built)
 - Tissue → cellular (cortex breakthrough, already built)
-- Cellular → chromatin (crossfade, Phase 5)
+- Cellular → coil (crossfade, Phase 5)
 - Chromatin → protein (crossfade, Phase 6)
 - Protein → code (aesthetic jump, Phase 7)
 - Code → expression (signal-origin emergence, Phase 8)
