@@ -10,7 +10,10 @@
 // ?z=<dist>&fov=<deg> camera; ?dpr=<n> pixel ratio (default 2 — retina-honest;
 // 1× aliases the groove bands into FAKE crispness); ?seed=<n> regrows the
 // coil; ?preset=tight|open|loose picks the parameter set; ?drift=0 freezes
-// the Brownian micro-drift.
+// the Brownian micro-drift; ?region=0|1&open=<0..1> parks the unwind engine
+// at a deterministic open state (seeded before mount, so no tween runs —
+// screenshot-stable). Region beads are also directly clickable here to
+// exercise the real tween path.
 import { useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Canvas, invalidate, useFrame } from '@react-three/fiber';
@@ -19,9 +22,10 @@ import { Leva } from 'leva';
 import { CoilMesh } from '@/scales/chromatin/CoilMesh';
 import { COIL_DEFAULTS, COIL_PRESETS, type CoilParams } from '@/scales/chromatin/coil-params';
 import { setCoilParamsOverride } from '@/scales/chromatin/coil-live-params';
-import { useCoilControls } from '@/dev/coil-dev-tools';
+import { useCoilControls, useCoilUnwindControls } from '@/dev/coil-dev-tools';
 import { setSceneFog } from '@/engine/scene-fog';
 import { PostFX } from '@/engine/post-fx';
+import { useCoilFocusStore } from '@/stores/coil-focus';
 import { useDepthStore } from '@/stores/depth';
 
 const params = new URLSearchParams(window.location.search);
@@ -52,9 +56,23 @@ const initialParams: CoilParams = {
 useDepthStore.getState().setDepth(0.5);
 setSceneFog(new Color('#2b3038'), 0.014);
 
+// Deterministic unwind state: seeded BEFORE the React tree mounts, so
+// CoilMesh's tween subscription never sees a change event and the blend
+// parks exactly where the URL asked (focusDepth = the parked depth, so the
+// scroll-release rule holds it).
+const REGION = params.get('region');
+if (REGION === '0' || REGION === '1') {
+  useCoilFocusStore.setState({
+    focusedRegion: Number(REGION) as 0 | 1,
+    unwindBlend: Math.min(1, Math.max(0, Number(params.get('open') ?? '1'))),
+    focusDepth: 0.5,
+  });
+}
+
 // eslint-disable-next-line react-refresh/only-export-components -- dev-only entry, not a fast-refresh module
 function ShapePanel() {
   const values = useCoilControls(initialParams, false);
+  useCoilUnwindControls();
 
   useEffect(() => {
     setCoilParamsOverride(values);

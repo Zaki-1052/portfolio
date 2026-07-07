@@ -1,9 +1,10 @@
 // src/utils/coil-generator.test.ts
 // The coil generator is pure and seeded — every structural invariant the
-// geometry builders, morph shader, and future annotation anchors rely on is
+// geometry builders, unwind engine, and future annotation anchors rely on is
 // asserted here: frame orthonormality (oriented discs), the consecutive
-// spacing floor (no interpenetrating beads at any seed), region marking, and
-// the unwound-target contract (only region beads ever move).
+// spacing floor (no interpenetrating beads at any seed or open state), region
+// marking, and the Approach-B open-state contract (identity at openT 0,
+// unwound targets at openT 1, continuity in between, non-region invariance).
 import { describe, expect, it } from 'vitest';
 import {
   COIL_GROWTH_DEFAULTS,
@@ -11,7 +12,6 @@ import {
   loopArcPairs,
   regionAnchor,
   regionBeadIndices,
-  unwindRegion,
   type CoilNode,
   type Vec3,
 } from './coil-generator';
@@ -181,18 +181,107 @@ describe('generateCoil — determinism', () => {
   });
 });
 
-describe('unwindRegion — Approach-B seam', () => {
-  it('repositions only the requested region, deterministically', () => {
-    const nodes = nodesOf();
-    const open = unwindRegion(nodes, 0, COIL_GROWTH_DEFAULTS.coilRadius * 3, 2);
-    expect(open.length).toBe(nodes.length);
-    for (const [i, n] of open.entries()) {
-      if (nodes[i]!.region === 0) {
-        expect(distance(n.position, nodes[i]!.position)).toBeGreaterThan(0.5);
-      } else {
-        expect(n.position).toEqual(nodes[i]!.position);
+describe('generateCoil — open state (Approach B)', () => {
+  it('is exactly the compact coil at openT 0 (and for null / omitted open)', () => {
+    const base = nodesOf();
+    expect(generateCoil(COIL_GROWTH_DEFAULTS, { region: 0, openT: 0 })).toEqual(base);
+    expect(generateCoil(COIL_GROWTH_DEFAULTS, { region: 1, openT: 0 })).toEqual(base);
+    expect(generateCoil(COIL_GROWTH_DEFAULTS, null)).toEqual(base);
+  });
+
+  it('lands region beads exactly on their unwound targets at openT 1', () => {
+    const base = nodesOf();
+    for (const region of [0, 1] as const) {
+      const open = generateCoil(COIL_GROWTH_DEFAULTS, { region, openT: 1 });
+      for (const i of regionBeadIndices(base, region)) {
+        // Same formula family at t = 1 — bitwise agreement, since the spacing
+        // floor cannot trigger at full spread.
+        expect(open[i]!.position).toEqual(base[i]!.unwoundPosition);
       }
     }
-    expect(unwindRegion(nodes, 0, COIL_GROWTH_DEFAULTS.coilRadius * 3, 2)).toEqual(open);
+  });
+
+  it('keeps beads outside the opening region compact (exact before it, relaxed-bounded after)', () => {
+    // The spacing-floor sweep is part of the pipeline, so a non-region bead
+    // that was floor-pushed by a crowding region neighbor legitimately
+    // RELAXES toward its raw placement once that region opens — crowding
+    // relief, continuous in openT. The sweep is forward, so beads before the
+    // region are bitwise-identical; beads after it may shift by at most the
+    // push scale.
+    const base = nodesOf();
+    const regionStart = Math.min(...regionBeadIndices(base, 0));
+    for (const t of [0.2, 0.5, 0.8, 1]) {
+      const open = generateCoil(COIL_GROWTH_DEFAULTS, { region: 0, openT: t });
+      for (const [i, n] of open.entries()) {
+        if (base[i]!.region === 0) continue;
+        if (i < regionStart) {
+          expect(n.position).toEqual(base[i]!.position);
+        } else {
+          expect(distance(n.position, base[i]!.position)).toBeLessThan(0.3);
+        }
+      }
+    }
+  });
+
+  it('opens continuously — small openT steps move beads by small distances', () => {
+    // Mid-range step AND the compact seam (openT 0 → 0+ crosses from the
+    // compact code path into the open formula + floor re-run).
+    const pairs: [number, number][] = [
+      [0.5, 0.501],
+      [0, 1e-4],
+    ];
+    for (const region of [0, 1] as const) {
+      for (const [t0, t1] of pairs) {
+        const a = generateCoil(COIL_GROWTH_DEFAULTS, { region, openT: t0 });
+        const b = generateCoil(COIL_GROWTH_DEFAULTS, { region, openT: t1 });
+        for (const [i, n] of a.entries()) {
+          expect(distance(n.position, b[i]!.position)).toBeLessThan(0.05);
+        }
+      }
+    }
+  });
+
+  it('holds the spacing floor at every openT, across seeds and cranked jitter', () => {
+    const variants = [COIL_GROWTH_DEFAULTS, { ...COIL_GROWTH_DEFAULTS, seed: 7, jitter: 0.3 }];
+    for (const params of variants) {
+      const speed = Math.hypot(params.coilRadius, params.coilPitch / (Math.PI * 2));
+      const naturalSpacing = (speed * params.coilTurns * Math.PI * 2) / (params.beadCount - 1);
+      const floor = Math.min(2 * params.beadRadius * 1.05, naturalSpacing * 0.95);
+      for (const region of [0, 1] as const) {
+        for (const t of [0.25, 0.6, 1]) {
+          const nodes = generateCoil(params, { region, openT: t });
+          for (let i = 1; i < nodes.length; i++) {
+            expect(distance(nodes[i]!.position, nodes[i - 1]!.position)).toBeGreaterThanOrEqual(
+              floor - 1e-9,
+            );
+          }
+        }
+      }
+    }
+  });
+
+  it('keeps frames orthonormal at every openT', () => {
+    const unit = (v: Vec3) => Math.hypot(v[0], v[1], v[2]);
+    const dot = (a: Vec3, b: Vec3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+    for (const t of [0.3, 0.7, 1]) {
+      const nodes = generateCoil(COIL_GROWTH_DEFAULTS, { region: 0, openT: t });
+      for (const n of nodes) {
+        expect(unit(n.tangent)).toBeCloseTo(1, 6);
+        expect(unit(n.normal)).toBeCloseTo(1, 6);
+        expect(unit(n.binormal)).toBeCloseTo(1, 6);
+        expect(Math.abs(dot(n.tangent, n.normal))).toBeLessThan(1e-6);
+        expect(Math.abs(dot(n.tangent, n.binormal))).toBeLessThan(1e-6);
+        expect(Math.abs(dot(n.normal, n.binormal))).toBeLessThan(1e-6);
+      }
+    }
+  });
+
+  it('is deterministic for the same open state and clamps openT', () => {
+    const a = generateCoil(COIL_GROWTH_DEFAULTS, { region: 1, openT: 0.42 });
+    expect(generateCoil(COIL_GROWTH_DEFAULTS, { region: 1, openT: 0.42 })).toEqual(a);
+    const over = generateCoil(COIL_GROWTH_DEFAULTS, { region: 1, openT: 1.7 });
+    expect(over).toEqual(generateCoil(COIL_GROWTH_DEFAULTS, { region: 1, openT: 1 }));
+    const under = generateCoil(COIL_GROWTH_DEFAULTS, { region: 1, openT: -0.3 });
+    expect(under).toEqual(nodesOf());
   });
 });

@@ -2,10 +2,17 @@
 // Pure, seeded generator for the third band's coil — a dense solenoid of
 // oblate beads threaded along a helical fiber path. Emits a flat bead list
 // ready for the geometry builders: bead centers with parallel-transport
-// frames (for oriented disc geometry), two marked publication regions, and
-// per-bead unwound morph targets (the open state the focus interaction
-// blends toward in a later stage). Deterministic per seed — zero imports,
-// foundation layer like math.ts and arbor-generator.ts.
+// frames (for oriented disc geometry) and two marked publication regions.
+//
+// Approach-B open state: the unwind interaction re-runs this WHOLE pipeline
+// per animation tick with an `open` argument — the focused region's beads are
+// placed by the same solenoid formula with three multipliers lerped toward
+// the open-arc values, then the spacing floor and transport frames recompute
+// over the result. Every intermediate state is a genuine re-coiled
+// conformation (discs re-orient with the local path, seam neighbors tilt
+// toward the opening), not a straight-line blend between two snapshots.
+// Deterministic per seed — zero imports, foundation layer like math.ts and
+// arbor-generator.ts.
 
 export type Vec3 = [number, number, number];
 
@@ -33,8 +40,16 @@ export interface CoilGrowthParams {
   regionGap: number;
 }
 
+export interface CoilOpenState {
+  /** Which publication region is opening. */
+  region: 0 | 1;
+  /** 0 = compact … 1 = fully open (clamped). The pipeline re-runs at every
+   *  value, so an animation tweens THIS parameter, not bead positions. */
+  openT: number;
+}
+
 export interface CoilNode {
-  /** Compact placement (the default, tightly packed state). */
+  /** Placement for the requested open state (compact when none). */
   position: Vec3;
   /** Parallel-transport frame at the bead — twist-free along the path. */
   tangent: Vec3;
@@ -46,8 +61,9 @@ export interface CoilNode {
   t: number;
   /** -1 = unassigned, 0/1 = publication region membership. */
   region: -1 | 0 | 1;
-  /** Morph target for the open state. Identical to `position` for
-   *  region -1 beads — only a focused region ever moves. */
+  /** The fully open (openT = 1) placement — reference target the animated
+   *  pipeline lands on. Identical to `position` for region -1 beads — only
+   *  a focused region ever moves. */
   unwoundPosition: Vec3;
 }
 
@@ -102,7 +118,7 @@ function dot(a: Vec3, b: Vec3): number {
   return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 }
 
-export function generateCoil(params: CoilGrowthParams): CoilNode[] {
+export function generateCoil(params: CoilGrowthParams, open?: CoilOpenState | null): CoilNode[] {
   const rng = mulberry32(params.seed);
   const count = Math.max(4, Math.floor(params.beadCount));
   const turnAngle = params.coilTurns * Math.PI * 2;
@@ -124,8 +140,9 @@ export function generateCoil(params: CoilGrowthParams): CoilNode[] {
     params.coilRadius * Math.sin(theta),
   ];
 
-  // Jitter offsets drawn up front (one per bead) so the compact and unwound
-  // placements share the same organic irregularity.
+  // Jitter offsets drawn up front (one per bead). The stream depends only on
+  // the seed — never on the open state — so every openT of the same coil
+  // shares the same organic irregularity.
   const jitterOffsets: Vec3[] = [];
   for (let i = 0; i < count; i++) {
     jitterOffsets.push([
@@ -135,11 +152,64 @@ export function generateCoil(params: CoilGrowthParams): CoilNode[] {
     ]);
   }
 
+  // --- Publication regions: centers symmetric around the coil midpoint,
+  // separated by regionGap in the t domain; each spans regionSize beads.
+  // Computed from count and params alone, ahead of placement — the placement
+  // loop routes the opening region's beads through the open formula. ---
+  const regionSize = Math.max(1, Math.min(Math.floor(params.regionSize), Math.floor(count / 3)));
+  const half = Math.floor(regionSize / 2);
+  const center0 = Math.round((0.5 - params.regionGap / 2) * (count - 1));
+  const center1 = Math.round((0.5 + params.regionGap / 2) * (count - 1));
+  const r0Start = Math.max(0, Math.min(center0 - half, count - 2 * regionSize - 1));
+  const r0End = r0Start + regionSize - 1;
+  // Region 1 never overlaps region 0, whatever the gap slider says.
+  const r1Start = Math.min(Math.max(center1 - half, r0End + 2), count - regionSize);
+  const r1End = r1Start + regionSize - 1;
+  const regionFor = (i: number): -1 | 0 | 1 => {
+    if (i >= r0Start && i <= r0End) return 0;
+    if (i >= r1Start && i <= r1End) return 1;
+    return -1;
+  };
+  const regionCenterIndex: [number, number] = [
+    Math.round((r0Start + r0End) / 2),
+    Math.round((r1Start + r1End) / 2),
+  ];
+
+  // Open-state placement family: one formula that IS the compact solenoid at
+  // openT 0 (all three multipliers 1) and IS the unwound arc at openT 1 — a
+  // wider, taller arc with each bead's angle stretched away from the region
+  // center. The unwind tweens openT, so intermediate shapes come from HERE,
+  // not from blending two endpoint snapshots.
+  const openAt = (i: number, centerIdx: number, t: number): Vec3 => {
+    const theta = thetaFor(i);
+    const thetaC = thetaFor(centerIdx);
+    const radiusMult = 1 + (UNWOUND_RADIUS_MULT - 1) * t;
+    const pitchMult = 1 + (UNWOUND_PITCH_MULT - 1) * t;
+    const spreadMult = 1 + (UNWOUND_SPREAD - 1) * t;
+    const thetaS = thetaC + (theta - thetaC) * spreadMult;
+    const centerY = pitchPerRad * thetaC - totalHeight / 2;
+    const j = jitterOffsets[i]!;
+    return [
+      params.coilRadius * radiusMult * Math.cos(thetaS) + j[0],
+      centerY + (thetaS - thetaC) * pitchPerRad * pitchMult + j[1],
+      params.coilRadius * radiusMult * Math.sin(thetaS) + j[2],
+    ];
+  };
+
+  // Strictly-positive gate keeps openT 0 (and no open arg) on the exact
+  // compact code path — bitwise-identical output, provable in tests.
+  const openT = open ? Math.min(1, Math.max(0, open.openT)) : 0;
+  const openRegion = open != null && openT > 0 ? open.region : null;
+
   const positions: Vec3[] = [];
   for (let i = 0; i < count; i++) {
-    const base = compactAt(thetaFor(i));
-    const j = jitterOffsets[i]!;
-    positions.push([base[0] + j[0], base[1] + j[1], base[2] + j[2]]);
+    if (openRegion !== null && regionFor(i) === openRegion) {
+      positions.push(openAt(i, regionCenterIndex[openRegion], openT));
+    } else {
+      const base = compactAt(thetaFor(i));
+      const j = jitterOffsets[i]!;
+      positions.push([base[0] + j[0], base[1] + j[1], base[2] + j[2]]);
+    }
   }
 
   // Spacing floor (forward sweep): consecutive beads may never sit closer
@@ -166,43 +236,6 @@ export function generateCoil(params: CoilGrowthParams): CoilNode[] {
       ];
     }
   }
-
-  // --- Publication regions: centers symmetric around the coil midpoint,
-  // separated by regionGap in the t domain; each spans regionSize beads. ---
-  const regionSize = Math.max(1, Math.min(Math.floor(params.regionSize), Math.floor(count / 3)));
-  const half = Math.floor(regionSize / 2);
-  const center0 = Math.round((0.5 - params.regionGap / 2) * (count - 1));
-  const center1 = Math.round((0.5 + params.regionGap / 2) * (count - 1));
-  const r0Start = Math.max(0, Math.min(center0 - half, count - 2 * regionSize - 1));
-  const r0End = r0Start + regionSize - 1;
-  // Region 1 never overlaps region 0, whatever the gap slider says.
-  const r1Start = Math.min(Math.max(center1 - half, r0End + 2), count - regionSize);
-  const r1End = r1Start + regionSize - 1;
-  const regionFor = (i: number): -1 | 0 | 1 => {
-    if (i >= r0Start && i <= r0End) return 0;
-    if (i >= r1Start && i <= r1End) return 1;
-    return -1;
-  };
-  const regionCenterIndex: [number, number] = [
-    Math.round((r0Start + r0End) / 2),
-    Math.round((r1Start + r1End) / 2),
-  ];
-
-  // Unwound morph target: same solenoid formula on a wider, taller arc, with
-  // each bead's angle stretched away from the region center for the further
-  // spacing of the open state. Non-region beads never move.
-  const unwoundAt = (i: number, centerIdx: number): Vec3 => {
-    const theta = thetaFor(i);
-    const thetaC = thetaFor(centerIdx);
-    const spread = thetaC + (theta - thetaC) * UNWOUND_SPREAD;
-    const centerY = pitchPerRad * thetaC - totalHeight / 2;
-    const j = jitterOffsets[i]!;
-    return [
-      params.coilRadius * UNWOUND_RADIUS_MULT * Math.cos(spread) + j[0],
-      centerY + (spread - thetaC) * pitchPerRad * UNWOUND_PITCH_MULT + j[1],
-      params.coilRadius * UNWOUND_RADIUS_MULT * Math.sin(spread) + j[2],
-    ];
-  };
 
   // --- Parallel-transport frames from the final (jittered + floored)
   // positions, so oriented discs match what actually renders. Finite
@@ -247,7 +280,7 @@ export function generateCoil(params: CoilGrowthParams): CoilNode[] {
       unwoundPosition:
         region === -1
           ? [position[0], position[1], position[2]]
-          : unwoundAt(i, regionCenterIndex[region]),
+          : openAt(i, regionCenterIndex[region], 1),
     });
   }
 
@@ -303,34 +336,4 @@ export function loopArcPairs(nodes: CoilNode[], regionIndex: 0 | 1): [number, nu
     pairs.push([indices[a]!, indices[b]!]);
   }
   return pairs;
-}
-
-/**
- * Approach-B seam: returns a copy with one region's beads repositioned onto
- * an open arc — a radial scale to `openRadius` about the coil axis plus a
- * vertical stretch by `openPitch` about the region's own center height.
- * Self-contained over the node list (no growth params needed); callers doing
- * a full CPU-rebuild open state would regenerate frames afterward. Not wired
- * to any render path in this stage.
- */
-export function unwindRegion(
-  nodes: CoilNode[],
-  regionIndex: 0 | 1,
-  openRadius: number,
-  openPitch: number,
-): CoilNode[] {
-  const indices = regionBeadIndices(nodes, regionIndex);
-  if (indices.length === 0) return nodes.map((n) => ({ ...n }));
-  let centerY = 0;
-  for (const i of indices) centerY += nodes[i]!.position[1];
-  centerY /= indices.length;
-  const members = new Set(indices);
-  return nodes.map((n) => {
-    if (!members.has(n.index)) return { ...n };
-    const [x, y, z] = n.position;
-    const radial = Math.hypot(x, z) || 1;
-    const scale = openRadius / radial;
-    const position: Vec3 = [x * scale, centerY + (y - centerY) * openPitch, z * scale];
-    return { ...n, position };
-  });
 }

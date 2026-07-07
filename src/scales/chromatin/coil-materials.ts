@@ -28,10 +28,11 @@ export const CoilBeadMaterial = shaderMaterial(
     uGrooveFreq: D.grooveFreq,
     uLocusGlow: D.locusGlow,
     uDriftAmp: D.driftAmp,
-    // The morph stays parked until the focus interaction stage wires the
-    // coil focus store: blend 0, no focused region.
-    uUnwindBlend: 0,
+    // Focus dim only — the unwind itself is CPU-rebuilt geometry (Approach
+    // B), not a shader blend. CoilMesh writes these from the focus store.
     uFocusRegion: -1,
+    uFocusDim: 0,
+    uFocusDimStrength: D.focusDimStrength,
     uFogColor: new Color('#2b3038'), // band fog anchor; mirrored live per frame
     uFogDensity: 0.014,
   },
@@ -50,6 +51,9 @@ export const CoilLinkerMaterial = shaderMaterial(
     uGlowOpacity: D.linkerOpacity,
     uWaveAmp: D.linkerWaveAmp,
     uShimmerSpeed: D.shimmerSpeed,
+    uFocusRegion: -1,
+    uFocusDim: 0,
+    uFocusDimStrength: D.focusDimStrength,
     uFogDensity: 0.014,
   },
   linkerVert,

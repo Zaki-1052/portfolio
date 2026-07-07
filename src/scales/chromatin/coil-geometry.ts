@@ -1,17 +1,26 @@
 // src/scales/chromatin/coil-geometry.ts
-// Coil bead list → BufferGeometry, two draw calls: one merged mesh of
-// oriented oblate beads (the cluster body) and one merged tube sweep of
-// sagging linker threads (the additive glow backbone). Merged hand-built
-// geometry per the arbor precedent — NOT InstancedMesh. If the merged look
-// disappoints, the reserved InstancedMesh rewrite swaps buildBeadGeometry's
-// internals (shared base geometry + per-instance matrices/attributes) and
-// the mesh JSX only; the shader contract (aCompactPos/aUnwoundPos morph +
-// the #ifdef USE_INSTANCING guard) is already shaped for both paths.
-import { BufferAttribute, BufferGeometry, Sphere, Vector3 } from 'three';
+// Coil bead list → GPU resources, two draw calls: an InstancedMesh of oblate
+// disc beads (ONE shared template geometry, per-bead placement in instance
+// matrices — the design doc's original bead spec) and one merged tube sweep
+// of sagging linker threads (the additive glow backbone).
+//
+// Approach-B contract: the unwind engine re-runs the generator per animation
+// tick and pushes the new state through the write* functions here — ~100
+// instance-matrix writes for the beads, a position/normal rewrite-in-place
+// for the linkers. Buffer SIZES are open-state invariant (bead count and
+// segment topology never change), so the writers never reallocate.
+import {
+  BufferAttribute,
+  BufferGeometry,
+  DynamicDrawUsage,
+  InstancedBufferAttribute,
+  Matrix4,
+  type InstancedMesh,
+} from 'three';
 import { regionBeadIndices, type CoilNode, type Vec3 } from '@/utils/coil-generator';
 
-// Low-poly lattice per bead: 9×13 = 117 verts × 96 beads ≈ 11k — well under
-// budget, dense enough that the fresnel rim reads smooth at dpr 2.
+// Low-poly lattice per bead: 9×13 = 117 verts on the shared template — dense
+// enough that the fresnel rim reads smooth at dpr 2.
 const BEAD_ROWS = 8;
 const BEAD_COLS = 12;
 
@@ -41,25 +50,55 @@ function cross(a: Vec3, b: Vec3): Vec3 {
 }
 
 /**
- * One merged mesh of all beads: an oblate UV-sphere per bead, squished along
- * the bead's transport-frame TANGENT axis (flat faces perpendicular to the
- * fiber — discs threaded on a string), oriented at build time.
+ * The shared bead template: ONE unit-radius oblate UV-sphere, squished along
+ * its local Z by `beadAspect` with correct ellipsoid shading normals baked
+ * in. Instance matrices carry ONLY rigid rotation + uniform radius scale +
+ * translation (aspect lives here in the template), so the vertex shader's
+ * `mat3(instanceMatrix) * normal` stays valid — a non-uniform instance scale
+ * would skew normals.
  *
- * The `position` attribute holds only the small oriented LOCAL offset; the
- * bead center lives in aCompactPos/aUnwoundPos and is added in the vertex
- * shader (that is what makes the unwind morph a pure uniform blend).
+ * Per-bead data rides in InstancedBufferAttributes on the same geometry:
+ * aSeed (drift phase), aT, aRegion, aLocusW (hann-windowed locus hotspot).
+ * aGroove is per TEMPLATE vertex (the local-Z coordinate the groove bands
+ * stack along) — identical for every instance by construction.
+ *
+ * The computed bounding sphere is the honest TEMPLATE sphere — right for
+ * InstancedMesh.raycast (which tests it per instance through each matrix),
+ * wrong for frustum culling of the whole cluster; the mesh disables culling
+ * (see CoilMesh) since instance matrices move per tick during the unwind.
  */
-export function buildBeadGeometry(nodes: CoilNode[], beadAspect: number): BufferGeometry {
+export function buildBeadTemplate(nodes: CoilNode[], beadAspect: number): BufferGeometry {
   const positions: number[] = [];
   const normals: number[] = [];
-  const aCompactPos: number[] = [];
-  const aUnwoundPos: number[] = [];
-  const aSeed: number[] = [];
-  const aT: number[] = [];
-  const aRegion: number[] = [];
-  const aLocusW: number[] = [];
   const aGroove: number[] = [];
   const indices: number[] = [];
+
+  for (let row = 0; row <= BEAD_ROWS; row++) {
+    const phi = (row / BEAD_ROWS) * Math.PI;
+    for (let col = 0; col <= BEAD_COLS; col++) {
+      const theta = (col / BEAD_COLS) * Math.PI * 2;
+      // Unit-sphere direction; local Z is the squished (thread) axis.
+      const ux = Math.sin(phi) * Math.cos(theta);
+      const uy = Math.cos(phi);
+      const uz = Math.sin(phi) * Math.sin(theta);
+      positions.push(ux, uy, uz * beadAspect);
+      // Ellipsoid shading normal: squished-axis component divided by the
+      // aspect, renormalized.
+      const nz = uz / beadAspect;
+      const nLen = Math.hypot(ux, uy, nz) || 1;
+      normals.push(ux / nLen, uy / nLen, nz / nLen);
+      // Bead-local coordinate along the thread axis (-1..1): the groove
+      // bands stack along it, following each bead's own frame.
+      aGroove.push(uz);
+    }
+  }
+  for (let row = 0; row < BEAD_ROWS; row++) {
+    for (let col = 0; col < BEAD_COLS; col++) {
+      const a = row * (BEAD_COLS + 1) + col;
+      const b = a + BEAD_COLS + 1;
+      indices.push(a, b, a + 1, a + 1, b, b + 1);
+    }
+  }
 
   // Locus weight: a hann window across each region span — 1 at the region's
   // center bead, 0 at its edges. The invitation marker reads as ONE soft
@@ -75,122 +114,146 @@ export function buildBeadGeometry(nodes: CoilNode[], beadAspect: number): Buffer
     });
   }
 
-  // Extents of the union of compact ∪ unwound centers, for the manual
-  // bounding sphere below.
-  const min: Vec3 = [Infinity, Infinity, Infinity];
-  const max: Vec3 = [-Infinity, -Infinity, -Infinity];
-  let maxRadius = 0;
-  const extend = (p: Vec3): void => {
-    for (let ax = 0; ax < 3; ax++) {
-      min[ax] = Math.min(min[ax]!, p[ax]!);
-      max[ax] = Math.max(max[ax]!, p[ax]!);
-    }
-  };
-
+  const count = nodes.length;
+  const aSeed = new Float32Array(count);
+  const aT = new Float32Array(count);
+  const aRegion = new Float32Array(count);
+  const aLocusW = new Float32Array(count);
   for (const node of nodes) {
-    const r = node.radius;
-    maxRadius = Math.max(maxRadius, r);
-    extend(node.position);
-    extend(node.unwoundPosition);
-    const seed = hash01(node.index);
-    const { tangent, normal, binormal } = node;
-    const base = positions.length / 3;
-    for (let row = 0; row <= BEAD_ROWS; row++) {
-      const phi = (row / BEAD_ROWS) * Math.PI;
-      for (let col = 0; col <= BEAD_COLS; col++) {
-        const theta = (col / BEAD_COLS) * Math.PI * 2;
-        // Unit-sphere direction; uz rides the tangent (squished) axis.
-        const ux = Math.sin(phi) * Math.cos(theta);
-        const uy = Math.cos(phi);
-        const uz = Math.sin(phi) * Math.sin(theta);
-        positions.push(
-          normal[0] * ux * r + binormal[0] * uy * r + tangent[0] * uz * r * beadAspect,
-          normal[1] * ux * r + binormal[1] * uy * r + tangent[1] * uz * r * beadAspect,
-          normal[2] * ux * r + binormal[2] * uy * r + tangent[2] * uz * r * beadAspect,
-        );
-        // Ellipsoid shading normal: unit direction with the squished axis
-        // component divided by the aspect, renormalized.
-        const nz = uz / beadAspect;
-        const nLen = Math.hypot(ux, uy, nz) || 1;
-        normals.push(
-          (normal[0] * ux + binormal[0] * uy + tangent[0] * nz) / nLen,
-          (normal[1] * ux + binormal[1] * uy + tangent[1] * nz) / nLen,
-          (normal[2] * ux + binormal[2] * uy + tangent[2] * nz) / nLen,
-        );
-        aCompactPos.push(node.position[0], node.position[1], node.position[2]);
-        aUnwoundPos.push(node.unwoundPosition[0], node.unwoundPosition[1], node.unwoundPosition[2]);
-        aSeed.push(seed);
-        aT.push(node.t);
-        aRegion.push(node.region);
-        aLocusW.push(locusWeight.get(node.index) ?? 0);
-        // Bead-local coordinate along the thread axis (-1..1): the groove
-        // bands stack along it, so the wrap orientation follows each bead's
-        // own frame instead of painting global world-axis stripes.
-        aGroove.push(uz);
-      }
-    }
-    for (let row = 0; row < BEAD_ROWS; row++) {
-      for (let col = 0; col < BEAD_COLS; col++) {
-        const a = base + row * (BEAD_COLS + 1) + col;
-        const b = a + BEAD_COLS + 1;
-        indices.push(a, b, a + 1, a + 1, b, b + 1);
-      }
-    }
+    aSeed[node.index] = hash01(node.index);
+    aT[node.index] = node.t;
+    aRegion[node.index] = node.region;
+    aLocusW[node.index] = locusWeight.get(node.index) ?? 0;
   }
 
   const geo = new BufferGeometry();
   geo.setAttribute('position', new BufferAttribute(new Float32Array(positions), 3));
   geo.setAttribute('normal', new BufferAttribute(new Float32Array(normals), 3));
-  geo.setAttribute('aCompactPos', new BufferAttribute(new Float32Array(aCompactPos), 3));
-  geo.setAttribute('aUnwoundPos', new BufferAttribute(new Float32Array(aUnwoundPos), 3));
-  geo.setAttribute('aSeed', new BufferAttribute(new Float32Array(aSeed), 1));
-  geo.setAttribute('aT', new BufferAttribute(new Float32Array(aT), 1));
-  geo.setAttribute('aRegion', new BufferAttribute(new Float32Array(aRegion), 1));
-  geo.setAttribute('aLocusW', new BufferAttribute(new Float32Array(aLocusW), 1));
   geo.setAttribute('aGroove', new BufferAttribute(new Float32Array(aGroove), 1));
+  geo.setAttribute('aSeed', new InstancedBufferAttribute(aSeed, 1));
+  geo.setAttribute('aT', new InstancedBufferAttribute(aT, 1));
+  geo.setAttribute('aRegion', new InstancedBufferAttribute(aRegion, 1));
+  geo.setAttribute('aLocusW', new InstancedBufferAttribute(aLocusW, 1));
   geo.setIndex(indices);
-
-  // MANUAL bounding sphere — deliberate asymmetry with the linker geometry
-  // below. `position` here is only the bead-local offset, so three's
-  // computeBoundingSphere() would produce a tiny near-origin sphere and the
-  // whole cluster would frustum-cull the moment the camera moves. The true
-  // extent is the union of compact ∪ unwound centers (the morph must never
-  // cull mid-blend), padded by the bead radius plus drift headroom. Do NOT
-  // "fix" this into a computeBoundingSphere() call.
-  const center = new Vector3((min[0] + max[0]) / 2, (min[1] + max[1]) / 2, (min[2] + max[2]) / 2);
-  let radiusSq = 0;
-  for (const node of nodes) {
-    for (const p of [node.position, node.unwoundPosition]) {
-      const dx = p[0] - center.x;
-      const dy = p[1] - center.y;
-      const dz = p[2] - center.z;
-      radiusSq = Math.max(radiusSq, dx * dx + dy * dy + dz * dz);
-    }
-  }
-  const DRIFT_PAD = 0.5;
-  geo.boundingSphere = new Sphere(center, Math.sqrt(radiusSq) + maxRadius + DRIFT_PAD);
-
+  geo.computeBoundingSphere();
   return geo;
+}
+
+// Module-scope temp — writeBeadInstances runs per animation tick during the
+// unwind; no allocations on that path.
+const _instanceMatrix = new Matrix4();
+
+/**
+ * Push a node state into the instanced bead mesh: per bead, basis columns
+ * (normal, binormal, tangent) × uniform radius scale + position translation.
+ * Instance order == node index order (the click handler relies on this).
+ */
+export function writeBeadInstances(mesh: InstancedMesh, nodes: CoilNode[]): void {
+  for (let i = 0; i < nodes.length; i++) {
+    const n = nodes[i]!;
+    const r = n.radius;
+    _instanceMatrix.set(
+      n.normal[0] * r,
+      n.binormal[0] * r,
+      n.tangent[0] * r,
+      n.position[0],
+      n.normal[1] * r,
+      n.binormal[1] * r,
+      n.tangent[1] * r,
+      n.position[1],
+      n.normal[2] * r,
+      n.binormal[2] * r,
+      n.tangent[2] * r,
+      n.position[2],
+      0,
+      0,
+      0,
+      1,
+    );
+    mesh.setMatrixAt(i, _instanceMatrix);
+  }
+  mesh.instanceMatrix.needsUpdate = true;
 }
 
 /**
  * One merged tube sweep of the linker threads between consecutive beads —
  * quadratic Bézier with a catenary-style sag at the midpoint, sampled into
- * short rings. Positions are true object-space coordinates (no shader-side
- * center addition), so the default computed bounding sphere is honest here.
- * Linkers stay in the compact state this stage — no morph attributes.
+ * short rings. Structure (index buffer, aT, aRegion) is open-state invariant
+ * and computed once here; positions/normals are filled by
+ * writeLinkerGeometry, which the unwind engine re-calls per tick with the
+ * re-generated node state. No bounding sphere is maintained — the mesh
+ * renders with culling disabled (threads follow the beads out during the
+ * unwind, so any build-time sphere would go stale).
  */
 export function buildLinkerGeometry(
   nodes: CoilNode[],
   linkerSag: number,
   radius: number,
 ): BufferGeometry {
-  const positions: number[] = [];
-  const normals: number[] = [];
-  const aT: number[] = [];
-  const aRegion: number[] = [];
+  const segments = nodes.length - 1;
+  const vertCount = segments * LINKER_SAMPLES * LINKER_RADIAL;
+  const aT = new Float32Array(vertCount);
+  const aRegion = new Float32Array(vertCount);
   const indices: number[] = [];
 
+  let v = 0;
+  for (let i = 1; i < nodes.length; i++) {
+    const a = nodes[i - 1]!;
+    const b = nodes[i]!;
+    const sharedRegion = a.region === b.region ? a.region : -1;
+    const base = (i - 1) * LINKER_SAMPLES * LINKER_RADIAL;
+    for (let s = 0; s < LINKER_SAMPLES; s++) {
+      const t = s / (LINKER_SAMPLES - 1);
+      for (let ring = 0; ring < LINKER_RADIAL; ring++) {
+        aT[v] = a.t + (b.t - a.t) * t;
+        aRegion[v] = sharedRegion;
+        v++;
+      }
+    }
+    for (let s = 0; s < LINKER_SAMPLES - 1; s++) {
+      for (let ring = 0; ring < LINKER_RADIAL; ring++) {
+        const r1 = (ring + 1) % LINKER_RADIAL;
+        const p0 = base + s * LINKER_RADIAL + ring;
+        const p1 = base + s * LINKER_RADIAL + r1;
+        const p2 = p0 + LINKER_RADIAL;
+        const p3 = p1 + LINKER_RADIAL;
+        indices.push(p0, p2, p1, p1, p2, p3);
+      }
+    }
+  }
+
+  const geo = new BufferGeometry();
+  const position = new BufferAttribute(new Float32Array(vertCount * 3), 3);
+  const normal = new BufferAttribute(new Float32Array(vertCount * 3), 3);
+  position.setUsage(DynamicDrawUsage);
+  normal.setUsage(DynamicDrawUsage);
+  geo.setAttribute('position', position);
+  geo.setAttribute('normal', normal);
+  geo.setAttribute('aT', new BufferAttribute(aT, 1));
+  geo.setAttribute('aRegion', new BufferAttribute(aRegion, 1));
+  geo.setIndex(indices);
+  writeLinkerGeometry(geo, nodes, linkerSag, radius);
+  return geo;
+}
+
+/**
+ * Rewrite the linker tube positions/normals in place from a node state —
+ * same Bézier sag math as always, writing through a cursor instead of
+ * allocating. Threads stay attached to their beads through every open state,
+ * and the sag deepens naturally as the spans stretch.
+ */
+export function writeLinkerGeometry(
+  geo: BufferGeometry,
+  nodes: CoilNode[],
+  linkerSag: number,
+  radius: number,
+): void {
+  const position = geo.getAttribute('position') as BufferAttribute;
+  const normal = geo.getAttribute('normal') as BufferAttribute;
+  const pArr = position.array as Float32Array;
+  const nArr = normal.array as Float32Array;
+
+  let w = 0;
   for (let i = 1; i < nodes.length; i++) {
     const a = nodes[i - 1]!;
     const b = nodes[i]!;
@@ -213,8 +276,6 @@ export function buildLinkerGeometry(
         u * u * a.position[2] + 2 * u * t * control[2] + t * t * b.position[2],
       ];
     };
-    const sharedRegion = a.region === b.region ? a.region : -1;
-    const base = positions.length / 3;
     for (let s = 0; s < LINKER_SAMPLES; s++) {
       const t = s / (LINKER_SAMPLES - 1);
       const point = sample(t);
@@ -231,29 +292,18 @@ export function buildLinkerGeometry(
         const nx = side[0] * cos + up[0] * sin;
         const ny = side[1] * cos + up[1] * sin;
         const nz = side[2] * cos + up[2] * sin;
-        positions.push(point[0] + nx * radius, point[1] + ny * radius, point[2] + nz * radius);
-        normals.push(nx, ny, nz);
-        aT.push(a.t + (b.t - a.t) * t);
-        aRegion.push(sharedRegion);
-      }
-    }
-    for (let s = 0; s < LINKER_SAMPLES - 1; s++) {
-      for (let ring = 0; ring < LINKER_RADIAL; ring++) {
-        const r1 = (ring + 1) % LINKER_RADIAL;
-        const p0 = base + s * LINKER_RADIAL + ring;
-        const p1 = base + s * LINKER_RADIAL + r1;
-        const p2 = p0 + LINKER_RADIAL;
-        const p3 = p1 + LINKER_RADIAL;
-        indices.push(p0, p2, p1, p1, p2, p3);
+        pArr[w] = point[0] + nx * radius;
+        nArr[w] = nx;
+        w++;
+        pArr[w] = point[1] + ny * radius;
+        nArr[w] = ny;
+        w++;
+        pArr[w] = point[2] + nz * radius;
+        nArr[w] = nz;
+        w++;
       }
     }
   }
-
-  const geo = new BufferGeometry();
-  geo.setAttribute('position', new BufferAttribute(new Float32Array(positions), 3));
-  geo.setAttribute('normal', new BufferAttribute(new Float32Array(normals), 3));
-  geo.setAttribute('aT', new BufferAttribute(new Float32Array(aT), 1));
-  geo.setAttribute('aRegion', new BufferAttribute(new Float32Array(aRegion), 1));
-  geo.setIndex(indices);
-  return geo;
+  position.needsUpdate = true;
+  normal.needsUpdate = true;
 }

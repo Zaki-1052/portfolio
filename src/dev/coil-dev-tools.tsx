@@ -14,6 +14,8 @@ import { invalidate } from '@react-three/fiber';
 import { button, folder, useControls } from 'leva';
 import { COIL_DEFAULTS, COIL_PRESETS, type CoilParams } from '@/scales/chromatin/coil-params';
 import { setCoilParamsOverride } from '@/scales/chromatin/coil-live-params';
+import { useCoilFocusStore, type CoilRegionIndex } from '@/stores/coil-focus';
+import { useDepthStore } from '@/stores/depth';
 
 // eslint-disable-next-line react-refresh/only-export-components -- dev-only module, not a fast-refresh target
 export function useCoilControls(initial: CoilParams, collapsed: boolean): CoilParams {
@@ -47,6 +49,7 @@ export function useCoilControls(initial: CoilParams, collapsed: boolean): CoilPa
         grooveAmp: { value: initial.grooveAmp, min: 0, max: 1, step: 0.01 },
         grooveFreq: { value: initial.grooveFreq, min: 1, max: 12, step: 0.5 },
         locusGlow: { value: initial.locusGlow, min: 0, max: 1.5, step: 0.01 },
+        focusDimStrength: { value: initial.focusDimStrength, min: 0, max: 1, step: 0.01 },
         driftAmp: { value: initial.driftAmp, min: 0, max: 0.3, step: 0.005 },
         linkerColor: { value: initial.linkerColor },
         linkerOpacity: { value: initial.linkerOpacity, min: 0, max: 1.5, step: 0.01 },
@@ -65,6 +68,45 @@ export function useCoilControls(initial: CoilParams, collapsed: boolean): CoilPa
   return values as unknown as CoilParams;
 }
 
+const toggleRegion = (region: CoilRegionIndex) => (): void => {
+  const s = useCoilFocusStore.getState();
+  s.setFocusedRegion(s.focusedRegion === region ? null : region, useDepthStore.getState().depth);
+};
+
+/**
+ * Dev triggers for the Approach-B unwind engine. The region buttons run the
+ * REAL store + tween path (exactly what a bead click does); the scrub writes
+ * unwindBlend directly for frame-by-frame inspection — it acts on the
+ * currently displayed region, so focus one first (and note a running tween
+ * will overwrite a scrub until it completes).
+ */
+// eslint-disable-next-line react-refresh/only-export-components -- dev-only module, not a fast-refresh target
+export function useCoilUnwindControls(): void {
+  useControls(() => ({
+    'coil unwind': folder(
+      {
+        'focus region 0': button(toggleRegion(0)),
+        'focus region 1': button(toggleRegion(1)),
+        release: button(() => {
+          useCoilFocusStore.getState().setFocusedRegion(null, useDepthStore.getState().depth);
+        }),
+        openScrub: {
+          value: 0,
+          min: 0,
+          max: 1,
+          step: 0.01,
+          onChange: (v: number, _path: string, ctx: { initial: boolean }) => {
+            if (ctx.initial) return;
+            useCoilFocusStore.getState().setUnwindBlend(v);
+            invalidate();
+          },
+        },
+      },
+      { collapsed: true },
+    ),
+  }));
+}
+
 /**
  * Live-site panel: writes the slider values into the coil override each
  * change and invalidates the demand-mode frameloop. Renders no panel root of
@@ -72,6 +114,7 @@ export function useCoilControls(initial: CoilParams, collapsed: boolean): CoilPa
  */
 export function CoilDevTools() {
   const values = useCoilControls(COIL_DEFAULTS, true);
+  useCoilUnwindControls();
 
   useEffect(() => {
     setCoilParamsOverride(values);

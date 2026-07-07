@@ -1,21 +1,16 @@
 // src/scales/chromatin/shaders/coil-bead.vert.glsl
-// Bead SHAPE stage. Each vertex carries its bead's compact + unwound center
-// as attributes and only the small oriented local offset in `position` —
-// the unwind interaction is a pure uniform blend between the two centers,
-// gated per bead so only the focused region ever opens (with uFocusRegion
-// at -1 the morph is a provable no-op). Brownian micro-drift rides on top,
-// per-bead phase from aSeed, frozen by uTime=0 / uDriftAmp=0 under reduced
-// motion. The USE_INSTANCING guard is the reserved-rewrite seam: a future
-// InstancedMesh bead layer defines it automatically and this stage keeps
-// working unchanged — do not simplify it away.
+// Bead SHAPE stage — instanced. Each bead is one instance of the shared
+// oblate template; instanceMatrix carries the full placement (transport-frame
+// rotation + uniform radius scale + translation), written on the CPU by the
+// Approach-B unwind engine each animation tick. No morph attributes remain —
+// the geometry that arrives here IS the current conformation. Brownian
+// micro-drift rides on top, per-instance phase from aSeed, frozen by uTime=0
+// / uDriftAmp=0 under reduced motion. The non-instanced fallback keeps the
+// bare template renderable as a plain mesh.
 
-uniform float uUnwindBlend;
-uniform float uFocusRegion; // -1 none | 0/1 focused publication region
 uniform float uTime;
 uniform float uDriftAmp;
 
-attribute vec3 aCompactPos;
-attribute vec3 aUnwoundPos;
 attribute float aSeed;
 attribute float aT;
 attribute float aRegion;
@@ -31,7 +26,7 @@ varying float vRegion;
 varying float vLocusW;
 varying float vSeed;
 varying float vGroove;
-varying vec3 vObjPos;
+varying vec3 vLocalPos;
 
 void main() {
   vT = aT;
@@ -39,10 +34,20 @@ void main() {
   vLocusW = aLocusW;
   vSeed = aSeed;
   vGroove = aGroove;
+  // Template-local coordinates: the frag's noise samples live HERE (plus a
+  // per-bead phase from the seed), so grooves and mottle ride WITH the bead
+  // through the unwind instead of crawling across its surface as it travels.
+  vLocalPos = position;
 
-  // Only the focused region's beads travel toward their unwound target.
-  float isMine = step(abs(aRegion - uFocusRegion), 0.5) * step(0.0, uFocusRegion);
-  vec3 beadCenter = mix(aCompactPos, aUnwoundPos, uUnwindBlend * isMine);
+  vec3 objectPos = position;
+  vec3 objectNormal = normal;
+#ifdef USE_INSTANCING
+  // Rigid rotation + uniform scale only (aspect is baked into the template),
+  // so transforming the normal by mat3(instanceMatrix) and renormalizing
+  // below is exact — never put a non-uniform scale in these matrices.
+  objectPos = (instanceMatrix * vec4(position, 1.0)).xyz;
+  objectNormal = mat3(instanceMatrix) * normal;
+#endif
 
   // Brownian-like drift: three incommensurate low frequencies per axis with
   // a per-bead phase — suspended stillness, not synchronized breathing.
@@ -51,20 +56,11 @@ void main() {
     sin(uTime * 0.27 + aSeed * 6.2831 + 2.094),
     cos(uTime * 0.23 + aSeed * 6.2831 + 4.188)
   ) * uDriftAmp;
-
-  vec3 localOffset = position;
-  vec3 localNormal = normal;
-#ifdef USE_INSTANCING
-  localOffset = (instanceMatrix * vec4(position, 1.0)).xyz;
-  localNormal = mat3(instanceMatrix) * normal;
-#endif
-
-  vec3 objectPos = beadCenter + drift + localOffset;
-  vObjPos = objectPos;
+  objectPos += drift;
 
   vec4 worldPos = modelMatrix * vec4(objectPos, 1.0);
   vWorldPos = worldPos.xyz;
-  vWorldNormal = normalize(mat3(modelMatrix) * localNormal);
+  vWorldNormal = normalize(mat3(modelMatrix) * objectNormal);
 
   vec3 toCam = cameraPosition - worldPos.xyz;
   vViewDir = normalize(toCam);

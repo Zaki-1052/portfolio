@@ -30,6 +30,21 @@ scale-manager.ts:28). CSS accent is rose `#d57aa5` (`--aod-rose`), fog
 > Growth defaults also tightened (pitch 0.55→0.5, beads 96→106) in the 5.1
 > sign-off pass for a denser packed read. Fog anchor `#2b3038` unchanged.
 
+> **Approach B adopted (2026-07-07, user-directed):** the unwind is now the
+> full CPU-rebuild methodology from §5's upgrade path, implemented ahead of
+> stage 5.4 — `generateCoil(params, { region, openT })` re-runs the whole
+> pipeline (placement with lerped open multipliers, spacing floor, transport
+> frames) every animation tick, so intermediate states are genuine re-coiled
+> conformations. The bead layer is now the InstancedMesh of this document's
+> original spec (per-tick update = ~106 matrices, not ~22k baked vertices);
+> the merged-geometry variant and ALL morph-target plumbing
+> (`aCompactPos`/`aUnwoundPos`/`uUnwindBlend`) are removed. A pure
+> `coil-focus` store (Option B, as recommended below), the 500 ms
+> `power2.inOut` tween with release-then-focus region switching, direct
+> bead-click triggers, and the focus dim all ship with the engine. Remaining
+> for 5.4: loop ribbons, annotations/cards, camera focus poses, intro
+> overlay, dual-register content.
+
 ---
 
 ## Creative decisions (user-locked, do not relitigate)

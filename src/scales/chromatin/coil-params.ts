@@ -21,8 +21,11 @@ export interface CoilLookParams {
   grooveAmp: number;
   grooveFreq: number;
   /** Subtle extra rim glow on the two publication-region loci — the
-   *  invitation markers, ahead of the focus interaction stage. */
+   *  invitation markers for the unwind interaction. */
   locusGlow: number;
+  /** How far everything OUTSIDE an unwound region recedes while it is
+   *  focused (0 = no dim, 1 = black). Rides the unwind tween. */
+  focusDimStrength: number;
   /** Brownian micro-drift amplitude per bead (world units; frozen at 0
    *  under reduced motion). */
   driftAmp: number;
@@ -58,6 +61,7 @@ const LOOK_DEFAULTS: CoilLookParams = {
   grooveAmp: 0.45,
   grooveFreq: 5,
   locusGlow: 0.25,
+  focusDimStrength: 0.55,
   driftAmp: 0.1,
   linkerColor: '#7aa5d8',
   linkerOpacity: 0.6,
@@ -106,6 +110,7 @@ export interface CoilBeadUniforms {
   uGrooveAmp: number;
   uGrooveFreq: number;
   uLocusGlow: number;
+  uFocusDimStrength: number;
 }
 
 export interface CoilLinkerUniforms {
@@ -113,6 +118,7 @@ export interface CoilLinkerUniforms {
   uGlowOpacity: number;
   uWaveAmp: number;
   uShimmerSpeed: number;
+  uFocusDimStrength: number;
 }
 
 /** Write the look params onto the bead material's uniforms. */
@@ -123,6 +129,7 @@ export function applyCoilBeadLook(m: CoilBeadUniforms, p: CoilLookParams): void 
   m.uGrooveAmp = p.grooveAmp;
   m.uGrooveFreq = p.grooveFreq;
   m.uLocusGlow = p.locusGlow;
+  m.uFocusDimStrength = p.focusDimStrength;
 }
 
 /** Write the look params onto the linker material's uniforms. */
@@ -131,4 +138,5 @@ export function applyCoilLinkerLook(m: CoilLinkerUniforms, p: CoilLookParams): v
   m.uGlowOpacity = p.linkerOpacity;
   m.uWaveAmp = p.linkerWaveAmp;
   m.uShimmerSpeed = p.shimmerSpeed;
+  m.uFocusDimStrength = p.focusDimStrength;
 }

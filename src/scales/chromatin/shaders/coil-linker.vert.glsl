@@ -1,9 +1,10 @@
 // src/scales/chromatin/shaders/coil-linker.vert.glsl
-// Linker thread SHAPE stage. True tube geometry (positions are honest
-// object-space coordinates — the bounding sphere needs no override here,
-// unlike the bead layer). A slight time-driven radial wave keeps the taut
-// threads from reading as rigid wire; frozen by uTime=0 / uWaveAmp=0 under
-// reduced motion.
+// Linker thread SHAPE stage. True tube geometry — positions are honest
+// object-space coordinates, rewritten in place on the CPU by the unwind
+// engine as the beads travel (the mesh renders with culling disabled, so no
+// bounding sphere is maintained). A slight time-driven radial wave keeps the
+// taut threads from reading as rigid wire; frozen by uTime=0 / uWaveAmp=0
+// under reduced motion.
 
 uniform float uTime;
 uniform float uWaveAmp;

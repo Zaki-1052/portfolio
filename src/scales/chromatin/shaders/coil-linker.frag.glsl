@@ -12,6 +12,9 @@ uniform float uGlowOpacity;
 uniform float uOpacity;
 uniform float uFogDensity;
 uniform float uShimmerSpeed;
+uniform float uFocusRegion; // -1 none | 0/1 focused publication region
+uniform float uFocusDim;
+uniform float uFocusDimStrength;
 uniform float uTime;
 
 varying float vT;
@@ -34,6 +37,12 @@ void main() {
   float glow = profile * (0.45 + 0.75 * shimmer * shimmer);
   vec3 col = mix(uColor, vec3(1.0), 0.12 * shimmer);
 
+  // Focus dim: threads outside the unwound region recede with the beads
+  // (segments inside a region share its aRegion; everything else is -1).
+  float mine = step(abs(vRegion - uFocusRegion), 0.5);
+  float dimF = uFocusDim * step(-0.5, uFocusRegion) * (1.0 - mine);
+
   float fogK = exp(-uFogDensity * uFogDensity * 0.35 * vViewDist * vViewDist);
-  gl_FragColor = vec4(col, 1.0) * (glow * fogK * uGlowOpacity * uOpacity);
+  gl_FragColor =
+    vec4(col, 1.0) * (glow * fogK * uGlowOpacity * uOpacity * (1.0 - dimF * uFocusDimStrength));
 }
