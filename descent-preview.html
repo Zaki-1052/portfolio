@@ -1,0 +1,26 @@
+<!doctype html>
+<!-- descent-preview.html — DEV-ONLY isolated preview of the FULL descent
+     stack (atmosphere + scenes + real camera path + post-fx) with a depth
+     scrub, for verifying band transitions without loading the site. Served
+     by Vite at /descent-preview.html in dev; not referenced by index.html,
+     so it is never included in the production build. -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Descent Preview (dev)</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #1d2027;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="preview-root"></div>
+    <script type="module" src="/src/dev/descent-preview.tsx"></script>
+  </body>
+</html>

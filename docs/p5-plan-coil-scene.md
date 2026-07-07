@@ -45,6 +45,22 @@ scale-manager.ts:28). CSS accent is rose `#d57aa5` (`--aod-rose`), fog
 > for 5.4: loop ribbons, annotations/cards, camera focus poses, intro
 > overlay, dual-register content.
 
+> **Stage 5.3 implemented (2026-07-07):** fog module `coil-fog.ts` (density
+> delta peak 0.014 at depth 0.44, window [0.42, 0.50]; tint blend toward
+> `#2b3038`, max 0.5, gone by 0.58 — composed in `scene-atmosphere.tsx` after
+> the arbor terms; density windows tested disjoint). Four camera knots landed
+> at 0.455 / 0.48 / 0.52 / 0.565 (dive → broadside resolve → orbit
+> behind/below → left-third settle with annotation room right; reduced
+> anchors on 0.48 and 0.565). The arbor got a body exit fade (all four
+> materials, 0.445 → 0.485, done before the 0.49 unmount) and the coil's
+> linker threads an authored lights-first reveal (0.435 → 0.455) ahead of the
+> bead mass (0.44 → 0.48). Transition verification now runs on the NEW
+> isolated `descent-preview.html` harness (real Canvas stack + theme-stub
+> bridge + depth scrub/sweep) — the live site is never loaded. Measured:
+> 60 fps through the 0.40→0.60 sweep, 14 draw calls/frame at the crossfade
+> overlap, reduced-motion anchor cuts pixel-stable. Remaining for 5.4
+> unchanged (list above).
+
 ---
 
 ## Creative decisions (user-locked, do not relitigate)

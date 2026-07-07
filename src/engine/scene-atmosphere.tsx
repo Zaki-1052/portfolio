@@ -21,6 +21,11 @@ import {
   arborFogColorBlendT,
   arborFogDensityDeltaFor,
 } from '@/scales/cellular/arbor-fog';
+import {
+  COIL_FOG_TINT,
+  coilFogColorBlendT,
+  coilFogDensityDeltaFor,
+} from '@/scales/chromatin/coil-fog';
 
 // Deep warm-interior fog target the breakthrough drifts toward (dim amber-umber).
 const INTERIOR_FOG = new Color('#31221a');
@@ -35,6 +40,7 @@ export function SceneAtmosphere() {
   const warmOverride = useRef(new Color('#4a3f33'));
   const interiorFog = useRef(new Color('#31221a'));
   const arborTint = useRef(new Color(ARBOR_FOG_TINT));
+  const coilTint = useRef(new Color(COIL_FOG_TINT));
 
   useFrame(() => {
     const depth = useDepthStore.getState().depth;
@@ -68,10 +74,16 @@ export function SceneAtmosphere() {
     // order does the amber→navy crossfade), then fades before the next scale.
     const tint = arborFogColorBlendT(depth);
     if (tint > 0) fogColor.current.lerp(arborTint.current, tint);
+    // Band-three handoff: the blue-slate haze takes over as the navy fades —
+    // composing AFTER the arbor term does the navy→blue crossfade.
+    const coilT = coilFogColorBlendT(depth);
+    if (coilT > 0) fogColor.current.lerp(coilTint.current, coilT);
     const density =
       (o
         ? fogDensityFor(depth, o.densityEstablish, o.densityBase, o.densityInterior, o.densityVeil)
-        : fogDensityFor(depth)) + arborFogDensityDeltaFor(depth);
+        : fogDensityFor(depth)) +
+      arborFogDensityDeltaFor(depth) +
+      coilFogDensityDeltaFor(depth);
     if (fogRef.current) {
       fogRef.current.color.copy(fogColor.current);
       fogRef.current.density = density;

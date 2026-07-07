@@ -2,20 +2,20 @@
   "publications": [
     {
       "id": "hic-2026",
-      "title": "Regulation of chromatin conformation by the histone deubiquitinase BAP1 in the brain",
+      "title": "placeholder",
       "year": 2026,
       "status": "in preparation",
       "venue": "URC / ACS-SA Symposium",
-      "description": "BAP1 loss disrupts chromatin state through a pathway of elevated H2AK119ub, which collapses long-range developmental loops, replacing them with proximal repressive contacts. Through Hi-C, we find genome-wide dysregulation of 3D organization.",
+      "description": "placeholder",
       "links": { "preprint": null, "paper": null }
     },
     {
       "id": "methylation-2026",
-      "title": "Coordinated methylation and hydroxymethylation changes at gene bodies after BAP1 loss",
+      "title": "placeholder",
       "year": 2026,
       "status": "in preparation",
       "venue": "Ferguson Lab / URS",
-      "description": "BAP1 loss disrupts active demethylation in neurons, causing a simultaneous increase in 5mC and decrease of 5hmC at neuronal and synaptic gene loci associated with neurodevelopment. We observe MeCP2 binding strongly to non-CG methylation.",
+      "description": "placeholder",
       "links": { "preprint": null, "paper": null }
     }
   ]

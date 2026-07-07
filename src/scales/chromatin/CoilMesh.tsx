@@ -42,6 +42,10 @@ import { CoilBeadMaterial, CoilLinkerMaterial } from './coil-materials';
 
 // The bead mass materializes AFTER its lights: the linker threads glimmer
 // through the haze from the band's start, the cluster resolves behind them.
+// The threads get their own authored envelope (they'd otherwise be visible
+// from the scene mount at 0.37, deep inside the previous band).
+const LIGHTS_REVEAL_START = 0.435;
+const LIGHTS_REVEAL_END = 0.455;
 const BODY_REVEAL_START = 0.44;
 const BODY_REVEAL_END = 0.48;
 
@@ -277,6 +281,7 @@ export function CoilMesh({ origin = COIL_ORIGIN }: CoilMeshProps) {
     // Lights-first reveal: the bead mass materializes after the threads are
     // already glimmering through the mist. (The preview parks depth
     // mid-band, so it always renders fully revealed.)
+    linkerMaterial.uOpacity = smoothstep(LIGHTS_REVEAL_START, LIGHTS_REVEAL_END, depth);
     beadMaterial.uOpacity = smoothstep(BODY_REVEAL_START, BODY_REVEAL_END, depth);
 
     // Match the hand-rolled fog to the live scene fog — SceneAtmosphere's

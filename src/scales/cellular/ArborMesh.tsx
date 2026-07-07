@@ -39,6 +39,13 @@ import { ArborPunctaMaterial, ArborStrandMaterial, ArborTipMaterial } from './ar
 const BODY_REVEAL_START = 0.315;
 const BODY_REVEAL_END = 0.35;
 
+// Exit: the whole tree dissolves into the next band's thickening haze —
+// completed before the registry hard-unmounts the scene at 0.49, so the
+// unmount is invisible. The trunk's uOpacity mixes toward the fog color
+// (a dissolve, not a darken); the glow layers extinguish with it.
+const BODY_FADE_START = 0.445;
+const BODY_FADE_END = 0.485;
+
 interface ArborMeshProps {
   /** World placement of the tree group; the preview overrides it. */
   origin?: readonly [number, number, number];
@@ -144,8 +151,13 @@ export function ArborMesh({ origin = ARBOR_ORIGIN }: ArborMeshProps) {
 
     // Lights-first reveal: the solid body materializes after the glow
     // layers are already glimmering through the mist. (The preview parks
-    // depth mid-band, so it always renders fully revealed.)
-    trunkMaterial.uOpacity = smoothstep(BODY_REVEAL_START, BODY_REVEAL_END, depth);
+    // depth mid-band, so it always renders fully revealed.) The exit
+    // envelope fades EVERYTHING — the handoff crossfade with the next band.
+    const exit = 1 - smoothstep(BODY_FADE_START, BODY_FADE_END, depth);
+    trunkMaterial.uOpacity = smoothstep(BODY_REVEAL_START, BODY_REVEAL_END, depth) * exit;
+    strandMaterial.uOpacity = exit;
+    tipMaterial.uOpacity = exit;
+    punctaMaterial.uOpacity = exit;
 
     // Match the hand-rolled fog to the live scene fog — SceneAtmosphere's
     // useFrame runs first (mounted earlier in the Canvas).
