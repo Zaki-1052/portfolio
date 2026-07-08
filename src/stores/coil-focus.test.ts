@@ -10,6 +10,7 @@ describe('coil focus store', () => {
   beforeEach(() => {
     useCoilFocusStore.setState({
       focusedRegion: null,
+      hoveredRegion: null,
       unwindBlend: 0,
       focusDepth: 0,
     });
@@ -35,6 +36,14 @@ describe('coil focus store', () => {
     const s = useCoilFocusStore.getState();
     expect(s.focusedRegion).toBeNull();
     expect(s.unwindBlend).toBe(1);
+  });
+
+  it('tracks hover independently of focus', () => {
+    useCoilFocusStore.getState().setHoveredRegion(1);
+    expect(useCoilFocusStore.getState().hoveredRegion).toBe(1);
+    expect(useCoilFocusStore.getState().focusedRegion).toBeNull();
+    useCoilFocusStore.getState().setHoveredRegion(null);
+    expect(useCoilFocusStore.getState().hoveredRegion).toBeNull();
   });
 
   it('clamps the blend to [0, 1]', () => {

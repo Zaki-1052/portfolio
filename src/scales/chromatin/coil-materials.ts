@@ -12,6 +12,8 @@ import beadVert from './shaders/coil-bead.vert.glsl?raw';
 import beadFrag from './shaders/coil-bead.frag.glsl?raw';
 import linkerVert from './shaders/coil-linker.vert.glsl?raw';
 import linkerFrag from './shaders/coil-linker.frag.glsl?raw';
+import ribbonVert from './shaders/coil-ribbon.vert.glsl?raw';
+import ribbonFrag from './shaders/coil-ribbon.frag.glsl?raw';
 import { COIL_DEFAULTS as D } from './coil-params';
 
 const beadVertexShader = `${noise}\n${beadVert}`;
@@ -58,4 +60,21 @@ export const CoilLinkerMaterial = shaderMaterial(
   },
   linkerVert,
   linkerFrag,
+);
+
+export const CoilRibbonMaterial = shaderMaterial(
+  {
+    uOpacity: 1,
+    uTime: 0,
+    uColor: new Color(D.ribbonColor),
+    uGlowOpacity: D.ribbonOpacity,
+    uFlowSpeed: D.ribbonFlowSpeed,
+    // The bloom gate: uUnwind rides the unwind blend; the arcs exist only
+    // for the focused region and only once it is mostly open.
+    uFocusRegion: -1,
+    uUnwind: 0,
+    uFogDensity: 0.014,
+  },
+  ribbonVert,
+  ribbonFrag,
 );

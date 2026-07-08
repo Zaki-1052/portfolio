@@ -24,6 +24,7 @@ import { useDepthStore } from '@/stores/depth';
 import { useMotionStore } from '@/stores/motion';
 import { useIntroStore } from '@/stores/intro';
 import { shouldReleaseFocus, useBranchFocusStore } from '@/stores/branch-focus';
+import { useCoilFocusStore } from '@/stores/coil-focus';
 import {
   INTRO_KEYFRAMES,
   liveCameraKeyframes,
@@ -32,7 +33,7 @@ import {
   sampleNearestKeyframe,
   type CameraSample,
 } from './camera-keyframes';
-import { blendCameraSample, focusPoseFor } from './camera-focus';
+import { blendCameraSample, focusPoseFor, regionFocusPoseFor } from './camera-focus';
 import { setCameraPose } from './camera-pose';
 import {
   PARALLAX_MAX_PITCH,
@@ -54,6 +55,10 @@ export function CameraController(): null {
   const target = useRef({ x: 0, y: 0 });
   const qTmp = useRef(new Quaternion());
   const heldPose = useRef<{ valid: boolean; pose: CameraSample }>({
+    valid: false,
+    pose: { position: [0, 0, 0], quaternion: [0, 0, 0, 1], fov: 50 },
+  });
+  const heldRegionPose = useRef<{ valid: boolean; pose: CameraSample }>({
     valid: false,
     pose: { position: [0, 0, 0], quaternion: [0, 0, 0, 1], fov: 50 },
   });
@@ -150,6 +155,38 @@ export function CameraController(): null {
         s = blendCameraSample(s, held.pose, blend);
       }
       if (branch === null && focus.focusBlend < 1e-4) held.valid = false;
+    }
+
+    // --- Region focus (third band) — same held-pose composition, but the
+    // blend IS the unwind blend: the geometry opening and the camera pivot
+    // are one gesture, tween-owned by CoilMesh (which also owns the
+    // scroll-release rule). Region switches ride its release-then-focus
+    // sequencing — the blend passes through 0 exactly when the held pose
+    // swaps, so the swap can never pop. ---
+    const coil = useCoilFocusStore.getState();
+    if (!introActive && (coil.focusedRegion !== null || coil.unwindBlend > 1e-4)) {
+      const held = heldRegionPose.current;
+      const region = coil.focusedRegion;
+      if (region !== null) {
+        const targetPose = regionFocusPoseFor(region);
+        if (!held.valid) {
+          held.pose = targetPose;
+          held.valid = true;
+        } else {
+          const k = 1 - Math.exp(-HELD_POSE_OMEGA * Math.min(delta, 0.1));
+          held.pose = blendCameraSample(held.pose, targetPose, k);
+          const dx = held.pose.position[0] - targetPose.position[0];
+          const dy = held.pose.position[1] - targetPose.position[1];
+          const dz = held.pose.position[2] - targetPose.position[2];
+          if (dx * dx + dy * dy + dz * dz > 1e-6) invalidate();
+          else held.pose = targetPose;
+        }
+      }
+      if (held.valid) {
+        const blend = reduced ? (region !== null ? 1 : 0) : coil.unwindBlend;
+        s = blendCameraSample(s, held.pose, blend);
+      }
+      if (region === null && coil.unwindBlend < 1e-4) held.valid = false;
     }
 
     camera.position.set(s.position[0], s.position[1], s.position[2]);

@@ -61,6 +61,27 @@ scale-manager.ts:28). CSS accent is rose `#d57aa5` (`--aod-rose`), fog
 > overlap, reduced-motion anchor cuts pixel-stable. Remaining for 5.4
 > unchanged (list above).
 
+> **Stage 5.4 implemented (2026-07-07) — PHASE 5 COMPLETE:** loop ribbons
+> (one mesh, both regions' arcs, rewritten in place per unwind tick alongside
+> the beads/threads; traveling-packet frag, blooming in the later half of the
+> opening), scene-native publication annotations (`CoilAnnotations`, anchors
+> that RIDE the unwind blend, screen-space label de-collision — two loci on
+> one compact cluster can project coincident at aligned view angles, unlike
+> the arbor's three spread tips), region camera focus (`regionFocusPoseFor`
+> derived from `coil-anchors.ts`; the controller blend RIDES `unwindBlend` —
+> geometry and camera are one gesture, no second tween), `CoilIntro`
+> (0.435→0.50 window, clears before annotations at 0.465), and the
+> dual-register `ChromatinContent` rework (runways 140vh/130vh,
+> `.chromatin-doc` hidden under WebGL, chromatin added to the WebGL-reveal
+> selector lists). Growth default `regionGap 0.33 → 0.375`: at 6 turns, 0.33
+> was exactly 2.0 revolutions — both loci at the SAME azimuth (overlapping
+> labels, twin unwind bearings); 0.375 puts them ~82° apart with the compact
+> silhouette untouched. Compact anchors are the regions' CENTER BEADS (rim),
+> not centroids (a ~0.86-turn arc's centroid collapses toward the cluster
+> axis). Verified in both harnesses AND on the live site (user-cleared):
+> full interaction, Esc/scroll-release, reduced-motion pixel-stable,
+> 19 calls/frame at 61 fps with a region focused.
+
 ---
 
 ## Creative decisions (user-locked, do not relitigate)

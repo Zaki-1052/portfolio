@@ -1,12 +1,16 @@
 // src/engine/camera-focus.ts
-// The click-to-focus camera layer: a working pose per limb (derived from the
-// limb anchors — never hand-typed twice) and the blend that carries the
-// depth-driven sample toward it. Pure math (no three import), node-tested;
-// the controller composes the result BEFORE its parallax post-multiply.
+// The click-to-focus camera layer: a working pose per limb (second band) and
+// per publication region (third band), each derived from its anchors — never
+// hand-typed twice — plus the blend that carries the depth-driven sample
+// toward it. Pure math (no three import), node-tested; the controller
+// composes the result BEFORE its parallax post-multiply.
 import type { BranchKey } from '@/content/branch-order';
 import { limbIndexOf } from '@/content/branch-order';
 import { getBranchAnchors } from '@/scales/cellular/arbor-anchors';
 import { ARBOR_ORIGIN } from '@/scales/cellular/arbor-params';
+import { getRegionAnchors } from '@/scales/chromatin/coil-anchors';
+import { COIL_ORIGIN } from '@/scales/chromatin/coil-params';
+import type { CoilRegionIndex } from '@/stores/coil-focus';
 import { lookAtQuaternion, type CameraSample, type Quat, type Vec3 } from './camera-keyframes';
 
 const FOCUS_DISTANCE = 8.5; // camera stand-off from the limb anchor
@@ -35,6 +39,43 @@ export function focusPoseFor(branch: BranchKey): CameraSample {
     position,
     quaternion: lookAtQuaternion(position, anchor, 0),
     fov: FOCUS_FOV,
+  };
+}
+
+// Region focus (third band): the open arc is wide (~17 across at full
+// unwind) and the dimmed compact mass should stay in frame behind it, so the
+// stand-off is much longer than the limb poses'.
+const REGION_FOCUS_DISTANCE = 17;
+const REGION_FOCUS_LIFT = 2;
+const REGION_FOCUS_FOV = 45;
+
+/**
+ * Focus pose for a publication region. The look-target is the OPEN arc's
+ * centroid (where the unwound mass and its card live); the stand-off BEARING
+ * comes from the COMPACT anchor's rim direction — the open centroid sits
+ * near the cluster axis (the arc wraps past a full turn around it), so a
+ * radial direction through it would be ill-conditioned, while the rim
+ * bearing is stable and faces the side the region unwinds toward.
+ */
+export function regionFocusPoseFor(region: CoilRegionIndex): CameraSample {
+  const anchors = getRegionAnchors();
+  const compact = anchors.compact[region];
+  const target = anchors.open[region];
+  const out: Vec3 = [
+    compact[0] - COIL_ORIGIN[0],
+    compact[1] - COIL_ORIGIN[1],
+    compact[2] - COIL_ORIGIN[2],
+  ];
+  const len = Math.hypot(out[0], out[1], out[2]) || 1;
+  const position: [number, number, number] = [
+    target[0] + (out[0] / len) * REGION_FOCUS_DISTANCE,
+    target[1] + (out[1] / len) * REGION_FOCUS_DISTANCE + REGION_FOCUS_LIFT,
+    target[2] + (out[2] / len) * REGION_FOCUS_DISTANCE,
+  ];
+  return {
+    position,
+    quaternion: lookAtQuaternion(position, target, 0),
+    fov: REGION_FOCUS_FOV,
   };
 }
 

@@ -11,7 +11,7 @@
 // channel rebuild the template/linker buffers.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { invalidate, useFrame, type ThreeEvent } from '@react-three/fiber';
-import { AdditiveBlending, DynamicDrawUsage, type InstancedMesh } from 'three';
+import { AdditiveBlending, DynamicDrawUsage, type InstancedMesh, type Mesh } from 'three';
 import { gsap } from 'gsap';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { getSceneFog } from '@/engine/scene-fog';
@@ -29,16 +29,19 @@ import {
   COIL_ORIGIN,
   applyCoilBeadLook,
   applyCoilLinkerLook,
+  applyCoilRibbonLook,
   type CoilParams,
 } from './coil-params';
 import { getCoilParamsOverride, subscribeCoilParams } from './coil-live-params';
 import {
   buildBeadTemplate,
   buildLinkerGeometry,
+  buildRibbonGeometry,
   writeBeadInstances,
   writeLinkerGeometry,
+  writeRibbonGeometry,
 } from './coil-geometry';
-import { CoilBeadMaterial, CoilLinkerMaterial } from './coil-materials';
+import { CoilBeadMaterial, CoilLinkerMaterial, CoilRibbonMaterial } from './coil-materials';
 
 // The bead mass materializes AFTER its lights: the linker threads glimmer
 // through the haze from the band's start, the cluster resolves behind them.
@@ -79,12 +82,14 @@ export function CoilMesh({ origin = COIL_ORIGIN }: CoilMeshProps) {
       baseNodes,
       template: buildBeadTemplate(baseNodes, params.beadAspect),
       linkers: buildLinkerGeometry(baseNodes, params.linkerSag, params.linkerWidth),
+      ribbons: buildRibbonGeometry(baseNodes, params.ribbonWidth),
     };
   }, [params]);
   useEffect(
     () => () => {
       built.template.dispose();
       built.linkers.dispose();
+      built.ribbons.dispose();
     },
     [built],
   );
@@ -97,20 +102,29 @@ export function CoilMesh({ origin = COIL_ORIGIN }: CoilMeshProps) {
     m.blending = AdditiveBlending;
     return m;
   }, []);
+  const ribbonMaterial = useMemo(() => {
+    const m = new CoilRibbonMaterial();
+    m.transparent = true;
+    m.depthWrite = false;
+    m.blending = AdditiveBlending;
+    return m;
+  }, []);
   useEffect(
     () => () => {
       beadMaterial.dispose();
       linkerMaterial.dispose();
+      ribbonMaterial.dispose();
     },
-    [beadMaterial, linkerMaterial],
+    [beadMaterial, linkerMaterial, ribbonMaterial],
   );
 
   // Look params are uniform-only.
   useEffect(() => {
     applyCoilBeadLook(beadMaterial, params);
     applyCoilLinkerLook(linkerMaterial, params);
+    applyCoilRibbonLook(ribbonMaterial, params);
     invalidate();
-  }, [params, beadMaterial, linkerMaterial]);
+  }, [params, beadMaterial, linkerMaterial, ribbonMaterial]);
 
   // --- Unwind engine state ---
   // Both meshes render with culling disabled: instance matrices (and the
@@ -118,6 +132,7 @@ export function CoilMesh({ origin = COIL_ORIGIN }: CoilMeshProps) {
   // bounding sphere would go stale; the band's mount window already gates
   // visibility and the cluster fills the frame whenever mounted.
   const meshRef = useRef<InstancedMesh>(null);
+  const ribbonRef = useRef<Mesh>(null);
   // The region whose shape is currently DISPLAYED — holds through the release
   // tween after focusedRegion has already gone null, so the closing geometry
   // and dim ease out on the shape they opened on.
@@ -143,6 +158,7 @@ export function CoilMesh({ origin = COIL_ORIGIN }: CoilMeshProps) {
         : generateCoil(params, { region: regionKey as CoilRegionIndex, openT: f.unwindBlend });
     writeBeadInstances(mesh, nodes);
     writeLinkerGeometry(built.linkers, nodes, params.linkerSag, params.linkerWidth);
+    writeRibbonGeometry(built.ribbons, nodes, params.ribbonWidth);
     writeState.current = { region: regionKey, blend: blendKey };
   };
 
@@ -236,9 +252,16 @@ export function CoilMesh({ origin = COIL_ORIGIN }: CoilMeshProps) {
     const id = e.instanceId;
     const region = id !== undefined ? (built.baseNodes[id]?.region ?? -1) : -1;
     document.body.style.cursor = region !== -1 ? 'pointer' : '';
+    // Mirrors the annotation labels' hover writes — the store's hover state
+    // freezes the floating label's side while the pointer is on its region.
+    const store = useCoilFocusStore.getState();
+    const hover = region === -1 ? null : (region as CoilRegionIndex);
+    if (store.hoveredRegion !== hover) store.setHoveredRegion(hover);
   };
   const handlePointerOut = (): void => {
     document.body.style.cursor = '';
+    const store = useCoilFocusStore.getState();
+    if (store.hoveredRegion !== null) store.setHoveredRegion(null);
   };
   useEffect(
     () => () => {
@@ -277,11 +300,20 @@ export function CoilMesh({ origin = COIL_ORIGIN }: CoilMeshProps) {
     beadMaterial.uFocusDim = blend;
     linkerMaterial.uFocusRegion = dimRegion;
     linkerMaterial.uFocusDim = blend;
+    // Ribbons: the connection streams of the displayed region, blooming as
+    // it opens. The mesh is hidden entirely while compact — cheaper than
+    // shading a full-screen additive pass to zero.
+    ribbonMaterial.uFocusRegion = dimRegion;
+    ribbonMaterial.uUnwind = blend;
+    ribbonMaterial.uTime = time;
+    if (ribbonRef.current) ribbonRef.current.visible = dimRegion !== -1;
 
     // Lights-first reveal: the bead mass materializes after the threads are
     // already glimmering through the mist. (The preview parks depth
     // mid-band, so it always renders fully revealed.)
-    linkerMaterial.uOpacity = smoothstep(LIGHTS_REVEAL_START, LIGHTS_REVEAL_END, depth);
+    const lightsReveal = smoothstep(LIGHTS_REVEAL_START, LIGHTS_REVEAL_END, depth);
+    linkerMaterial.uOpacity = lightsReveal;
+    ribbonMaterial.uOpacity = lightsReveal;
     beadMaterial.uOpacity = smoothstep(BODY_REVEAL_START, BODY_REVEAL_END, depth);
 
     // Match the hand-rolled fog to the live scene fog — SceneAtmosphere's
@@ -290,6 +322,7 @@ export function CoilMesh({ origin = COIL_ORIGIN }: CoilMeshProps) {
     beadMaterial.uFogColor = fog.color;
     beadMaterial.uFogDensity = fog.density;
     linkerMaterial.uFogDensity = fog.density;
+    ribbonMaterial.uFogDensity = fog.density;
   });
 
   return (
@@ -303,6 +336,13 @@ export function CoilMesh({ origin = COIL_ORIGIN }: CoilMeshProps) {
         onPointerOut={handlePointerOut}
       />
       <mesh geometry={built.linkers} material={linkerMaterial} frustumCulled={false} />
+      <mesh
+        ref={ribbonRef}
+        geometry={built.ribbons}
+        material={ribbonMaterial}
+        frustumCulled={false}
+        visible={false}
+      />
     </group>
   );
 }

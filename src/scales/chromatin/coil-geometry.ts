@@ -17,7 +17,7 @@ import {
   Matrix4,
   type InstancedMesh,
 } from 'three';
-import { regionBeadIndices, type CoilNode, type Vec3 } from '@/utils/coil-generator';
+import { loopArcPairs, regionBeadIndices, type CoilNode, type Vec3 } from '@/utils/coil-generator';
 
 // Low-poly lattice per bead: 9×13 = 117 verts on the shared template — dense
 // enough that the fresnel rim reads smooth at dpr 2.
@@ -28,6 +28,11 @@ const BEAD_COLS = 12;
 // design spec (an additive glow line, not a lit solid).
 const LINKER_SAMPLES = 6;
 const LINKER_RADIAL = 4;
+
+// Loop-ribbon tessellation: long bowed arcs between distant same-region
+// beads, so they need far more length samples than the short linkers.
+const RIBBON_SAMPLES = 24;
+const RIBBON_RADIAL = 4;
 
 /** Deterministic per-index hash (same idiom as arbor-geometry) — drift
  *  phases stay reproducible across builds, never Math.random. */
@@ -299,6 +304,135 @@ export function writeLinkerGeometry(
         nArr[w] = ny;
         w++;
         pArr[w] = point[2] + nz * radius;
+        nArr[w] = nz;
+        w++;
+      }
+    }
+  }
+  position.needsUpdate = true;
+  normal.needsUpdate = true;
+}
+
+/**
+ * One merged tube sweep of the loop ribbons — bowed arcs connecting distant
+ * same-region bead pairs, the connection streams revealed while a region is
+ * unwound. Both regions' arcs live in ONE geometry (one draw call); the
+ * shader gates visibility per fragment via aRegion against the focused
+ * region. Pair topology comes from loopArcPairs, which is rank-derived from
+ * the fixed region layout — open-state invariant, so the index buffer and
+ * attribute sizes never change and writeRibbonGeometry can rewrite in place
+ * per unwind tick, exactly like the linkers. No bounding sphere maintained —
+ * the mesh renders with culling disabled.
+ */
+export function buildRibbonGeometry(nodes: CoilNode[], width: number): BufferGeometry {
+  const arcs = [
+    ...loopArcPairs(nodes, 0).map((pair) => ({ pair, region: 0 })),
+    ...loopArcPairs(nodes, 1).map((pair) => ({ pair, region: 1 })),
+  ];
+  const vertsPerArc = RIBBON_SAMPLES * RIBBON_RADIAL;
+  const vertCount = arcs.length * vertsPerArc;
+  const aArcT = new Float32Array(vertCount);
+  const aRegion = new Float32Array(vertCount);
+  const aArc = new Float32Array(vertCount);
+  const indices: number[] = [];
+
+  let v = 0;
+  for (let arc = 0; arc < arcs.length; arc++) {
+    const base = arc * vertsPerArc;
+    for (let s = 0; s < RIBBON_SAMPLES; s++) {
+      const t = s / (RIBBON_SAMPLES - 1);
+      for (let ring = 0; ring < RIBBON_RADIAL; ring++) {
+        aArcT[v] = t;
+        aRegion[v] = arcs[arc]!.region;
+        aArc[v] = arc;
+        v++;
+      }
+    }
+    for (let s = 0; s < RIBBON_SAMPLES - 1; s++) {
+      for (let ring = 0; ring < RIBBON_RADIAL; ring++) {
+        const r1 = (ring + 1) % RIBBON_RADIAL;
+        const p0 = base + s * RIBBON_RADIAL + ring;
+        const p1 = base + s * RIBBON_RADIAL + r1;
+        const p2 = p0 + RIBBON_RADIAL;
+        const p3 = p1 + RIBBON_RADIAL;
+        indices.push(p0, p2, p1, p1, p2, p3);
+      }
+    }
+  }
+
+  const geo = new BufferGeometry();
+  const position = new BufferAttribute(new Float32Array(vertCount * 3), 3);
+  const normal = new BufferAttribute(new Float32Array(vertCount * 3), 3);
+  position.setUsage(DynamicDrawUsage);
+  normal.setUsage(DynamicDrawUsage);
+  geo.setAttribute('position', position);
+  geo.setAttribute('normal', normal);
+  geo.setAttribute('aArcT', new BufferAttribute(aArcT, 1));
+  geo.setAttribute('aRegion', new BufferAttribute(aRegion, 1));
+  geo.setAttribute('aArc', new BufferAttribute(aArc, 1));
+  geo.setIndex(indices);
+  writeRibbonGeometry(geo, nodes, width);
+  return geo;
+}
+
+/**
+ * Rewrite the ribbon tube positions/normals in place from a node state. Each
+ * arc is a quadratic Bézier whose control point pushes the midpoint OUTWARD
+ * from the cluster axis and lifts it — the streams bow around the mass
+ * instead of cutting through it, and they stretch with the region as it
+ * unwinds (endpoints ride the live bead positions).
+ */
+export function writeRibbonGeometry(geo: BufferGeometry, nodes: CoilNode[], width: number): void {
+  const position = geo.getAttribute('position') as BufferAttribute;
+  const normal = geo.getAttribute('normal') as BufferAttribute;
+  const pArr = position.array as Float32Array;
+  const nArr = normal.array as Float32Array;
+  const arcs = [...loopArcPairs(nodes, 0), ...loopArcPairs(nodes, 1)];
+
+  let w = 0;
+  for (const [ia, ib] of arcs) {
+    const a = nodes[ia]!.position;
+    const b = nodes[ib]!.position;
+    const span = Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]);
+    const mid: Vec3 = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2];
+    // Outward = the midpoint's horizontal bearing off the cluster axis
+    // (nodes are cluster-local, axis = local Y); guard the on-axis case.
+    const hLen = Math.hypot(mid[0], mid[2]);
+    const out: Vec3 = hLen > 1e-6 ? [mid[0] / hLen, 0, mid[2] / hLen] : [1, 0, 0];
+    const control: Vec3 = [
+      mid[0] + out[0] * span * 0.35,
+      mid[1] + span * 0.15,
+      mid[2] + out[2] * span * 0.35,
+    ];
+    const sample = (t: number): Vec3 => {
+      const u = 1 - t;
+      return [
+        u * u * a[0] + 2 * u * t * control[0] + t * t * b[0],
+        u * u * a[1] + 2 * u * t * control[1] + t * t * b[1],
+        u * u * a[2] + 2 * u * t * control[2] + t * t * b[2],
+      ];
+    };
+    for (let s = 0; s < RIBBON_SAMPLES; s++) {
+      const t = s / (RIBBON_SAMPLES - 1);
+      const point = sample(t);
+      const tangent = normalize(sub(sample(Math.min(1, t + 0.03)), sample(Math.max(0, t - 0.03))));
+      const ref: Vec3 = Math.abs(tangent[1]) < 0.99 ? [0, 1, 0] : [1, 0, 0];
+      const side = normalize(cross(tangent, ref));
+      const up = cross(tangent, side);
+      for (let ring = 0; ring < RIBBON_RADIAL; ring++) {
+        const ang = (ring / RIBBON_RADIAL) * Math.PI * 2;
+        const cos = Math.cos(ang);
+        const sin = Math.sin(ang);
+        const nx = side[0] * cos + up[0] * sin;
+        const ny = side[1] * cos + up[1] * sin;
+        const nz = side[2] * cos + up[2] * sin;
+        pArr[w] = point[0] + nx * width;
+        nArr[w] = nx;
+        w++;
+        pArr[w] = point[1] + ny * width;
+        nArr[w] = ny;
+        w++;
+        pArr[w] = point[2] + nz * width;
         nArr[w] = nz;
         w++;
       }

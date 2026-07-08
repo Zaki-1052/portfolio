@@ -25,20 +25,26 @@ export type CoilRegionIndex = 0 | 1;
 
 interface CoilFocusStore {
   focusedRegion: CoilRegionIndex | null;
+  /** Pointer-hover state (bead or annotation label) — freezes the label's
+   *  side so it never chases the cursor across the screen midline. */
+  hoveredRegion: CoilRegionIndex | null;
   /** 0 = compact … 1 = fully open. Tween-owned (CoilMesh). */
   unwindBlend: number;
   /** Depth recorded when focus was set — the release reference. */
   focusDepth: number;
   setFocusedRegion: (region: CoilRegionIndex | null, depth: number) => void;
+  setHoveredRegion: (region: CoilRegionIndex | null) => void;
   setUnwindBlend: (t: number) => void;
 }
 
 export const useCoilFocusStore = create<CoilFocusStore>()(
   subscribeWithSelector((set) => ({
     focusedRegion: null,
+    hoveredRegion: null,
     unwindBlend: 0,
     focusDepth: 0,
     setFocusedRegion: (region, depth) => set({ focusedRegion: region, focusDepth: depth }),
+    setHoveredRegion: (region) => set({ hoveredRegion: region }),
     setUnwindBlend: (t) => set({ unwindBlend: Math.min(1, Math.max(0, t)) }),
   })),
 );

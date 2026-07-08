@@ -36,6 +36,13 @@ export interface CoilLookParams {
   linkerWidth: number;
   linkerWaveAmp: number;
   shimmerSpeed: number;
+  /** Loop ribbons: the connection streams revealed while a region is
+   *  unwound — luminous color, additive opacity, tube radius
+   *  (geometry-consumed), traveling-packet speed. */
+  ribbonColor: string;
+  ribbonOpacity: number;
+  ribbonWidth: number;
+  ribbonFlowSpeed: number;
 }
 
 export type CoilParams = CoilGrowthParams & CoilLookParams;
@@ -68,6 +75,10 @@ const LOOK_DEFAULTS: CoilLookParams = {
   linkerWidth: 0.04,
   linkerWaveAmp: 0.02,
   shimmerSpeed: 1.6,
+  ribbonColor: '#9fd0f5',
+  ribbonOpacity: 0.85,
+  ribbonWidth: 0.08,
+  ribbonFlowSpeed: 0.5,
 };
 
 // Three starting points for iteration: 'tight' is the dense crystalline
@@ -121,6 +132,12 @@ export interface CoilLinkerUniforms {
   uFocusDimStrength: number;
 }
 
+export interface CoilRibbonUniforms {
+  uColor: Color;
+  uGlowOpacity: number;
+  uFlowSpeed: number;
+}
+
 /** Write the look params onto the bead material's uniforms. */
 export function applyCoilBeadLook(m: CoilBeadUniforms, p: CoilLookParams): void {
   m.uBaseColor.set(p.beadBaseColor);
@@ -139,4 +156,11 @@ export function applyCoilLinkerLook(m: CoilLinkerUniforms, p: CoilLookParams): v
   m.uWaveAmp = p.linkerWaveAmp;
   m.uShimmerSpeed = p.shimmerSpeed;
   m.uFocusDimStrength = p.focusDimStrength;
+}
+
+/** Write the look params onto the ribbon material's uniforms. */
+export function applyCoilRibbonLook(m: CoilRibbonUniforms, p: CoilLookParams): void {
+  m.uColor.set(p.ribbonColor);
+  m.uGlowOpacity = p.ribbonOpacity;
+  m.uFlowSpeed = p.ribbonFlowSpeed;
 }

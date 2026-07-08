@@ -73,6 +73,11 @@ export interface CoilNode {
 // Pitch/count tightened 0.55/96 → 0.5/106 in the 5.1 sign-off pass — closes
 // the vertical gaps between turns without hitting the spacing floor
 // (natural spacing ≈ 1.01 > 0.945 floor at these values).
+// regionGap 0.33 → 0.375 in the 5.4 pass: at 6 turns, 0.33 is exactly 2.0
+// revolutions — the two loci stacked at the SAME azimuth ~1 unit apart
+// (overlapping labels, twin unwind directions). 0.375 = 2.25 revolutions
+// puts them ~82° apart on the rim. Region marking never moves compact
+// placement, so the blessed silhouette is untouched — only the locus glows.
 export const COIL_GROWTH_DEFAULTS: CoilGrowthParams = {
   seed: 11,
   beadCount: 106,
@@ -84,7 +89,7 @@ export const COIL_GROWTH_DEFAULTS: CoilGrowthParams = {
   jitter: 0.08,
   linkerSag: 0.12,
   regionSize: 15,
-  regionGap: 0.33,
+  regionGap: 0.375,
 };
 
 // Unwound-state shape: the open arc is wider and taller than the compact

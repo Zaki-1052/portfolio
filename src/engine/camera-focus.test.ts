@@ -7,7 +7,8 @@ import { describe, expect, it } from 'vitest';
 import { BRANCH_ORDER } from '@/content/branch-order';
 import { getBranchAnchors } from '@/scales/cellular/arbor-anchors';
 import { limbIndexOf } from '@/content/branch-order';
-import { blendCameraSample, focusPoseFor } from './camera-focus';
+import { getRegionAnchors } from '@/scales/chromatin/coil-anchors';
+import { blendCameraSample, focusPoseFor, regionFocusPoseFor } from './camera-focus';
 
 const qLen = (q: readonly number[]): number => Math.hypot(q[0]!, q[1]!, q[2]!, q[3]!);
 
@@ -42,6 +43,38 @@ describe('focusPoseFor', () => {
         expect(d).toBeGreaterThan(2);
       }
     }
+  });
+});
+
+describe('regionFocusPoseFor', () => {
+  it('positions the camera a working distance from each open anchor, aimed at it', () => {
+    for (const region of [0, 1] as const) {
+      const pose = regionFocusPoseFor(region);
+      const target = getRegionAnchors().open[region];
+      const d = Math.hypot(
+        pose.position[0] - target[0],
+        pose.position[1] - target[1],
+        pose.position[2] - target[2],
+      );
+      // Long stand-off: the open arc is wide and the compact mass stays in frame.
+      expect(d).toBeGreaterThan(12);
+      expect(d).toBeLessThan(24);
+      expect(pose.fov).toBeGreaterThan(38);
+      expect(pose.fov).toBeLessThan(52);
+      expect(qLen(pose.quaternion)).toBeCloseTo(1, 6);
+      expect(pose.position.every(Number.isFinite)).toBe(true);
+    }
+  });
+
+  it('gives each region a distinct pose', () => {
+    const a = regionFocusPoseFor(0);
+    const b = regionFocusPoseFor(1);
+    const d = Math.hypot(
+      a.position[0] - b.position[0],
+      a.position[1] - b.position[1],
+      a.position[2] - b.position[2],
+    );
+    expect(d).toBeGreaterThan(2);
   });
 });
 

@@ -29,6 +29,8 @@ import { CameraDevTools } from '@/engine/camera-dev-tools';
 import { startThemeBridge } from '@/engine/theme-bridge';
 import { startRenderInvalidation } from '@/engine/render-loop';
 import { SCALES } from '@/engine/scale-manager';
+import { CoilAnnotations } from '@/scales/chromatin/CoilAnnotations';
+import { CoilIntro } from '@/scales/chromatin/CoilIntro';
 import { useDepthStore } from '@/stores/depth';
 import { useIntroStore } from '@/stores/intro';
 import { initMotionStore, useMotionStore } from '@/stores/motion';
@@ -52,6 +54,12 @@ if (params.get('reduced') === '1') {
 }
 useIntroStore.getState().finish();
 useDepthStore.getState().setDepth(INITIAL_DEPTH);
+// The scene-native overlays' CSS is gated on the WebGL latch (globals.css);
+// this harness is by definition the WebGL register. The motion dataset
+// mirrors what app.tsx reflects from the store — the annotation dot-pulse
+// CSS keys on it.
+document.documentElement.dataset.webgl = 'active';
+document.documentElement.dataset.motion = useMotionStore.getState().reduced ? 'reduced' : 'full';
 
 function applyDepth(d: number): void {
   useDepthStore.getState().setDepth(Math.min(1, Math.max(0, d)));
@@ -139,6 +147,12 @@ function DescentPreview() {
           mounts into the same panel. */}
       <CameraDevTools />
       <DescentPanel />
+      {/* The third band's scene-native overlays — plain fixed DOM reading
+          the depth store + camera pose, so the full 5.4 interaction (labels,
+          cards, camera pivot, Esc, scroll-release) is verifiable here in
+          isolation. */}
+      <CoilIntro />
+      <CoilAnnotations />
       <Canvas
         style={{ position: 'fixed', inset: 0 }}
         gl={{ antialias: false, powerPreference: 'high-performance' }}

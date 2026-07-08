@@ -421,7 +421,8 @@
    ============================================================ */
 [data-webgl='active'] [data-scale='approach'],
 [data-webgl='active'] [data-scale='tissue'],
-[data-webgl='active'] [data-scale='cellular'] {
+[data-webgl='active'] [data-scale='cellular'],
+[data-webgl='active'] [data-scale='chromatin'] {
   --section-bg: transparent;
 }
 [data-webgl='active'] [data-scale='approach']::before,
@@ -429,12 +430,15 @@
 [data-webgl='active'] [data-scale='tissue']::before,
 [data-webgl='active'] [data-scale='tissue']::after,
 [data-webgl='active'] [data-scale='cellular']::before,
-[data-webgl='active'] [data-scale='cellular']::after {
+[data-webgl='active'] [data-scale='cellular']::after,
+[data-webgl='active'] [data-scale='chromatin']::before,
+[data-webgl='active'] [data-scale='chromatin']::after {
   display: none;
 }
 [data-webgl='active'] [data-scale='approach'] + [data-scale],
 [data-webgl='active'] [data-scale='tissue'] + [data-scale],
-[data-webgl='active'] [data-scale='cellular'] + [data-scale] {
+[data-webgl='active'] [data-scale='cellular'] + [data-scale],
+[data-webgl='active'] [data-scale='chromatin'] + [data-scale] {
   border-top: none;
 }
 
@@ -1527,6 +1531,21 @@ hr {
   height: 200vh;
 }
 
+/* Third-band scene-native runways: arrival (the cluster resolves out of the
+   haze, camera orbits) and index (the settled framing where the publication
+   annotations live). Same contract as the arbor runways. */
+.coil-runway {
+  display: none;
+}
+[data-webgl='active'] .coil-runway--arrival {
+  display: block;
+  height: 140vh;
+}
+[data-webgl='active'] .coil-runway--index {
+  display: block;
+  height: 130vh;
+}
+
 /* The band's document register yields entirely to the scene-native one:
    the annotation overlay (below) is the real interface under WebGL, so the
    in-flow copy is fully removed (not sr-only — no phantom tab stops, no
@@ -1543,6 +1562,23 @@ hr {
   letter-spacing: 0.02em;
 }
 .cellular-doc__title {
+  margin: 0 0 var(--space-6);
+  font-size: var(--text-3xl);
+  max-width: 20ch;
+}
+
+/* Third band: same document-register yield as the cellular band above. */
+[data-webgl='active'] [data-scale='chromatin'] .chromatin-doc {
+  display: none;
+}
+.chromatin-doc__kicker {
+  margin: 0 0 var(--space-2);
+  color: var(--accent);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  letter-spacing: 0.02em;
+}
+.chromatin-doc__title {
   margin: 0 0 var(--space-6);
   font-size: var(--text-3xl);
   max-width: 20ch;
@@ -1625,6 +1661,65 @@ hr {
 /* The muted --text-body reads dull against the warm melt; step the body up to
    the palette's bright foreground (scoped to this overlay only). */
 .arbor-intro .prose {
+  color: var(--text-strong);
+}
+
+/* ============================================================
+   COIL INTRO — the third band's intro prose in the WebGL register, resolving
+   from the haze with the cluster (CoilIntro.tsx). Same architecture as the
+   arbor intro above: presence gate on data-active, painted cooled-lens pool
+   (never backdrop-filter), text-only blur/rise. The blue band is darker than
+   the melt, so the lens pool runs slightly lighter.
+   ============================================================ */
+.coil-intro {
+  display: none;
+}
+[data-webgl='active'] .coil-intro[data-active='true'] {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  pointer-events: none;
+}
+.coil-intro__col {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(620px, 82vw);
+  text-align: left;
+}
+.coil-intro__col::before {
+  content: '';
+  position: absolute;
+  inset: -40px -56px;
+  z-index: -1;
+  border-radius: var(--radius-organic, 16px);
+  background: radial-gradient(
+    ellipse 78% 94% at 50% 50%,
+    rgba(10, 12, 18, 0.72) 0%,
+    rgba(10, 12, 18, 0.45) 46%,
+    rgba(10, 12, 18, 0) 82%
+  );
+  opacity: var(--lens-alpha, 0);
+  pointer-events: none;
+}
+.coil-intro__inner {
+  opacity: 0; /* JS fades the TEXT here — kept off the lens's ancestor chain */
+  text-shadow:
+    0 1px 2px rgba(8, 10, 16, 0.9),
+    0 0 4px rgba(8, 10, 16, 0.85),
+    0 0 16px rgba(8, 10, 16, 0.5);
+  will-change: opacity, transform, filter;
+}
+.coil-intro__title {
+  margin: 0 0 var(--space-4);
+  /* The band's heading register is the sans (middle-scale bridge). */
+  font-family: var(--font-sans);
+  font-size: var(--text-3xl);
+  max-width: 18ch;
+}
+.coil-intro .prose {
   color: var(--text-strong);
 }
 
@@ -1859,6 +1954,240 @@ hr {
 }
 @media (prefers-reduced-motion: reduce) {
   .arbor-annotation__entries {
+    transition: none;
+  }
+}
+
+/* ============================================================
+   COIL ANNOTATIONS — the scene-native publication index (Phase 5.4).
+   Same luminous figure-annotation register as the arbor's: glowing type +
+   hairline connectors, nothing boxed. Each .coil-annotation is translated
+   to its region's PROJECTED anchor every rendered frame — and the anchor
+   itself travels with the region as the fiber unwinds.
+   ============================================================ */
+.coil-annotations {
+  display: none;
+}
+[data-webgl='active'] .coil-annotations {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  pointer-events: none;
+}
+.coil-annotation {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform;
+}
+.coil-annotation[data-focused] {
+  z-index: 2;
+}
+/* A small luminous marker at the projected locus — the labels' "find me"
+   affordance over the packed cluster. */
+.coil-annotation__dot {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffffff 0%, var(--accent) 55%, transparent 75%);
+  box-shadow: 0 0 10px 2px color-mix(in srgb, var(--accent) 65%, transparent);
+  animation: coil-dot-pulse 2.4s ease-in-out infinite;
+}
+.coil-annotation[data-focused] .coil-annotation__dot {
+  animation: none;
+}
+@keyframes coil-dot-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.75;
+  }
+  50% {
+    transform: scale(1.55);
+    opacity: 1;
+  }
+}
+[data-motion='reduced'] .coil-annotation__dot {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .coil-annotation__dot {
+    animation: none;
+  }
+}
+.coil-annotation__line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 52px;
+  height: 1px;
+  background: var(--accent-line);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 35%, transparent);
+  transform-origin: 0 50%;
+  transform: rotate(-14deg);
+}
+.coil-annotation[data-side='left'] .coil-annotation__line,
+.coil-annotation[data-focused] .coil-annotation__line {
+  transform: rotate(194deg);
+}
+.coil-annotation__body {
+  position: absolute;
+  top: -26px;
+  left: 56px;
+  text-align: left;
+}
+.coil-annotation[data-side='left'] .coil-annotation__body,
+.coil-annotation[data-focused] .coil-annotation__body {
+  left: auto;
+  right: 56px;
+  text-align: right;
+}
+.coil-annotation__label {
+  pointer-events: auto;
+  background: none;
+  border: 0;
+  padding: 4px 6px;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  /* Publication titles run longer than the arbor's group labels. */
+  max-width: min(300px, 36vw);
+  color: var(--text-strong);
+  text-shadow:
+    0 0 14px color-mix(in srgb, var(--accent) 80%, transparent),
+    0 0 4px color-mix(in srgb, var(--accent) 60%, transparent),
+    0 1px 3px rgba(0, 0, 0, 0.9);
+  transition:
+    color var(--dur-fast, 160ms) ease,
+    text-shadow var(--dur-fast, 160ms) ease;
+}
+.coil-annotation__label:hover,
+.coil-annotation__label:focus-visible,
+.coil-annotation__label[aria-pressed='true'] {
+  color: #ffffff;
+  text-shadow:
+    0 0 18px var(--accent),
+    0 0 6px color-mix(in srgb, var(--accent) 80%, transparent),
+    0 1px 3px rgba(0, 0, 0, 0.9);
+}
+.coil-annotation__entries {
+  position: relative;
+  width: min(300px, 38vw);
+  margin-top: 6px;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 280ms var(--ease-out, ease-out),
+    transform 280ms var(--ease-out, ease-out),
+    visibility 0s linear 280ms;
+}
+.coil-annotation__entries::before {
+  content: '';
+  position: absolute;
+  inset: -52px -84px;
+  z-index: -1;
+  background: radial-gradient(
+    ellipse 72% 78% at 50% 44%,
+    rgba(8, 10, 16, 0.62),
+    rgba(8, 10, 16, 0.3) 52%,
+    transparent 72%
+  );
+  pointer-events: none;
+}
+.coil-annotation[data-clamped='true'] .coil-annotation__line {
+  opacity: 0.15;
+}
+.coil-annotation__entries[data-open] {
+  pointer-events: auto;
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+  transition-delay: 0s;
+}
+.coil-annotation__back {
+  pointer-events: auto;
+  background: none;
+  border: 0;
+  padding: 2px 4px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-shadow:
+    0 0 10px color-mix(in srgb, var(--accent) 45%, transparent),
+    0 1px 3px rgba(0, 0, 0, 0.9);
+  transition: color var(--dur-fast, 160ms) ease;
+}
+.coil-annotation__back:hover,
+.coil-annotation__back:focus-visible {
+  color: var(--text-strong);
+}
+.coil-entries__hint {
+  margin: 8px 0 0;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-style: italic;
+  color: var(--text-muted);
+  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.85);
+}
+
+.coil-entry {
+  margin-bottom: var(--space-4);
+}
+.coil-entry__status {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
+}
+.coil-entry p {
+  margin: 3px 0;
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #d9dfe8;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.85);
+}
+.coil-entry__venue {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #aeb9c6;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+.coil-entry__links {
+  display: block;
+  margin-top: 4px;
+}
+.coil-entry__links a {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  margin-right: 10px;
+  color: #f2f5f9;
+  text-decoration: none;
+  text-shadow:
+    0 0 14px color-mix(in srgb, var(--accent) 45%, transparent),
+    0 1px 4px rgba(0, 0, 0, 0.9);
+}
+.coil-entry__links a:hover,
+.coil-entry__links a:focus-visible {
+  color: var(--accent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .coil-annotation__entries {
     transition: none;
   }
 }
