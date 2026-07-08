@@ -1,50 +1,50 @@
 // src/scales/chromatin/shaders/coil-bead.vert.glsl
 // Bead SHAPE stage — instanced. Each bead is one instance of the shared
-// oblate template; instanceMatrix carries the full placement (transport-frame
-// rotation + uniform radius scale + translation), written on the CPU by the
-// Approach-B unwind engine each animation tick. No morph attributes remain —
-// the geometry that arrives here IS the current conformation. Brownian
-// micro-drift rides on top, per-instance phase from aSeed, frozen by uTime=0
-// / uDriftAmp=0 under reduced motion. The non-instanced fallback keeps the
-// bare template renderable as a plain mesh.
+// beveled-puck template; instanceMatrix carries the full placement
+// (transport-frame rotation + uniform radius scale + translation), written on
+// the CPU by the Approach-B unwind engine each animation tick. No morph
+// attributes remain — the geometry that arrives here IS the current
+// conformation. Brownian micro-drift rides on top, per-instance phase from
+// aSeed, frozen by uTime=0 / uDriftAmp=0 under reduced motion. The wound
+// thread's vertex stage duplicates this exact drift formula (same
+// frequencies, same seed hash) so the wrapped cord rides its drum without
+// detaching. The non-instanced fallback keeps the bare template renderable
+// as a plain mesh.
 
 uniform float uTime;
 uniform float uDriftAmp;
 
 attribute float aSeed;
-attribute float aT;
 attribute float aRegion;
 attribute float aLocusW;
-attribute float aGroove;
+attribute float aCapMask;
 
-varying vec3 vWorldPos;
 varying vec3 vWorldNormal;
 varying vec3 vViewDir;
 varying float vViewDist;
-varying float vT;
 varying float vRegion;
 varying float vLocusW;
 varying float vSeed;
-varying float vGroove;
+varying float vCapMask;
 varying vec3 vLocalPos;
 
 void main() {
-  vT = aT;
   vRegion = aRegion;
   vLocusW = aLocusW;
   vSeed = aSeed;
-  vGroove = aGroove;
-  // Template-local coordinates: the frag's noise samples live HERE (plus a
-  // per-bead phase from the seed), so grooves and mottle ride WITH the bead
-  // through the unwind instead of crawling across its surface as it travels.
+  vCapMask = aCapMask;
+  // Template-local coordinates: the frag's mottle noise samples live HERE
+  // (plus a per-drum phase from the seed), so the surface pattern rides WITH
+  // the drum through the unwind instead of crawling across it as it travels.
   vLocalPos = position;
 
   vec3 objectPos = position;
   vec3 objectNormal = normal;
 #ifdef USE_INSTANCING
-  // Rigid rotation + uniform scale only (aspect is baked into the template),
-  // so transforming the normal by mat3(instanceMatrix) and renormalizing
-  // below is exact — never put a non-uniform scale in these matrices.
+  // Rigid rotation + uniform scale only (aspect + bevel are baked into the
+  // template), so transforming the normal by mat3(instanceMatrix) and
+  // renormalizing below is exact — never put a non-uniform scale in these
+  // matrices.
   objectPos = (instanceMatrix * vec4(position, 1.0)).xyz;
   objectNormal = mat3(instanceMatrix) * normal;
 #endif
@@ -59,7 +59,6 @@ void main() {
   objectPos += drift;
 
   vec4 worldPos = modelMatrix * vec4(objectPos, 1.0);
-  vWorldPos = worldPos.xyz;
   vWorldNormal = normalize(mat3(modelMatrix) * objectNormal);
 
   vec3 toCam = cameraPosition - worldPos.xyz;

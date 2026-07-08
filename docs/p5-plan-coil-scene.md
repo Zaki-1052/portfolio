@@ -61,6 +61,49 @@ scale-manager.ts:28). CSS accent is rose `#d57aa5` (`--aod-rose`), fog
 > overlap, reduced-motion anchor cuts pixel-stable. Remaining for 5.4
 > unchanged (list above).
 
+> **Ethereal retune (2026-07-08, user-directed — "pretty, not a prison"):**
+> the 5.5 look was still too dark/mechanical. Drums lifted from near-black
+> slate to luminous pale blue (`beadBaseColor #434a56 → #7fa3c8`), ambient
+> floor roughly doubled in the bead/thread/knob frags, an inner-luminance
+> term added (strongest on cap faces — shadowed inner disks never go
+> hostile-dark), fresnel halo widened (power 3.4 → 2.8, weight 0.18 → 0.28).
+> The RING DESIGNS returned as pure ornament (the real thread carries the
+> structure now): fbm-wobbled concentric rings across each cap + soft bands
+> around the wall, new `ringAmp 0.45` / `ringFreq 5` sliders, valleys deepen
+> gently while ridges pick up the accent. Gold softened to champagne
+> (`threadColor #e8b24a → #d8b878`, knobs `#c99a3f → #c2a978`) with flatter
+> wrapped diffuse and wide quiet sheens replacing the hard Blinn glints
+> (bead spec 48/0.35 → 26/0.22). Verified in both harnesses at dpr 2,
+> compact + focused; gates green (199 tests).
+
+> **Stage 5.5 implemented (2026-07-07) — modeling fidelity pass:** the fake
+> wound-band shading is gone; the winding is real geometry. Beveled-puck drum
+> template (15-row lathe × 28 segments, analytic normals, ORGANIC surface —
+> improved two-octave mottle + cap-skin tint after the user corrected the
+> mis-recorded "machined" decision; no seams). Open rising coil packing
+> (55 drums, 9/turn, radius 2.2, pitch 1.05, regionSize 9 — silhouette
+> ≈ 5.4 × 7.4). Wound amber thread (`coil-thread-path.ts`, pure + 9 tests):
+> per-drum rim wraps of EXACTLY `wrapTurns` (1.6) revolutions — only the
+> entry azimuth is pinned (toward the previous drum), making the whole path
+> a continuous function of node state (2π-periodicity hides the atan2 cut;
+> no quantized turn count, winding pops impossible BY CONSTRUCTION — the
+> planned freeze-k fallback was never needed; verified by a step-scaling
+> probe in `scripts/verify/`). Free tangent-launched bridges (sag ramps in
+> on long spans only, keeping compact junctions exactly C1); cord sinks
+> `WRAP_SINK` (0.18ρ) into the wall (grazing tangent z-fights). One merged
+> tube, static topology, per-tick rewrite; drift-matched vertex shaders
+> (`aSeedA/aSeedB/aDriftMix`) keep the cord pinned to drifting drums at the
+> blessed driftAmp 0.1. Cinch knobs: InstancedMesh ×110 at wrap entry/exit.
+> Thread register: opaque lit cord + `threadEmissive` dial (0 = matte;
+> additive variant documented in the frag header). Linker layer + groove
+> params deleted. Camera: broadside knot 0.48 re-authored (stand-off + spool
+> lower-right of the intro fade window); 0.455/0.52/0.565 held;
+> `REGION_FOCUS_DISTANCE` 17 → 20. Measured: unwind tick 0.248 ms (was
+> 0.75 ms — 55-bead generator run outweighs the added tube), 60 fps sweeps
+> both directions at dpr 2, reduced-motion pixel-stable (identical PNGs),
+> both regions' focus + switch + card verified in the descent harness, prod
+> bundle clean. 199 tests green. Live-site bless: user.
+
 > **Stage 5.4 implemented (2026-07-07) — PHASE 5 COMPLETE:** loop ribbons
 > (one mesh, both regions' arcs, rewritten in place per unwind tick alongside
 > the beads/threads; traveling-packet frag, blooming in the later half of the
@@ -501,6 +544,201 @@ Rework `CoilContent.tsx` to dual-register. Wire `uUnwindBlend` +
 loop ribbons flow, card anchors to the opened region. Scroll-away releases.
 Keyboard (Esc, Tab). Reduced motion = instant, HTML fully functional.
 No-WebGL fallback unchanged.
+
+### Stage 5.5 — Modeling fidelity pass (drums + wound thread)
+
+> **Detailed design landed 2026-07-07 (this session)** — the review, the
+> locked decisions, and the full architecture below. Implementation staged
+> 5.5a → 5.5d.
+
+**Why:** the blessed 5.1–5.4 look leans too far into evocative abstraction to
+read as a *wound spool of drums*. The drums render as lumpy textured ovals in
+a packed wall, and the thread is a near-invisible ghost line. The current
+bead frag even FAKES the wrap by banding "wrapped-thread grooves" across each
+bead's surface (`coil-bead.frag.glsl:44-51`) + adds fbm mottle — a shading
+trick standing in for real wound geometry. 5.5 replaces the fake with the
+real thing and cleans up the drums.
+
+**The four fixes (review, in priority order):**
+
+1. **Make the wound thread real and explicit** (highest leverage). Today it's
+   a thin center-to-center sag tube fading between drums. Replace with a
+   thicker, brighter, contrasting tube that visibly **wraps ~1.5–2 turns
+   around each drum's rim** before bridging to the next — the single feature
+   that turns "pile of discs" into "wound spool." The wrap is generated from
+   the live per-bead transport frames, so it follows the unwind naturally.
+2. **Clean, uniform drums** (second highest). Replace the squished UV sphere +
+   fbm mottle with a high-res **beveled cylinder/puck**: flat cap faces, a
+   crisp rim highlight, and subtle **radial wedge seams** (8-fold) for
+   machined-detail credibility. Kill the mottle — the previous "read as
+   material, not injection-molded" intent is explicitly reversed here.
+   **[SUPERSEDED 2026-07-07 by the corrected locked decision below: drums
+   stay ORGANIC. The puck geometry + rim highlight stand; the wedge seams
+   are OUT and an improved mottle is IN.]**
+3. **Cinch knobs** — a small contrasting knob (clasp) at each drum's
+   thread entry/exit point, the physical anchor detail.
+4. **Legible packing** — commit to one clear architecture instead of the
+   chaotic wall (see decision below).
+
+**Locked decisions (user, 2026-07-07):**
+
+- **Packing → open rising coil.** Fewer drums per turn (~8–10), smaller
+  radius with a visible hollow core, so it reads as a spiral staircase of
+  wound drums. This OVERRIDES the earlier "dense cluster" lock (creative
+  decision #1) — recognizability wins over density. Dependency: the camera
+  knots (0.455/0.48/0.52/0.565, framed to the current cluster size) and the
+  anchor bounds will need a retune in the descent harness once the new
+  silhouette exists.
+- **Wound thread → warm amber/gold** (~#e8b24a) against the cool slate-blue
+  drums: maximum contrast, and a warm callback inside the cool band. The rest
+  of the register (blue accent, fog, drum body) stays blessed.
+- **Drums → ORGANIC**, not machined: the prior session misrecorded this as
+  "clean/machined — the user agreed" but the user's intent was always organic
+  above all else. The lumpy-oval look is still the problem to solve, but the
+  fix is a better organic surface read (improved mottle, rim highlight from
+  the bevel, real wound thread providing the structure) — not a machined
+  industrial aesthetic.
+
+**In scope (all in `src/scales/chromatin/`, unwind engine untouched):** the
+bead template + bead shaders (drum shape/shading, kill mottle), the
+linker→wound-thread geometry + a new thread material/shaders, optional cinch
+knobs, packing params (`COIL_GROWTH_DEFAULTS`), dev-panel sliders, and a
+camera-knot/anchor retune. Preserve: the Approach-B unwind, focus store,
+annotations, fog, dual-register content.
+
+**User look choices = starter defaults, NOT locks (2026-07-07):** lit thread
+with subtle glow, amber knobs, full 6-turn column — chosen from descriptions,
+explicitly provisional. Each ships as a live dev-panel parameter
+(`threadEmissive` [0, 1.5] where 0 = fully matte, `knobColor` picker,
+`coilTurns` slider) and gets re-blessed by eye in the preview.
+
+### 5.5 detailed design
+
+**Architecture:**
+
+1. New pure module `coil-thread-path.ts` (no three imports, node-tested like
+   the generator) holds all wrap+bridge math; emits into caller-owned
+   Float32Arrays — zero allocation on the tween path.
+2. Puck template: hand-built lathe grid (same rows×(cols+1) idiom as the old
+   UV sphere), 15 profile rows (cap center/mid/edge → bevel arc ×3 → wall
+   top/mid/bottom → mirrored) × 28 radial segments ≈ 435 verts, analytic
+   normals (caps flat, wall radial, bevel quarter-arc). Half-thickness baked
+   in template space (local Z = fiber tangent, like the old squish) so
+   instance matrices stay rigid and `writeBeadInstances` is untouched.
+   Surface stays ORGANIC (user correction, 2026-07-07): an improved
+   two-octave fbm value mottle (seed-phased, slider-controlled) + a faint
+   cap-skin tint via a per-vertex `aCapMask` — the clean silhouette carries
+   the form, the mottle only breathes the surface. No seams or sector lines.
+3. Thread: ONE merged tube (all wraps + bridges), static topology sized from
+   bead count alone, per-tick position/normal rewrite like the old linker
+   writer. Wrap ring frames are analytic (exact, twist-free); bridge frames
+   parallel-transport from the wrap-exit frame — surface continuous through
+   junctions.
+4. Thread register: opaque lit cord with an emissive dial (`uThreadEmissive`
+   feeds bloom); the additive-glow alternative is contained to the frag
+   output block + material flags (documented in the shader header).
+5. Knobs: one `InstancedMesh`, 2 per drum at wrap entry/exit, low-poly dome,
+   per-tick matrix rewrite. +1 draw call.
+6. Drift registration (found in design review): drum Brownian drift is
+   shader-side but thread/knobs are CPU geometry — a tight wrap would detach
+   from a drifting drum. Thread/knob verts duplicate the bead drift formula
+   via seed attributes (`aSeedA`/`aSeedB`/`aDriftMix`; bridges blend endpoint
+   drifts, and junction rings sit at blend 0/1 so seals hold at any
+   amplitude). `driftAmp` stays at the blessed 0.1 (organic register).
+
+**Wrap-path math** (per node `i`: center `C`, frame `(N, B, T)`, drum radius
+`r`, aspect `a`, thread radius `ρ`, wrap turns `W` = 1.75, winding sense
+`σ = +1` fixed; constants `WRAP_SAMPLES 28`, `BRIDGE_SAMPLES 6`,
+`THREAD_RADIAL 6`, `WRAP_Z_FRACTION 0.55`, `BRIDGE_TENSION 0.35`):
+
+- Entry/exit azimuths: project the chord to the neighbor off `T`
+  (`p = toNext − (toNext·T)T`, guard `|p| < 1e-4 → p = N`), then
+  `φ_out = atan2(p·B, p·N)`; same with `toPrev` for `φ_in`. End drums extend
+  by `σ·2πW`.
+- Winding count: `Δφ_raw = mod(σ·(φ_out − φ_in), 2π)`;
+  `k = max(1, round(W − Δφ_raw/2π))`; `Δφ = Δφ_raw + 2πk` — continuous as
+  `Δφ_raw` wraps between ticks; actual turns land in `[W−0.5, W+0.5]`.
+- Wrap sampling (u = 0..1): `φ(u) = φ_in + σ·Δφ·u`;
+  `z(u) = ±z_w`, `z_w = WRAP_Z_FRACTION·r·a`; point
+  `P = C + (r+ρ)·e_r(φ) + z·T` with `e_r(φ) = cosφ·N + sinφ·B`. Analytic
+  tangent `T_w = σ·(r+ρ)·Δφ·(−sinφ·N + cosφ·B) + 2·z_w·T`; ring basis
+  `side = e_r`, `up = cross(T_w, side)` — exact, no ref-guard, no twist.
+- Bridge: cubic Bézier from wrap exit A to next wrap entry D (C0 exact,
+  duplicated junction rings); controls `A + t_A·L·BRIDGE_TENSION` /
+  `D − t_D·L·BRIDGE_TENSION`, both dropped by `linkerSag·L` in y; frames
+  parallel-transported from the wrap-exit frame.
+- Unwind: all inputs recompute from live nodes each tick; topology never
+  changes; buffers never reallocate.
+
+**Per-tick budget** (55 drums): ~11.2k thread verts (pos+normal) plus 55
+drum and 110 knob matrices; estimated 1.0–1.4 ms vs 0.75 ms today (generateCoil
+halves at 55 beads). Gate < 2 ms; degradation ladder `WRAP_SAMPLES` 28→22,
+`THREAD_RADIAL` 6→5. Draw calls: beads + thread + ribbons + knobs (+ motes)
+→ mid-band 10 → 11.
+
+**Packing retune — `COIL_GROWTH_DEFAULTS` starters (all live sliders):**
+
+| Param | Old | New | Why |
+|---|---|---|---|
+| beadCount | 106 | 55 | 54 gaps / 6 turns = 9 drums per turn |
+| coilRadius | 2.8 | 2.2 | visible hollow core (Ø ~3.4) |
+| coilPitch | 0.5 | 1.05 | staircase rise; turn clearance over drum Ø 1.0 |
+| coilTurns | 6 | 6 | full column starter |
+| beadRadius | 0.45 | 0.5 | chunky drum proportion |
+| beadAspect | 0.6 | 0.62 | drum thickness ~0.62 world units |
+| jitter | 0.08 | 0.08 | unchanged — organic irregularity, floor stays inactive |
+| linkerSag | 0.12 | 0.1 | now the bridge sag |
+| regionSize | 15 | 9 | one turn per locus; ≥5 (loopArcPairs), ≤ count/3 |
+| regionGap | 0.375 | 0.375 | 2.22 turns between centers → ~80° azimuth split |
+
+Sanity: naturalSpacing ≈ 1.54 → spacing floor (1.05) inactive at defaults;
+rim-to-rim gap ≈ 0.54 leaves bridge room; silhouette ≈ 5.4 wide × ~7.4 tall
+(vs 6.5 × 3) — hence the 5.5c camera retune.
+
+**Params/dev panel:** remove `grooveAmp`/`grooveFreq` (+ `aGroove` plumbing)
+and the linker quartet (`linkerColor/Opacity/Width/WaveAmp`) +
+`CoilLinkerUniforms`. Add (default · leva range, every range containing its
+default): `mottleAmp 0.35 · [0,1]`, `beadSpecStrength 0.35 · [0,1]`,
+`beadSpecPower 48 · [8,128]`, `beadBevel 0.14 · [0.05,0.3]` (growth folder —
+rebuilds template), `threadColor '#e8b24a'`, `threadRadius 0.055 ·
+[0.02,0.15]`, `threadEmissive 0.35 · [0,1.5]`, `wrapTurns 1.6 · [1,2.5]`
+(fractional part ≈ 0.6 aims each exit at the next drum — short tidy
+bridges), `knobColor '#c99a3f'`, `knobSize 0.11 · [0.02,0.25]`. Keep bead
+colors/fresnel, `locusGlow`, `focusDimStrength`, `driftAmp` (0.1 unchanged),
+`shimmerSpeed` (repurposed: thread emissive pulse), all ribbon params.
+Presets keep their `tight/open/loose` keys (preview `?preset=` URLs intact),
+values re-derived.
+
+**Tests:** NEW `coil-thread-path.test.ts` (C0 junctions exact; winding turns
+in range; wrap points at distance `r+ρ` from the drum axis; ring normals ⊥
+tangent; z-span within the wall; openT continuity 0.5 vs 0.501 and 0 vs 1e-4
+— catches winding pops; determinism). `coil-generator.test.ts` — no
+assertion changes intended (parameterized, floor inactive at new defaults).
+`coil-anchors.test.ts` — expected to pass (compact pair ≈ 3.6 > 3 tightest);
+nudge `regionGap` before relaxing any bound. `camera-focus.test.ts` — holds
+while `REGION_FOCUS_DISTANCE` ∈ ~[12.5, 23]. Keyframe + fog tests untouched.
+
+**Sub-stages:** 5.5a pucks + packing (chromatin-preview dpr 2, gate) →
+5.5b wound thread + knobs (thread-path tests, unwind continuity via real
+trusted clicks + stepped `?open=` screenshots, tick < 2 ms, gate) →
+5.5c camera/anchors/annotations retune (descent-preview bake workflow, FULL
+reload after keyframe edits, 60 fps sweep) → 5.5d gates + bless + dated
+addendum + session log.
+
+**Risks:** winding-count pop at the `round()` half-integer threshold
+(continuity test + stepped screenshots; fallback: freeze per-drum `k` from
+the compact conformation); wrap↔bridge ring-phase seam (bridge sample 0 can
+copy the wrap ring verbatim); tick budget (measured in 5.5b before polish);
+drift detachment (drift-matched verts, required); `UNWOUND_*` multipliers
+tuned for the old packing (verify `?open=1` framing; keep radius mult ≥ 2
+for the spread test); bloom washing the amber cord (tune `threadEmissive`
+against the preview's real PostFX); click targets (regionSize 15 → 9 but
+drums grow — exercise real clicks).
+
+**5.5 checkpoint:** the resting fiber reads unmistakably as a wound coil of
+clean drums with a bright wrapping thread; unwind still opens a region with
+the thread following; blessed blue register + fog intact; gates green;
+verified in `chromatin-preview` + `descent-preview` + the live site.
 
 ---
 

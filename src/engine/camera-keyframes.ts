@@ -97,19 +97,22 @@ export const CAMERA_KEYFRAMES: readonly CameraKeyframe[] = [
   }, // off-axis rule-of-thirds settle — hub above the frame bottom with the filament's fall visible, canopy generous in frame (user-tuned midpoint framing, 2026-07-05)
   { depth: 0.43, position: [-11.5, -4, 5], target: [1, -5, -24], roll: 0, fov: 49 }, // hold with a breath of downward drift while the next section covers (= SCALE_BOUNDARIES[3])
   // --- The coil band (third scale): dive out of the arbor hold into the
-  // thickening haze, resolve the cluster broadside, sweep around and below
-  // it, settle off-axis. Starter values framing COIL_ORIGIN [0, -26, -40]
-  // (cluster ≈ 6.5 wide × 3 tall) — tuned in the descent-preview harness
-  // via camera-dev-tools (bake → paste). ---
-  { depth: 0.455, position: [-7, -12, -9], target: [0, -21, -34], roll: -0.015, fov: 51 }, // dive from the hold — first beads glimmer below in the haze
+  // thickening haze, resolve the spool broadside, sweep around and below
+  // it, settle off-axis. Framing COIL_ORIGIN [0, -26, -40]; the 5.5 open
+  // rising coil is a taller, narrower silhouette than the old packed
+  // cluster (≈ 5.4 wide × 7.4 tall incl. the wound thread) — the broadside
+  // knot gained stand-off and pushes the column to the lower-right so the
+  // intro prose column reads clear through its fade window. Tuned in the
+  // descent-preview harness. ---
+  { depth: 0.455, position: [-7, -12, -9], target: [0, -21, -34], roll: -0.015, fov: 51 }, // dive from the hold — the winding glimmers below in the haze
   {
     depth: 0.48,
-    position: [9, -21.5, -26],
-    target: [-1, -26.5, -40.5],
+    position: [11, -19.5, -21],
+    target: [-6.5, -24.5, -40.5],
     roll: 0.01,
     fov: 48,
     reducedAnchor: true,
-  }, // cluster resolved, broadside orbital — the fiber-visible beat (frontal on purpose; the settle below breaks center)
+  }, // spool resolved, broadside orbital — the fiber-visible beat, column lower-right of the fading intro
   { depth: 0.52, position: [11, -30, -52], target: [-0.5, -25.5, -39], roll: -0.01, fov: 47 }, // the sweep orbits behind and below — reads as thread parallax, not framing change (the annotation window, stage 5.4)
   {
     depth: 0.565,

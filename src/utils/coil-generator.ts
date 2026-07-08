@@ -1,8 +1,8 @@
 // src/utils/coil-generator.ts
-// Pure, seeded generator for the third band's coil — a dense solenoid of
-// oblate beads threaded along a helical fiber path. Emits a flat bead list
+// Pure, seeded generator for the third band's coil — an open rising helix of
+// drum-shaped beads threaded along a fiber path. Emits a flat bead list
 // ready for the geometry builders: bead centers with parallel-transport
-// frames (for oriented disc geometry) and two marked publication regions.
+// frames (for oriented drum geometry) and two marked publication regions.
 //
 // Approach-B open state: the unwind interaction re-runs this WHOLE pipeline
 // per animation tick with an `open` argument — the focused region's beads are
@@ -67,28 +67,32 @@ export interface CoilNode {
   unwoundPosition: Vec3;
 }
 
-// Dense-cluster defaults per the phase design spec: tight pitch relative to
-// bead size so adjacent turns press close (the compressed, crystalline read),
-// while along-thread spacing leaves short taut threads visible between discs.
-// Pitch/count tightened 0.55/96 → 0.5/106 in the 5.1 sign-off pass — closes
-// the vertical gaps between turns without hitting the spacing floor
-// (natural spacing ≈ 1.01 > 0.945 floor at these values).
-// regionGap 0.33 → 0.375 in the 5.4 pass: at 6 turns, 0.33 is exactly 2.0
-// revolutions — the two loci stacked at the SAME azimuth ~1 unit apart
-// (overlapping labels, twin unwind directions). 0.375 = 2.25 revolutions
-// puts them ~82° apart on the rim. Region marking never moves compact
-// placement, so the blessed silhouette is untouched — only the locus glows.
+// Open-rising-coil defaults per the 5.5 modeling-fidelity pass (2026-07-07).
+// The earlier dense-cluster packing (106 beads, pitch 0.5 — the 5.1 sign-off
+// values) read as a lumpy wall; recognizability of the wound-spool structure
+// now wins over density. 9 drums per turn (54 gaps / 6 turns) on a smaller
+// radius leaves a clearly visible hollow core, and the raised pitch clears
+// each turn over the drum diameter (2·beadRadius = 1.0 < 1.05) — a rising
+// spiral staircase of drums. Natural spacing ≈ 1.54 keeps the spacing floor
+// (1.05 at these values) inactive at defaults, and the ~0.54 rim-to-rim gap
+// leaves room for the wound-thread bridges between drums. jitter stays 0.08
+// — the register is organic; the open spacing means the irregularity never
+// approaches the floor. regionSize 15 → 9 = one full
+// turn per publication locus (≥ 5 for loopArcPairs, ≤ count/3). regionGap
+// 0.375 unchanged (5.4 rationale): 2.25 revolutions between the two locus
+// centers keeps them ~80° apart on the rim, so labels and unwind bearings
+// never stack at one azimuth.
 export const COIL_GROWTH_DEFAULTS: CoilGrowthParams = {
   seed: 11,
-  beadCount: 106,
-  coilRadius: 2.8,
-  coilPitch: 0.5,
+  beadCount: 55,
+  coilRadius: 2.2,
+  coilPitch: 1.05,
   coilTurns: 6,
-  beadRadius: 0.45,
-  beadAspect: 0.6,
+  beadRadius: 0.5,
+  beadAspect: 0.62,
   jitter: 0.08,
-  linkerSag: 0.12,
-  regionSize: 15,
+  linkerSag: 0.1,
+  regionSize: 9,
   regionGap: 0.375,
 };
 

@@ -1,14 +1,15 @@
 // src/scales/chromatin/CoilMesh.tsx
-// Assembles the coil's two draw calls — the instanced oblate-bead cluster and
-// the additive linker-thread sweep — and owns the Approach-B unwind engine:
-// focusing a publication region tweens the focus store's unwindBlend, and
-// every tick of that tween RE-RUNS the pure generator at the new openT and
-// pushes the result through the geometry writers (instance matrices + linker
-// rewrite-in-place). Intermediate states are genuine re-coiled conformations;
-// idle frames skip the CPU path entirely via the write guard. Per-frame
-// uniform writes follow ArborMesh's pattern (depth/fog/time read
-// imperatively, no re-renders); growth-param edits from the dev override
-// channel rebuild the template/linker buffers.
+// Assembles the coil's draw calls — the instanced drum cluster, the wound
+// amber thread sweep, the instanced cinch knobs, and the focus-gated loop
+// ribbons — and owns the Approach-B unwind engine: focusing a publication
+// region tweens the focus store's unwindBlend, and every tick of that tween
+// RE-RUNS the pure generator at the new openT and pushes the result through
+// the geometry writers (bead + knob instance matrices, thread + ribbon
+// rewrite-in-place). Intermediate states are genuine re-coiled
+// conformations; idle frames skip the CPU path entirely via the write
+// guard. Per-frame uniform writes follow ArborMesh's pattern (depth/fog/
+// time read imperatively, no re-renders); growth-param edits from the dev
+// override channel rebuild the template/tube buffers.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { invalidate, useFrame, type ThreeEvent } from '@react-three/fiber';
 import { AdditiveBlending, DynamicDrawUsage, type InstancedMesh, type Mesh } from 'three';
@@ -28,20 +29,29 @@ import {
   COIL_DEFAULTS,
   COIL_ORIGIN,
   applyCoilBeadLook,
-  applyCoilLinkerLook,
+  applyCoilKnobLook,
   applyCoilRibbonLook,
+  applyCoilThreadLook,
   type CoilParams,
 } from './coil-params';
 import { getCoilParamsOverride, subscribeCoilParams } from './coil-live-params';
 import {
   buildBeadTemplate,
-  buildLinkerGeometry,
+  buildKnobGeometry,
   buildRibbonGeometry,
+  buildThreadGeometry,
   writeBeadInstances,
-  writeLinkerGeometry,
+  writeKnobInstances,
   writeRibbonGeometry,
+  writeThreadGeometry,
 } from './coil-geometry';
-import { CoilBeadMaterial, CoilLinkerMaterial, CoilRibbonMaterial } from './coil-materials';
+import type { ThreadPathOpts } from './coil-thread-path';
+import {
+  CoilBeadMaterial,
+  CoilKnobMaterial,
+  CoilRibbonMaterial,
+  CoilThreadMaterial,
+} from './coil-materials';
 
 // The bead mass materializes AFTER its lights: the linker threads glimmer
 // through the haze from the band's start, the cluster resolves behind them.
@@ -62,6 +72,17 @@ interface CoilMeshProps {
   origin?: readonly [number, number, number];
 }
 
+/** The slice of params the thread/knob path math consumes — derived once per
+ *  params change (memoized in `built`), never on the tween path. */
+function threadOptsFor(p: CoilParams): ThreadPathOpts {
+  return {
+    threadRadius: p.threadRadius,
+    wrapTurns: p.wrapTurns,
+    beadAspect: p.beadAspect,
+    linkerSag: p.linkerSag,
+  };
+}
+
 export function CoilMesh({ origin = COIL_ORIGIN }: CoilMeshProps) {
   const reduced = useReducedMotion();
 
@@ -78,30 +99,30 @@ export function CoilMesh({ origin = COIL_ORIGIN }: CoilMeshProps) {
   // unwind engine falls back to at blend 0.
   const built = useMemo(() => {
     const baseNodes = generateCoil(params);
+    const threadOpts = threadOptsFor(params);
     return {
       baseNodes,
-      template: buildBeadTemplate(baseNodes, params.beadAspect),
-      linkers: buildLinkerGeometry(baseNodes, params.linkerSag, params.linkerWidth),
+      threadOpts,
+      template: buildBeadTemplate(baseNodes, params.beadAspect, params.beadBevel),
+      threads: buildThreadGeometry(baseNodes, threadOpts),
+      knobs: buildKnobGeometry(baseNodes),
       ribbons: buildRibbonGeometry(baseNodes, params.ribbonWidth),
     };
   }, [params]);
   useEffect(
     () => () => {
       built.template.dispose();
-      built.linkers.dispose();
+      built.threads.dispose();
+      built.knobs.dispose();
       built.ribbons.dispose();
     },
     [built],
   );
 
   const beadMaterial = useMemo(() => new CoilBeadMaterial(), []);
-  const linkerMaterial = useMemo(() => {
-    const m = new CoilLinkerMaterial();
-    m.transparent = true;
-    m.depthWrite = false;
-    m.blending = AdditiveBlending;
-    return m;
-  }, []);
+  // Thread and knobs are opaque lit layers — no blending flags.
+  const threadMaterial = useMemo(() => new CoilThreadMaterial(), []);
+  const knobMaterial = useMemo(() => new CoilKnobMaterial(), []);
   const ribbonMaterial = useMemo(() => {
     const m = new CoilRibbonMaterial();
     m.transparent = true;
@@ -112,19 +133,21 @@ export function CoilMesh({ origin = COIL_ORIGIN }: CoilMeshProps) {
   useEffect(
     () => () => {
       beadMaterial.dispose();
-      linkerMaterial.dispose();
+      threadMaterial.dispose();
+      knobMaterial.dispose();
       ribbonMaterial.dispose();
     },
-    [beadMaterial, linkerMaterial, ribbonMaterial],
+    [beadMaterial, threadMaterial, knobMaterial, ribbonMaterial],
   );
 
   // Look params are uniform-only.
   useEffect(() => {
     applyCoilBeadLook(beadMaterial, params);
-    applyCoilLinkerLook(linkerMaterial, params);
+    applyCoilThreadLook(threadMaterial, params);
+    applyCoilKnobLook(knobMaterial, params);
     applyCoilRibbonLook(ribbonMaterial, params);
     invalidate();
-  }, [params, beadMaterial, linkerMaterial, ribbonMaterial]);
+  }, [params, beadMaterial, threadMaterial, knobMaterial, ribbonMaterial]);
 
   // --- Unwind engine state ---
   // Both meshes render with culling disabled: instance matrices (and the
@@ -132,6 +155,7 @@ export function CoilMesh({ origin = COIL_ORIGIN }: CoilMeshProps) {
   // bounding sphere would go stale; the band's mount window already gates
   // visibility and the cluster fills the frame whenever mounted.
   const meshRef = useRef<InstancedMesh>(null);
+  const knobRef = useRef<InstancedMesh>(null);
   const ribbonRef = useRef<Mesh>(null);
   // The region whose shape is currently DISPLAYED — holds through the release
   // tween after focusedRegion has already gone null, so the closing geometry
@@ -157,7 +181,10 @@ export function CoilMesh({ origin = COIL_ORIGIN }: CoilMeshProps) {
         ? built.baseNodes
         : generateCoil(params, { region: regionKey as CoilRegionIndex, openT: f.unwindBlend });
     writeBeadInstances(mesh, nodes);
-    writeLinkerGeometry(built.linkers, nodes, params.linkerSag, params.linkerWidth);
+    writeThreadGeometry(built.threads, nodes, built.threadOpts);
+    if (knobRef.current) {
+      writeKnobInstances(knobRef.current, nodes, built.threadOpts, params.knobSize);
+    }
     writeRibbonGeometry(built.ribbons, nodes, params.ribbonWidth);
     writeState.current = { region: regionKey, blend: blendKey };
   };
@@ -168,6 +195,7 @@ export function CoilMesh({ origin = COIL_ORIGIN }: CoilMeshProps) {
     const mesh = meshRef.current;
     if (!mesh) return;
     mesh.instanceMatrix.setUsage(DynamicDrawUsage);
+    knobRef.current?.instanceMatrix.setUsage(DynamicDrawUsage);
     writeState.current = { region: -1, blend: -1 };
     syncGeometry();
     invalidate();
@@ -285,12 +313,16 @@ export function CoilMesh({ origin = COIL_ORIGIN }: CoilMeshProps) {
 
     const time = reduced ? 0 : state.clock.elapsedTime;
     beadMaterial.uTime = time;
-    linkerMaterial.uTime = time;
+    threadMaterial.uTime = time;
+    knobMaterial.uTime = time;
     // Micro-motion freezes fully under reduced motion: drift amplitude to 0
-    // (beads sit exactly on their generated positions) and the thread wave
-    // stilled — a static suspended structure, not a paused animation.
-    beadMaterial.uDriftAmp = reduced ? 0 : params.driftAmp;
-    linkerMaterial.uWaveAmp = reduced ? 0 : params.linkerWaveAmp;
+    // everywhere (the thread and knobs carry the drums' drift formula, so
+    // all three layers freeze as one) — a static suspended structure, not a
+    // paused animation.
+    const driftAmp = reduced ? 0 : params.driftAmp;
+    beadMaterial.uDriftAmp = driftAmp;
+    threadMaterial.uDriftAmp = driftAmp;
+    knobMaterial.uDriftAmp = driftAmp;
 
     // Focus dim rides the unwind blend, on the displayed region (which
     // outlives focusedRegion through the release tween).
@@ -298,8 +330,10 @@ export function CoilMesh({ origin = COIL_ORIGIN }: CoilMeshProps) {
     const dimRegion = blend > 1e-4 && displayRegion.current !== null ? displayRegion.current : -1;
     beadMaterial.uFocusRegion = dimRegion;
     beadMaterial.uFocusDim = blend;
-    linkerMaterial.uFocusRegion = dimRegion;
-    linkerMaterial.uFocusDim = blend;
+    threadMaterial.uFocusRegion = dimRegion;
+    threadMaterial.uFocusDim = blend;
+    knobMaterial.uFocusRegion = dimRegion;
+    knobMaterial.uFocusDim = blend;
     // Ribbons: the connection streams of the displayed region, blooming as
     // it opens. The mesh is hidden entirely while compact — cheaper than
     // shading a full-screen additive pass to zero.
@@ -308,11 +342,12 @@ export function CoilMesh({ origin = COIL_ORIGIN }: CoilMeshProps) {
     ribbonMaterial.uTime = time;
     if (ribbonRef.current) ribbonRef.current.visible = dimRegion !== -1;
 
-    // Lights-first reveal: the bead mass materializes after the threads are
-    // already glimmering through the mist. (The preview parks depth
-    // mid-band, so it always renders fully revealed.)
+    // Lights-first reveal: the drum mass materializes after its winding —
+    // the amber cord and its knobs glimmer through the mist first. (The
+    // preview parks depth mid-band, so it always renders fully revealed.)
     const lightsReveal = smoothstep(LIGHTS_REVEAL_START, LIGHTS_REVEAL_END, depth);
-    linkerMaterial.uOpacity = lightsReveal;
+    threadMaterial.uOpacity = lightsReveal;
+    knobMaterial.uOpacity = lightsReveal;
     ribbonMaterial.uOpacity = lightsReveal;
     beadMaterial.uOpacity = smoothstep(BODY_REVEAL_START, BODY_REVEAL_END, depth);
 
@@ -321,7 +356,10 @@ export function CoilMesh({ origin = COIL_ORIGIN }: CoilMeshProps) {
     const fog = getSceneFog();
     beadMaterial.uFogColor = fog.color;
     beadMaterial.uFogDensity = fog.density;
-    linkerMaterial.uFogDensity = fog.density;
+    threadMaterial.uFogColor = fog.color;
+    threadMaterial.uFogDensity = fog.density;
+    knobMaterial.uFogColor = fog.color;
+    knobMaterial.uFogDensity = fog.density;
     ribbonMaterial.uFogDensity = fog.density;
   });
 
@@ -335,7 +373,12 @@ export function CoilMesh({ origin = COIL_ORIGIN }: CoilMeshProps) {
         onPointerMove={handlePointerMove}
         onPointerOut={handlePointerOut}
       />
-      <mesh geometry={built.linkers} material={linkerMaterial} frustumCulled={false} />
+      <mesh geometry={built.threads} material={threadMaterial} frustumCulled={false} />
+      <instancedMesh
+        ref={knobRef}
+        args={[built.knobs, knobMaterial, built.baseNodes.length * 2]}
+        frustumCulled={false}
+      />
       <mesh
         ref={ribbonRef}
         geometry={built.ribbons}

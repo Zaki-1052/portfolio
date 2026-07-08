@@ -42,10 +42,13 @@ export function focusPoseFor(branch: BranchKey): CameraSample {
   };
 }
 
-// Region focus (third band): the open arc is wide (~17 across at full
-// unwind) and the dimmed compact mass should stay in frame behind it, so the
-// stand-off is much longer than the limb poses'.
-const REGION_FOCUS_DISTANCE = 17;
+// Region focus (third band): the open arc is wide (~13 across at full
+// unwind on the 5.5 rising-coil packing) and the dimmed compact spool should
+// stay in frame behind it, so the stand-off is much longer than the limb
+// poses'. Lengthened 17 → 20 in the 5.5 retune: the wound thread swings out
+// with the drums, and the publication card needs clear air in front of the
+// opened composition.
+const REGION_FOCUS_DISTANCE = 20;
 const REGION_FOCUS_LIFT = 2;
 const REGION_FOCUS_FOV = 45;
 
