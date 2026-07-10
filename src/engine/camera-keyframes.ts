@@ -96,15 +96,18 @@ export const CAMERA_KEYFRAMES: readonly CameraKeyframe[] = [
     reducedAnchor: true,
   }, // off-axis rule-of-thirds settle — hub above the frame bottom with the filament's fall visible, canopy generous in frame (user-tuned midpoint framing, 2026-07-05)
   { depth: 0.43, position: [-11.5, -4, 5], target: [1, -5, -24], roll: 0, fov: 49 }, // hold with a breath of downward drift while the next section covers (= SCALE_BOUNDARIES[3])
-  // --- The coil band (third scale): dive out of the arbor hold into the
-  // thickening haze, resolve the spool broadside, sweep around and below
-  // it, settle off-axis. Framing COIL_ORIGIN [0, -26, -40]; the 5.5 open
-  // rising coil is a taller, narrower silhouette than the old packed
-  // cluster (≈ 5.4 wide × 7.4 tall incl. the wound thread) — the broadside
-  // knot gained stand-off and pushes the column to the lower-right so the
-  // intro prose column reads clear through its fade window. Tuned in the
-  // descent-preview harness. ---
-  { depth: 0.455, position: [-7, -12, -9], target: [0, -21, -34], roll: -0.015, fov: 51 }, // dive from the hold — the winding glimmers below in the haze
+  // --- The coil band (third scale), 5.6 hub-dive: after the hold the
+  // camera locks onto the tree's glowing hub (world ≈ [2,-10.6,-28], r≈2)
+  // and pushes INTO it — the swelling glow + fog spike + bloom swell own
+  // the frame through the crossing (the arbor has already dissolved to fog
+  // color, so the near-plane pass is fog-on-fog), and the spool resolves
+  // out of the same glow on the far side. No frame holds tree and coil as
+  // simultaneous subjects. The three dive knots are non-anchor — the
+  // reduced-motion track still cuts 0.41 → 0.48 → 0.565. Framing
+  // COIL_ORIGIN [0, -26, -40]; tuned in the descent-preview harness. ---
+  { depth: 0.442, position: [-6.1, -6.6, -8.2], target: [2, -10.6, -28], roll: -0.01, fov: 49 }, // lock-on — the target snaps to the hub, the push begins along the view ray
+  { depth: 0.454, position: [0.33, -9.78, -23.9], target: [4.2, -11.7, -33.5], roll: 0, fov: 49 }, // 4.5 u out — the glow fills the frame; target pushed THROUGH the center so the ray never degenerates
+  { depth: 0.464, position: [3.3, -11.2, -31.2], target: [1.5, -17, -38], roll: 0, fov: 48.5 }, // out the far side — aim easing down toward the coil zone
   {
     depth: 0.48,
     position: [11, -19.5, -21],

@@ -13,6 +13,10 @@
 
 uniform float uTime;
 uniform float uDriftAmp;
+uniform vec2 uCurrentDir; // shared band current (coil-current.ts); amp 0 = still
+uniform float uCurrentAmp;
+uniform float uCurrentFreq;
+uniform float uCurrentK;
 
 attribute float aSeed;
 attribute float aRegion;
@@ -57,6 +61,13 @@ void main() {
     cos(uTime * 0.23 + aSeed * 6.2831 + 4.188)
   ) * uDriftAmp;
   objectPos += drift;
+
+  // The band's shared current — the thread and knob stages evaluate the
+  // IDENTICAL expression at their own coil-local positions; the wave's
+  // ~105-unit wavelength bounds the phase shear across one drum to a few
+  // thousandths of a unit, so the wound cord never detaches.
+  float cPhase = uTime * uCurrentFreq + dot(objectPos.xz, uCurrentDir) * uCurrentK;
+  objectPos.xz += uCurrentDir * (uCurrentAmp * sin(cPhase));
 
   vec4 worldPos = modelMatrix * vec4(objectPos, 1.0);
   vWorldNormal = normalize(mat3(modelMatrix) * objectNormal);

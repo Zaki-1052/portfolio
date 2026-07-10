@@ -22,6 +22,7 @@ import { loopArcPairs, regionBeadIndices, type CoilNode, type Vec3 } from '@/uti
 import {
   BRIDGE_SAMPLES,
   WRAP_SAMPLES,
+  WRAP_Z_FRACTION,
   knobPlacements,
   sampleThreadPath,
   threadPointCount,
@@ -238,11 +239,31 @@ const RING_SIN = Array.from({ length: THREAD_RADIAL }, (_, r) =>
   Math.sin((r / THREAD_RADIAL) * Math.PI * 2),
 );
 
+// Static occlusion profiles for the cord's baked aShade (5.6): the wrap ring
+// basis always has side = radial-outward from the drum axis, so ring angle π
+// faces the drum wall (contact shadow) and ±π/2 face along the drum axis
+// (where adjacent turns crowd). Ring index → angle never changes, so these
+// are exact for wraps at every unwind tick — the attribute stays static.
+const RING_WALL_SHADE = Array.from(
+  { length: THREAD_RADIAL },
+  (_, r) => 0.45 * Math.pow(Math.max(0, -RING_COS[r]!), 1.5),
+);
+const RING_AXIAL_SHADE = Array.from(
+  { length: THREAD_RADIAL },
+  (_, r) => 0.35 * Math.pow(Math.abs(RING_SIN[r]!), 1.5),
+);
+
+function smoothstep01(e0: number, e1: number, x: number): number {
+  const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)));
+  return t * t * (3 - 2 * t);
+}
+
 /**
  * One merged tube sweep of the wound thread — per drum, a helical wrap
  * around the rim, then a free bridge to the next drum's entry (path math and
  * point order in coil-thread-path). Structure (index buffer, aT, aRegion,
- * drift seeds) is open-state invariant and computed once here;
+ * drift seeds, the baked aShade occlusion) is open-state invariant and
+ * computed once here;
  * positions/normals are filled by writeThreadGeometry, which the unwind
  * engine re-calls per tick with the re-generated node state. Junction rings
  * are duplicated (wrap exit == bridge start by construction), so segments
@@ -265,11 +286,19 @@ export function buildThreadGeometry(nodes: CoilNode[], opts: ThreadPathOpts): Bu
   const aSeedA = new Float32Array(vertCount);
   const aSeedB = new Float32Array(vertCount);
   const aDriftMix = new Float32Array(vertCount);
+  const aShade = new Float32Array(vertCount);
   const indices: number[] = [];
 
   let point = 0;
   let v = 0;
-  const pushRing = (region: number, seedA: number, seedB: number, mix: number): void => {
+  const pushRing = (
+    region: number,
+    seedA: number,
+    seedB: number,
+    mix: number,
+    wallK: number,
+    axialK: number,
+  ): void => {
     const t = point / (totalPoints - 1);
     for (let ring = 0; ring < THREAD_RADIAL; ring++) {
       aT[v] = t;
@@ -277,6 +306,7 @@ export function buildThreadGeometry(nodes: CoilNode[], opts: ThreadPathOpts): Bu
       aSeedA[v] = seedA;
       aSeedB[v] = seedB;
       aDriftMix[v] = mix;
+      aShade[v] = wallK * RING_WALL_SHADE[ring]! + axialK * RING_AXIAL_SHADE[ring]!;
       v++;
     }
     point++;
@@ -297,8 +327,15 @@ export function buildThreadGeometry(nodes: CoilNode[], opts: ThreadPathOpts): Bu
   for (let i = 0; i < n; i++) {
     const node = nodes[i]!;
     const seed = hash01(i);
+    // Adjacent-turn crowding: how tightly the wrap turns pack along the drum
+    // axis, in cord radii. Below ~2.5 radii the turns shade each other;
+    // fades out by 4 (at the shipping packing the turns sit apart, so this
+    // stays subtle — it earns its keep when wrapTurns is dialed up).
+    const zW = WRAP_Z_FRACTION * node.radius * opts.beadAspect;
+    const turnPitch = (2 * zW) / Math.max(opts.wrapTurns, 1e-3);
+    const adjacencyK = 1 - smoothstep01(2.5, 4, turnPitch / Math.max(opts.threadRadius, 1e-4));
     const wrapFirst = point;
-    for (let s = 0; s < WRAP_SAMPLES; s++) pushRing(node.region, seed, seed, 0);
+    for (let s = 0; s < WRAP_SAMPLES; s++) pushRing(node.region, seed, seed, 0, 1, adjacencyK);
     pushStrip(WRAP_SAMPLES, wrapFirst);
     if (i === n - 1) break;
     const next = nodes[i + 1]!;
@@ -306,7 +343,11 @@ export function buildThreadGeometry(nodes: CoilNode[], opts: ThreadPathOpts): Bu
     const nextSeed = hash01(i + 1);
     const bridgeFirst = point;
     for (let s = 0; s < BRIDGE_SAMPLES; s++) {
-      pushRing(shared, seed, nextSeed, s / (BRIDGE_SAMPLES - 1));
+      // The free span sheds its contact shadow: full at each junction ring
+      // (matching the coincident wrap ring so no seam shows), gone within a
+      // few samples of leaving the wall.
+      const wallK = Math.max(0, 1 - s / 2.5, 1 - (BRIDGE_SAMPLES - 1 - s) / 2.5);
+      pushRing(shared, seed, nextSeed, s / (BRIDGE_SAMPLES - 1), wallK, 0);
     }
     pushStrip(BRIDGE_SAMPLES, bridgeFirst);
   }
@@ -323,6 +364,7 @@ export function buildThreadGeometry(nodes: CoilNode[], opts: ThreadPathOpts): Bu
   geo.setAttribute('aSeedA', new BufferAttribute(aSeedA, 1));
   geo.setAttribute('aSeedB', new BufferAttribute(aSeedB, 1));
   geo.setAttribute('aDriftMix', new BufferAttribute(aDriftMix, 1));
+  geo.setAttribute('aShade', new BufferAttribute(aShade, 1));
   geo.setIndex(indices);
   writeThreadGeometry(geo, nodes, opts);
   return geo;

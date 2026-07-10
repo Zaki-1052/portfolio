@@ -14,6 +14,11 @@ import { invalidate } from '@react-three/fiber';
 import { button, folder, useControls } from 'leva';
 import { COIL_DEFAULTS, COIL_PRESETS, type CoilParams } from '@/scales/chromatin/coil-params';
 import { setCoilParamsOverride } from '@/scales/chromatin/coil-live-params';
+import {
+  COIL_WATER_DEFAULTS,
+  setCoilWaterOverride,
+  type CoilWaterParams,
+} from '@/scales/chromatin/coil-water-params';
 import { useCoilFocusStore, type CoilRegionIndex } from '@/stores/coil-focus';
 import { useDepthStore } from '@/stores/depth';
 
@@ -55,9 +60,19 @@ export function useCoilControls(initial: CoilParams, collapsed: boolean): CoilPa
         locusGlow: { value: initial.locusGlow, min: 0, max: 1.5, step: 0.01 },
         focusDimStrength: { value: initial.focusDimStrength, min: 0, max: 1, step: 0.01 },
         driftAmp: { value: initial.driftAmp, min: 0, max: 0.3, step: 0.005 },
+        duskLift: { value: initial.duskLift, min: 0.5, max: 1.6, step: 0.01 },
+        envStrength: { value: initial.envStrength, min: 0, max: 1, step: 0.01 },
+        envDeepColor: { value: initial.envDeepColor },
+        envPaleColor: { value: initial.envPaleColor },
+        causticAmp: { value: initial.causticAmp, min: 0, max: 0.6, step: 0.01 },
+        causticScale: { value: initial.causticScale, min: 0.1, max: 1.5, step: 0.01 },
+        wrapShadow: { value: initial.wrapShadow, min: 0, max: 1, step: 0.01 },
         threadColor: { value: initial.threadColor },
+        threadCoreColor: { value: initial.threadCoreColor },
         threadRadius: { value: initial.threadRadius, min: 0.02, max: 0.15, step: 0.005 },
         threadEmissive: { value: initial.threadEmissive, min: 0, max: 1.5, step: 0.01 },
+        threadAo: { value: initial.threadAo, min: 0, max: 1, step: 0.01 },
+        threadPulseCount: { value: initial.threadPulseCount, min: 1, max: 8, step: 1 },
         wrapTurns: { value: initial.wrapTurns, min: 1, max: 2.5, step: 0.05 },
         shimmerSpeed: { value: initial.shimmerSpeed, min: 0, max: 5, step: 0.05 },
         knobColor: { value: initial.knobColor },
@@ -76,6 +91,45 @@ export function useCoilControls(initial: CoilParams, collapsed: boolean): CoilPa
   setRef.current = set as (v: Partial<CoilParams>) => void;
 
   return values as unknown as CoilParams;
+}
+
+/**
+ * The band's water-medium sliders (silt / bokeh / bubbles / veils / shared
+ * current) — writes the coil-water override; CoilAtmosphere re-derives its
+ * layer configs on change (particle fields re-scatter — fine for tuning)
+ * and CoilMesh reads the current terms per frame. Every range contains its
+ * shipping default.
+ */
+// eslint-disable-next-line react-refresh/only-export-components -- dev-only module, not a fast-refresh target
+export function useCoilWaterControls(): void {
+  const d = COIL_WATER_DEFAULTS;
+  // Function schema ⇒ useControls returns a [values, set] tuple.
+  const [values] = useControls(() => ({
+    'coil water': folder(
+      {
+        siltCount: { value: d.siltCount, min: 100, max: 1200, step: 10 },
+        siltOpacity: { value: d.siltOpacity, min: 0, max: 1, step: 0.01 },
+        bokehCount: { value: d.bokehCount, min: 0, max: 150, step: 1 },
+        bokehOpacity: { value: d.bokehOpacity, min: 0, max: 1, step: 0.01 },
+        bokehMaxPx: { value: d.bokehMaxPx, min: 7, max: 128, step: 1 },
+        wispOpacity: { value: d.wispOpacity, min: 0, max: 0.5, step: 0.005 },
+        wispColor: { value: d.wispColor },
+        bubbleCount: { value: d.bubbleCount, min: 0, max: 80, step: 1 },
+        bubbleRise: { value: d.bubbleRise, min: 0, max: 1.5, step: 0.01 },
+        bubbleOpacity: { value: d.bubbleOpacity, min: 0, max: 1, step: 0.01 },
+        currentAmp: { value: d.currentAmp, min: 0, max: 1, step: 0.01 },
+        currentFreq: { value: d.currentFreq, min: 0, max: 1, step: 0.01 },
+        currentDirDeg: { value: d.currentDirDeg, min: 0, max: 360, step: 1 },
+        beadCurrentAmp: { value: d.beadCurrentAmp, min: 0, max: 0.2, step: 0.005 },
+      },
+      { collapsed: true },
+    ),
+  }));
+
+  useEffect(() => {
+    setCoilWaterOverride(values as unknown as CoilWaterParams);
+    invalidate();
+  }, [values]);
 }
 
 const toggleRegion = (region: CoilRegionIndex) => (): void => {
@@ -124,6 +178,7 @@ export function useCoilUnwindControls(): void {
  */
 export function CoilDevTools() {
   const values = useCoilControls(COIL_DEFAULTS, true);
+  useCoilWaterControls();
   useCoilUnwindControls();
 
   useEffect(() => {

@@ -18,6 +18,7 @@ import knobFrag from './shaders/coil-knob.frag.glsl?raw';
 import ribbonVert from './shaders/coil-ribbon.vert.glsl?raw';
 import ribbonFrag from './shaders/coil-ribbon.frag.glsl?raw';
 import { COIL_DEFAULTS as D } from './coil-params';
+import { WRAP_Z_FRACTION } from './coil-thread-path';
 
 const beadFragmentShader = `${noise}\n${beadFrag}`;
 
@@ -35,6 +36,20 @@ export const CoilBeadMaterial = shaderMaterial(
     uSpecPower: D.beadSpecPower,
     uLocusGlow: D.locusGlow,
     uDriftAmp: D.driftAmp,
+    // Shared band current (coil-current.ts) — CoilMesh writes these per
+    // frame from the water params; amp 0 keeps the cluster still.
+    uCurrentDir: [1, 0],
+    uCurrentAmp: 0,
+    uCurrentFreq: 0,
+    uCurrentK: 0,
+    uDuskLift: D.duskLift,
+    uEnvDeepColor: new Color(D.envDeepColor),
+    uEnvPaleColor: new Color(D.envPaleColor),
+    uEnvStrength: D.envStrength,
+    uCausticAmp: D.causticAmp,
+    uCausticScale: D.causticScale,
+    uWrapShadow: D.wrapShadow,
+    uWrapBandZ: WRAP_Z_FRACTION * D.beadAspect,
     // Focus dim only — the unwind itself is CPU-rebuilt geometry (Approach
     // B), not a shader blend. CoilMesh writes these from the focus store.
     uFocusRegion: -1,
@@ -58,8 +73,15 @@ export const CoilThreadMaterial = shaderMaterial(
     uOpacity: 1,
     uTime: 0,
     uDriftAmp: D.driftAmp,
+    uCurrentDir: [1, 0],
+    uCurrentAmp: 0,
+    uCurrentFreq: 0,
+    uCurrentK: 0,
     uColor: new Color(D.threadColor),
+    uCoreColor: new Color(D.threadCoreColor),
     uThreadEmissive: D.threadEmissive,
+    uThreadAo: D.threadAo,
+    uPulseCount: D.threadPulseCount,
     uShimmerSpeed: D.shimmerSpeed,
     uFocusRegion: -1,
     uFocusDim: 0,
@@ -76,6 +98,10 @@ export const CoilKnobMaterial = shaderMaterial(
     uOpacity: 1,
     uTime: 0,
     uDriftAmp: D.driftAmp,
+    uCurrentDir: [1, 0],
+    uCurrentAmp: 0,
+    uCurrentFreq: 0,
+    uCurrentK: 0,
     uColor: new Color(D.knobColor),
     uEmissive: D.threadEmissive * 0.5,
     uFocusRegion: -1,

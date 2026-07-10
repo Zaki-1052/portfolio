@@ -1,5 +1,5 @@
 // src/scales/chromatin/shaders/coil-knob.frag.glsl
-// Cinch-knob SHADING stage — a small lit amber stud in the drums'
+// Cinch-knob SHADING stage — a small lit teal stud in the drums' deep-dusk
 // environment, with a share of the thread's emissive so the clasp reads as
 // part of the winding system. Focus dim, fog, and reveal mirror the other
 // layers.
@@ -23,12 +23,13 @@ void main() {
   if (!gl_FrontFacing) N = -N;
   vec3 V = normalize(vViewDir);
 
-  vec3 key = normalize(vec3(0.35, 0.68, 0.62));
+  // The drums' deep-dusk environment, verbatim — one scene, one light rig.
+  vec3 key = normalize(vec3(0.15, 0.9, 0.35));
   float wrap = dot(N, key) * 0.5 + 0.5;
-  float diff = mix(0.35, 1.0, wrap * wrap);
-  float hemi = 0.5 + 0.5 * N.y;
-  vec3 ambient = mix(vec3(0.2, 0.23, 0.32), vec3(0.4, 0.45, 0.56), hemi);
-  vec3 keyCol = vec3(0.9, 0.95, 1.0) * 0.75;
+  float diff = mix(0.15, 1.0, wrap * wrap);
+  float hemi = pow(0.5 + 0.5 * N.y, 1.4);
+  vec3 ambient = mix(vec3(0.10, 0.13, 0.15), vec3(0.36, 0.44, 0.50), hemi);
+  vec3 keyCol = vec3(0.85, 0.95, 1.0) * 0.7;
   vec3 color = uColor * (ambient + keyCol * diff);
 
   // Soft stud highlight — a gentle catch of light, not a metal point.

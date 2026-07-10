@@ -12,6 +12,11 @@ uniform vec2 uSize; // world size [min, random span]
 uniform float uWobble; // drift amplitude (world units)
 uniform float uRise; // upward conveyor speed (units/s; embers)
 uniform float uRiseRange; // vertical wrap band (0 disables the conveyor)
+uniform float uMaxPx; // point-size ceiling (7 = classic mote; large = bokeh disc)
+uniform vec2 uCurrentDir; // shared traveling-wave current (amp 0 disables)
+uniform float uCurrentAmp;
+uniform float uCurrentFreq;
+uniform float uCurrentK;
 
 attribute float aSeed;
 attribute vec3 aColor; // per-particle tint (white ⇒ single-color field unchanged)
@@ -34,6 +39,10 @@ void main() {
     // branch is fine — the no-divergent-taps rule is about fragment samplers.
     p.y += mod(uTime * uRise + fract(aSeed * 7.7) * uRiseRange, uRiseRange) - 0.5 * uRiseRange;
   }
+  // Shared traveling-wave current (coil-current.ts) — zero-amp for the
+  // classic fields, so they stay byte-identical.
+  float cPhase = uTime * uCurrentFreq + dot(p.xz, uCurrentDir) * uCurrentK;
+  p.xz += uCurrentDir * (uCurrentAmp * sin(cPhase));
 
   vec4 mv = modelViewMatrix * vec4(p, 1.0);
   float dist = -mv.z;
@@ -42,6 +51,6 @@ void main() {
   vAlpha = smoothstep(uFadeNear.x, uFadeNear.y, dist) * (1.0 - smoothstep(uFadeFar.x, uFadeFar.y, dist));
 
   float worldSize = uSize.x + uSize.y * fract(aSeed * 13.7);
-  gl_PointSize = clamp(worldSize * uPixelScale / dist, 1.0, 7.0);
+  gl_PointSize = clamp(worldSize * uPixelScale / dist, 1.0, uMaxPx);
   gl_Position = projectionMatrix * mv;
 }

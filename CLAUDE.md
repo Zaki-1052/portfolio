@@ -1,6 +1,6 @@
 # Portfolio Project
 
-Biological Scale Descent Portfolio — scroll-driven 3D site.
+Scale Descent Portfolio — scroll-driven 3D site.
 
 ## Stack
 
@@ -32,9 +32,9 @@ React 19 + TypeScript, Vite 6, Three.js + R3F v9 + drei v10, GSAP + Lenis, Zusta
 
 ## Architecture references
 
-@docs/SPEC-portfolio.md
-@docs/DESIGN-portfolio.md
-@docs/PLAN-portfolio.md
+docs/SPEC-portfolio.md
+docs/DESIGN-portfolio.md
+docs/PLAN-portfolio.md
 
 ## Session Logging
 

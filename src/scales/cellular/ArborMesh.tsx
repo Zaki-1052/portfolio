@@ -6,9 +6,9 @@
 // geometry (CPU-built, ~1ms), look edits re-apply uniforms. The reveal/dim
 // curves and focus uniforms wire up in later stages; this component keeps a
 // single seam for all of them.
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { invalidate, useFrame } from '@react-three/fiber';
-import { AdditiveBlending, DoubleSide } from 'three';
+import { AdditiveBlending, DoubleSide, type Group } from 'three';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { getSceneFog } from '@/engine/scene-fog';
 import { useDepthStore } from '@/stores/depth';
@@ -39,12 +39,24 @@ import { ArborPunctaMaterial, ArborStrandMaterial, ArborTipMaterial } from './ar
 const BODY_REVEAL_START = 0.315;
 const BODY_REVEAL_END = 0.35;
 
-// Exit: the whole tree dissolves into the next band's thickening haze —
-// completed before the registry hard-unmounts the scene at 0.49, so the
-// unmount is invisible. The trunk's uOpacity mixes toward the fog color
-// (a dissolve, not a darken); the glow layers extinguish with it.
-const BODY_FADE_START = 0.445;
-const BODY_FADE_END = 0.485;
+// Exit (5.6 hub-dive retime): the whole tree dissolves into the swelling
+// hub glow + fog spike, COMPLETE before the camera's near plane crosses the
+// hub shell (≈ depth 0.458) — a fully faded trunk renders as fog color, so
+// the clipped cross-section is fog-on-fog and the pass-through is
+// invisible. Once the fade completes the group turns visible=false (no
+// fog-colored occluders over the emerging coil, and the draw calls go too);
+// the registry hard-unmount at 0.49 stays a no-op visually.
+const BODY_FADE_START = 0.446;
+const BODY_FADE_END = 0.458;
+
+// The hub-dive glow swell: as the camera locks on and pushes in
+// (0.435 → 0.452 in the keyframe table), the hub's inner glow brightens ×4
+// and widens across its whole face (uHubFill) — the light the transition
+// passes through. Held through the fade; disabled under reduced motion
+// (the anchor track cuts past the dive entirely).
+const HUB_SWELL_START = 0.435;
+const HUB_SWELL_END = 0.452;
+const HUB_SWELL_GAIN = 3;
 
 interface ArborMeshProps {
   /** World placement of the tree group; the preview overrides it. */
@@ -53,6 +65,7 @@ interface ArborMeshProps {
 
 export function ArborMesh({ origin = ARBOR_ORIGIN }: ArborMeshProps) {
   const reduced = useReducedMotion();
+  const groupRef = useRef<Group>(null);
 
   // Dev override channel: null in production (one check at mount + a dead
   // subscription); every panel write lands here as a state change.
@@ -152,12 +165,21 @@ export function ArborMesh({ origin = ARBOR_ORIGIN }: ArborMeshProps) {
     // Lights-first reveal: the solid body materializes after the glow
     // layers are already glimmering through the mist. (The preview parks
     // depth mid-band, so it always renders fully revealed.) The exit
-    // envelope fades EVERYTHING — the handoff crossfade with the next band.
+    // envelope fades EVERYTHING — into the hub-dive's glow-fill beat.
     const exit = 1 - smoothstep(BODY_FADE_START, BODY_FADE_END, depth);
     trunkMaterial.uOpacity = smoothstep(BODY_REVEAL_START, BODY_REVEAL_END, depth) * exit;
     strandMaterial.uOpacity = exit;
     tipMaterial.uOpacity = exit;
     punctaMaterial.uOpacity = exit;
+    // Fully dissolved ⇒ drop the draws entirely (a faded trunk still writes
+    // fog-colored depth over the emerging coil).
+    if (groupRef.current) groupRef.current.visible = exit > 0.001;
+
+    // The hub-dive glow swell — a pure function of depth, held through the
+    // fade so the glow is what the frame dissolves into.
+    const fillT = reduced ? 0 : smoothstep(HUB_SWELL_START, HUB_SWELL_END, depth);
+    trunkMaterial.uHubFill = fillT;
+    trunkMaterial.uHubGlowStrength = params.hubGlowStrength * (1 + HUB_SWELL_GAIN * fillT);
 
     // Match the hand-rolled fog to the live scene fog — SceneAtmosphere's
     // useFrame runs first (mounted earlier in the Canvas).
@@ -181,7 +203,7 @@ export function ArborMesh({ origin = ARBOR_ORIGIN }: ArborMeshProps) {
   });
 
   return (
-    <group position={[origin[0], origin[1], origin[2]]}>
+    <group ref={groupRef} position={[origin[0], origin[1], origin[2]]}>
       <mesh geometry={geometries.trunk} material={trunkMaterial} />
       {/* Ribbons inflate view-dependently in the vertex stage; their base
           positions bound them within a half-width — default culling is safe. */}

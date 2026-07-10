@@ -1,12 +1,13 @@
 // src/scales/chromatin/coil-params.ts
 // The coil's parameter set — growth (re-exported shape from the pure
-// generator) + look (colors, machined-drum surface, glow, drift) + world placement, one
+// generator) + look (colors, organic drum surface, glow, drift) + world placement, one
 // source of truth mirroring arbor-params.ts. Shipped as material defaults AND
 // driven live by the coil dev panel so the cluster is iterated by eye and the
 // winning values frozen here. Pure data + mappers; no three imports beyond
 // types.
 import type { Color } from 'three';
 import { COIL_GROWTH_DEFAULTS, type CoilGrowthParams } from '@/utils/coil-generator';
+import { WRAP_Z_FRACTION } from './coil-thread-path';
 
 export interface CoilLookParams {
   /** Bead body: desaturated dark slate — a believable material tone; the
@@ -39,13 +40,34 @@ export interface CoilLookParams {
   /** Brownian micro-drift amplitude per bead (world units; frozen at 0
    *  under reduced motion). */
   driftAmp: number;
-  /** Wound amber thread (5.5): cord color, tube radius (geometry-consumed),
-   *  the register dial (0 = fully matte physical cord, ~0.35 = subtle bloom
-   *  pickup, higher = luminous), revolutions wrapped around each drum
-   *  (geometry-consumed), and the travel speed of the emissive shimmer. */
+  /** Deep-dusk grade (5.6): ambient escape hatch (1 = the blessed dusk
+   *  floor; above lifts toward the old ethereal register), and the
+   *  vertical-gradient environment reflection — deep tone below the medium,
+   *  pale filtered light above, sampled by the reflected ray. */
+  duskLift: number;
+  envStrength: number;
+  envDeepColor: string;
+  envPaleColor: string;
+  /** Caustic dapple: light-through-the-medium pattern drifting across
+   *  up-facing drum surfaces (world-anchored; static under reduced motion).
+   *  Amp is brightness, scale is world-space pattern frequency. */
+  causticAmp: number;
+  causticScale: number;
+  /** Cord seating: how strongly the wrapped thread shades the drum wall
+   *  band it rides (0 = painted-on, 1 = deeply seated). */
+  wrapShadow: number;
+  /** Wound thread (5.6 teal biolume): dark cord body + bright cyan CORE
+   *  color (the camera-facing filament carrying the emissive), tube radius
+   *  (geometry-consumed), the register dial (0 = fully matte physical cord,
+   *  higher = luminous core), revolutions wrapped around each drum
+   *  (geometry-consumed), the baked wrap-occlusion strength, the number of
+   *  traveling light packets along the cord, and their travel speed. */
   threadColor: string;
+  threadCoreColor: string;
   threadRadius: number;
   threadEmissive: number;
+  threadAo: number;
+  threadPulseCount: number;
   wrapTurns: number;
   shimmerSpeed: number;
   /** Cinch knobs: stud color + world size (geometry-consumed). */
@@ -75,15 +97,17 @@ export const COIL_ORIGIN: readonly [number, number, number] = [0, -26, -40];
 // restored to this band per the master plan; rose moved down one band): the
 // band accent blue over desaturated slate drums — the calm equilibrium
 // between the warm shell and the cold digital bands. Distinct from the
-// second band's ELECTRIC blue: this one is quiet. The 5.5 wound thread is
-// the deliberate exception: warm amber against the cool drums for maximum
-// material contrast, a warm callback inside the cool band.
+// second band's ELECTRIC blue: this one is quiet. The 5.6 wound thread
+// speaks the medium's own language: a teal biolume cord (user-directed —
+// the 5.5 warm amber washed to beige against the pale drums and read
+// uncanny), its light carried by a cyan core filament.
 const LOOK_DEFAULTS: CoilLookParams = {
-  // Ethereal retune (2026-07-07, user-directed: "lighter, prettier, not a
-  // prison"): the drum body lifts from near-black slate to a luminous pale
-  // blue — the band's light lives IN the disks now, with a wider soft rim
-  // halo instead of a dark mass edged in accent.
-  beadBaseColor: '#7fa3c8',
+  // Deep-dusk grade (5.6, user-directed: an underwater medium, lit softly
+  // from above): the drum body drops from the ethereal pastel (#7fa3c8) to
+  // a mid-tone slate-blue so the disks model as volumes against the teal
+  // haze — the luminous work moves to the rim halo, the env reflection,
+  // and the thread core. Starters, re-blessed by eye in the preview.
+  beadBaseColor: '#607e9a',
   beadFresnelColor: '#61afef',
   beadFresnelPower: 2.8,
   mottleAmp: 0.3,
@@ -99,17 +123,29 @@ const LOOK_DEFAULTS: CoilLookParams = {
   // same seeds; bridge junction rings sit at blend 0/1), so drift costs no
   // detachment at any amplitude.
   driftAmp: 0.1,
-  // Soft champagne, not hard gold — warmth without the vault-door read.
-  threadColor: '#d8b878',
+  duskLift: 1.0,
+  envStrength: 0.35,
+  envDeepColor: '#16323a',
+  envPaleColor: '#8fd0da',
+  causticAmp: 0.18,
+  causticScale: 0.45,
+  wrapShadow: 0.35,
+  // Teal biolume cord (5.6): a dark slate-teal body whose light lives in
+  // the bright cyan core filament — the old full-value champagne cord
+  // outlined every silhouette and read as fondant.
+  threadColor: '#3f7d8a',
+  threadCoreColor: '#7fe3f2',
   threadRadius: 0.055,
-  threadEmissive: 0.35,
+  threadEmissive: 1.0,
+  threadAo: 0.6,
+  threadPulseCount: 3,
   // Fractional part ≈ 0.6 lands each wrap's exit facing the next drum
   // (entry faces the previous one; the next sits roughly opposite plus the
   // helix advance), so the bridges hop short and tidy instead of looping
   // a further quarter-turn around the drum.
   wrapTurns: 1.6,
-  shimmerSpeed: 1.6,
-  knobColor: '#c2a978',
+  shimmerSpeed: 0.6,
+  knobColor: '#45737f',
   knobSize: 0.11,
   ribbonColor: '#9fd0f5',
   ribbonOpacity: 0.85,
@@ -158,11 +194,22 @@ export interface CoilBeadUniforms {
   uSpecPower: number;
   uLocusGlow: number;
   uFocusDimStrength: number;
+  uDuskLift: number;
+  uEnvDeepColor: Color;
+  uEnvPaleColor: Color;
+  uEnvStrength: number;
+  uCausticAmp: number;
+  uCausticScale: number;
+  uWrapShadow: number;
+  uWrapBandZ: number;
 }
 
 export interface CoilThreadUniforms {
   uColor: Color;
+  uCoreColor: Color;
   uThreadEmissive: number;
+  uThreadAo: number;
+  uPulseCount: number;
   uShimmerSpeed: number;
   uFocusDimStrength: number;
 }
@@ -179,8 +226,13 @@ export interface CoilRibbonUniforms {
   uFlowSpeed: number;
 }
 
-/** Write the look params onto the bead material's uniforms. */
-export function applyCoilBeadLook(m: CoilBeadUniforms, p: CoilLookParams): void {
+/** Write the look params onto the bead material's uniforms. Takes the full
+ *  param set: the wrap-band shadow extent derives from the GROWTH aspect
+ *  (template-local z of the wound band, mirroring the thread-path bake). */
+export function applyCoilBeadLook(
+  m: CoilBeadUniforms,
+  p: CoilLookParams & Pick<CoilGrowthParams, 'beadAspect'>,
+): void {
   m.uBaseColor.set(p.beadBaseColor);
   m.uFresnelColor.set(p.beadFresnelColor);
   m.uFresnelPower = p.beadFresnelPower;
@@ -191,12 +243,23 @@ export function applyCoilBeadLook(m: CoilBeadUniforms, p: CoilLookParams): void 
   m.uSpecPower = p.beadSpecPower;
   m.uLocusGlow = p.locusGlow;
   m.uFocusDimStrength = p.focusDimStrength;
+  m.uDuskLift = p.duskLift;
+  m.uEnvDeepColor.set(p.envDeepColor);
+  m.uEnvPaleColor.set(p.envPaleColor);
+  m.uEnvStrength = p.envStrength;
+  m.uCausticAmp = p.causticAmp;
+  m.uCausticScale = p.causticScale;
+  m.uWrapShadow = p.wrapShadow;
+  m.uWrapBandZ = WRAP_Z_FRACTION * p.beadAspect;
 }
 
 /** Write the look params onto the thread material's uniforms. */
 export function applyCoilThreadLook(m: CoilThreadUniforms, p: CoilLookParams): void {
   m.uColor.set(p.threadColor);
+  m.uCoreColor.set(p.threadCoreColor);
   m.uThreadEmissive = p.threadEmissive;
+  m.uThreadAo = p.threadAo;
+  m.uPulseCount = p.threadPulseCount;
   m.uShimmerSpeed = p.shimmerSpeed;
   m.uFocusDimStrength = p.focusDimStrength;
 }

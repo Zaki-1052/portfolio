@@ -26,9 +26,10 @@ import { smoothstep } from '@/utils/math';
 import type { Vec3 } from '@/utils/coil-generator';
 
 // The overlay fades in once the cluster stands resolved after the orbital
-// sweep begins, and out as the band hands off to the next scale.
-const REVEAL_START = 0.465;
-const REVEAL_END = 0.5;
+// sweep begins (5.6: pushed past the retimed intro's fade start), and out
+// as the band hands off to the next scale.
+const REVEAL_START = 0.505;
+const REVEAL_END = 0.53;
 const FADE_START = 0.545;
 const FADE_END = 0.565;
 

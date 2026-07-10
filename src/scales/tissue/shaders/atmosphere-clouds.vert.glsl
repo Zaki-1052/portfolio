@@ -4,6 +4,10 @@
 // draw call with zero per-frame CPU work. Drift is a pure function of uTime +
 // seed (deterministic; freezes cleanly at uTime 0 under reduced motion).
 uniform float uTime;
+uniform vec2 uCurrentDir; // shared traveling-wave current (amp 0 disables)
+uniform float uCurrentAmp;
+uniform float uCurrentFreq;
+uniform float uCurrentK;
 
 attribute vec3 aCenter;
 attribute vec3 aParams; // x = scale, y = rotation, z = seed
@@ -23,6 +27,10 @@ void main() {
       sin(uTime * 0.038 + s * 6.7)
     ) *
       5.0;
+  // Shared traveling-wave current (coil-current.ts) — zero-amp for the
+  // classic tissue bank, so it stays byte-identical.
+  float cPhase = uTime * uCurrentFreq + dot(c.xz, uCurrentDir) * uCurrentK;
+  c.xz += uCurrentDir * (uCurrentAmp * sin(cPhase));
 
   vec4 mv = modelViewMatrix * vec4(c, 1.0);
   float cr = cos(aParams.y);

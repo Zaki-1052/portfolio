@@ -32,6 +32,7 @@ export const ArborTrunkMaterial = shaderMaterial(
     uHubGlowA: new Color(D.hubGlowA),
     uHubGlowB: new Color(D.hubGlowB),
     uHubGlowStrength: D.hubGlowStrength,
+    uHubFill: 0, // 5.6 hub-dive swell; ArborMesh drives it from depth
     uHubBump: D.hubBump,
     uSheathColor: new Color(D.sheathColor),
     uSheathAmount: D.sheathAmount,

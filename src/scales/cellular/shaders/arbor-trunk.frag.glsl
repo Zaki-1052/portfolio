@@ -21,6 +21,7 @@ uniform float uHoverBranch; // -1 none | 0/1/2 hovered limb
 uniform vec3 uHubGlowA; // granular core glow, mottled between two hues
 uniform vec3 uHubGlowB;
 uniform float uHubGlowStrength;
+uniform float uHubFill; // 5.6 hub-dive swell: 0 = resting glow, 1 = fill-the-frame beat
 uniform vec3 uSheathColor; // the green encrustation riding the blue limbs
 uniform float uSheathAmount;
 
@@ -87,11 +88,15 @@ void main() {
   // The hub is LIT FROM WITHIN: a granular two-hue glow, brightest facing
   // the camera (inverse of the rim) — the reference's luminous core. A
   // finer-grained field carries the granularity so the mass reads alive.
+  // The 5.6 hub-dive swell (uHubFill) lifts the off-axis floor so the glow
+  // widens across the whole face as the camera pushes in — the sphere
+  // becomes the frame-filling light the transition passes through.
   float hubK = 1.0 - step(-1.5, vLimb);
   float grain2 = fbm(vObjPos * (uReliefFreq * 5.2)) * 0.5 + 0.5;
   vec3 hubGlow = mix(uHubGlowA, uHubGlowB, smoothstep(0.2, 0.8, grain2));
   color += hubGlow *
-    (hubK * uHubGlowStrength * (0.25 + 0.75 * pow(ndv, 1.4)) * (0.55 + 0.65 * grain2));
+    (hubK * uHubGlowStrength * (mix(0.25, 0.7, uHubFill) + 0.75 * pow(ndv, 1.4)) *
+      (0.55 + 0.65 * grain2));
 
   // Focus dim: while a branch is focused the other limbs recede; the shared
   // trunk (vLimb < 0) never dims. Hover lifts its limb slightly.

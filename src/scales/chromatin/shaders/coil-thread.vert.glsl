@@ -10,18 +10,24 @@
 
 uniform float uTime;
 uniform float uDriftAmp;
+uniform vec2 uCurrentDir; // shared band current (coil-current.ts); amp 0 = still
+uniform float uCurrentAmp;
+uniform float uCurrentFreq;
+uniform float uCurrentK;
 
 attribute float aT;
 attribute float aRegion;
 attribute float aSeedA;
 attribute float aSeedB;
 attribute float aDriftMix;
+attribute float aShade;
 
 varying vec3 vWorldNormal;
 varying vec3 vViewDir;
 varying float vViewDist;
 varying float vT;
 varying float vRegion;
+varying float vShade;
 
 // Identical to the bead vert's drift — same frequencies, same phase layout.
 vec3 driftFor(float seed) {
@@ -35,9 +41,15 @@ vec3 driftFor(float seed) {
 void main() {
   vT = aT;
   vRegion = aRegion;
+  vShade = aShade;
 
   vec3 drift = mix(driftFor(aSeedA), driftFor(aSeedB), aDriftMix) * uDriftAmp;
-  vec4 worldPos = modelMatrix * vec4(position + drift, 1.0);
+  vec3 swayed = position + drift;
+  // The band's shared current — identical expression to the bead stage, so
+  // the winding rides its swaying drums exactly.
+  float cPhase = uTime * uCurrentFreq + dot(swayed.xz, uCurrentDir) * uCurrentK;
+  swayed.xz += uCurrentDir * (uCurrentAmp * sin(cPhase));
+  vec4 worldPos = modelMatrix * vec4(swayed, 1.0);
   vWorldNormal = normalize(mat3(modelMatrix) * normal);
 
   vec3 toCam = cameraPosition - worldPos.xyz;

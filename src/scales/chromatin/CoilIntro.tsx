@@ -17,13 +17,15 @@ import { useDepthStore } from '@/stores/depth';
 import { useMotionStore } from '@/stores/motion';
 import { smoothstep } from '@/utils/math';
 
-// Depth window (canonical 0..1). Reveal as the first beads glimmer in the
-// haze; clear before CoilAnnotations begins its reveal (0.465), so the two
-// text layers never fight. These four numbers are the tuning knob.
-const REVEAL_START = 0.435;
-const REVEAL_END = 0.46;
-const FADE_START = 0.475;
-const FADE_END = 0.5;
+// Depth window (canonical 0..1). 5.6 retime: the column resolves only
+// AFTER the hub-dive's fill beat (the glow-filled frame stays clean of
+// text) and is mostly gone before CoilAnnotations begins its reveal
+// (0.505), so the two text layers never fight. These four numbers are the
+// tuning knob.
+const REVEAL_START = 0.465;
+const REVEAL_END = 0.487;
+const FADE_START = 0.498;
+const FADE_END = 0.52;
 
 // Resolve-from-haze magnitudes at zero envelope (fully faded): the column
 // sits this much lower and blurrier, then sharpens/settles as it peaks.

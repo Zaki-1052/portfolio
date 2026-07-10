@@ -35,6 +35,8 @@ import {
   type CoilParams,
 } from './coil-params';
 import { getCoilParamsOverride, subscribeCoilParams } from './coil-live-params';
+import { COIL_CURRENT_DEFAULTS, currentDir } from './coil-current';
+import { COIL_WATER_DEFAULTS, getCoilWaterOverride } from './coil-water-params';
 import {
   buildBeadTemplate,
   buildKnobGeometry,
@@ -53,14 +55,17 @@ import {
   CoilThreadMaterial,
 } from './coil-materials';
 
-// The bead mass materializes AFTER its lights: the linker threads glimmer
-// through the haze from the band's start, the cluster resolves behind them.
-// The threads get their own authored envelope (they'd otherwise be visible
-// from the scene mount at 0.37, deep inside the previous band).
-const LIGHTS_REVEAL_START = 0.435;
-const LIGHTS_REVEAL_END = 0.455;
-const BODY_REVEAL_START = 0.44;
-const BODY_REVEAL_END = 0.48;
+// The bead mass materializes AFTER its lights: the cord's glow glimmers
+// out of the hub-dive's fill beat first, the cluster resolves behind it.
+// 5.6 retime: both envelopes start AFTER the hub-shell crossing (≈ 0.458)
+// so the coil never ghosts into a frame the tree still owns — the two
+// scenes are never simultaneous subjects. (The threads' own envelope also
+// keeps them hidden from the scene mount at 0.37, deep inside the previous
+// band.)
+const LIGHTS_REVEAL_START = 0.462;
+const LIGHTS_REVEAL_END = 0.48;
+const BODY_REVEAL_START = 0.468;
+const BODY_REVEAL_END = 0.5;
 
 // Unwind pacing per the design spec; the switch-release is quicker so
 // re-targeting a different region doesn't feel like two full animations.
@@ -323,6 +328,19 @@ export function CoilMesh({ origin = COIL_ORIGIN }: CoilMeshProps) {
     beadMaterial.uDriftAmp = driftAmp;
     threadMaterial.uDriftAmp = driftAmp;
     knobMaterial.uDriftAmp = driftAmp;
+
+    // The band's shared current, at the body's own (far smaller) amplitude —
+    // drums, cord, and knobs carry the identical wave so nothing detaches.
+    // Frozen with the drift under reduced motion.
+    const water = getCoilWaterOverride() ?? COIL_WATER_DEFAULTS;
+    const dir = currentDir(water.currentDirDeg);
+    const bodyAmp = reduced ? 0 : water.beadCurrentAmp;
+    for (const m of [beadMaterial, threadMaterial, knobMaterial]) {
+      m.uCurrentDir = dir;
+      m.uCurrentAmp = bodyAmp;
+      m.uCurrentFreq = water.currentFreq;
+      m.uCurrentK = COIL_CURRENT_DEFAULTS.k;
+    }
 
     // Focus dim rides the unwind blend, on the displayed region (which
     // outlives focusedRegion through the release tween).

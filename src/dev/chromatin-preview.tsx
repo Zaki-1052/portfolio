@@ -20,9 +20,10 @@ import { Canvas, invalidate, useFrame } from '@react-three/fiber';
 import { Color, MathUtils, type Group } from 'three';
 import { Leva } from 'leva';
 import { CoilMesh } from '@/scales/chromatin/CoilMesh';
+import { CoilAtmosphere } from '@/scales/chromatin/coil-atmosphere';
 import { COIL_DEFAULTS, COIL_PRESETS, type CoilParams } from '@/scales/chromatin/coil-params';
 import { setCoilParamsOverride } from '@/scales/chromatin/coil-live-params';
-import { useCoilControls, useCoilUnwindControls } from '@/dev/coil-dev-tools';
+import { useCoilControls, useCoilUnwindControls, useCoilWaterControls } from '@/dev/coil-dev-tools';
 import { setSceneFog } from '@/engine/scene-fog';
 import { PostFX } from '@/engine/post-fx';
 import { useCoilFocusStore } from '@/stores/coil-focus';
@@ -39,6 +40,9 @@ const DPR = Number(params.get('dpr') ?? '2');
 const SEED = params.get('seed');
 const PRESET = params.get('preset');
 const DRIFT_OFF = params.get('drift') === '0';
+// ?water=0 hides the medium layers (silt/bokeh/bubbles/veils) for clean
+// geometry review.
+const WATER_ON = params.get('water') !== '0';
 
 const basePreset: CoilParams =
   PRESET && PRESET in COIL_PRESETS
@@ -50,11 +54,12 @@ const initialParams: CoilParams = {
   ...(DRIFT_OFF ? { driftAmp: 0 } : null),
 };
 
-// Park the depth store mid-band (past the 0.44→0.48 reveal, in the band's
-// post-fx register) and pin the fog mirror to the band's anchor — there's
-// no SceneAtmosphere here to write it.
+// Park the depth store mid-band (past the reveal windows, in the band's
+// post-fx register) and pin the fog mirror to the 5.6 deep-dusk grade —
+// the sustained underwater medium the re-graded look is judged inside
+// (mirrors the coil-fog sustain values; no SceneAtmosphere here to write it).
 useDepthStore.getState().setDepth(0.5);
-setSceneFog(new Color('#2b3038'), 0.014);
+setSceneFog(new Color('#20343a'), 0.02);
 
 // Deterministic unwind state: seeded BEFORE the React tree mounts, so
 // CoilMesh's tween subscription never sees a change event and the blend
@@ -72,6 +77,7 @@ if (REGION === '0' || REGION === '1') {
 // eslint-disable-next-line react-refresh/only-export-components -- dev-only entry, not a fast-refresh module
 function ShapePanel() {
   const values = useCoilControls(initialParams, false);
+  useCoilWaterControls();
   useCoilUnwindControls();
 
   useEffect(() => {
@@ -100,8 +106,10 @@ function SpinRig() {
   return (
     // The generator centers the cluster on its own origin (unlike the arbor,
     // which grows upward from its root), so no re-centering offset is needed.
+    // The water medium rides the same rig so ?spin keeps it coherent.
     <group ref={groupRef}>
       <CoilMesh origin={[0, 0, 0]} />
+      {WATER_ON && <CoilAtmosphere origin={[0, 0, 0]} />}
     </group>
   );
 }

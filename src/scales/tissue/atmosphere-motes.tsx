@@ -34,6 +34,16 @@ const DriftMaterial = shaderMaterial(
     uWobble: 1.6,
     uRise: 0,
     uRiseRange: 0,
+    // 5.6 extensions, all defaulted to classic behavior: the point-size
+    // ceiling (7 = the old hard clamp), the defocused-lens rim profile
+    // (0 = plain soft disc), and the shared traveling-wave current
+    // (amp 0 = no sway) — existing fields stay byte-identical.
+    uMaxPx: 7,
+    uRimGlow: 0,
+    uCurrentDir: [1, 0],
+    uCurrentAmp: 0,
+    uCurrentFreq: 0,
+    uCurrentK: 0,
   },
   vert,
   frag,
@@ -52,6 +62,13 @@ export interface DriftConfig {
   riseRange: number;
   fadeNear: readonly [number, number];
   fadeFar: readonly [number, number];
+  /** Point-size ceiling in device px (default 7, the classic mote clamp).
+   *  Large values let near particles bloom into soft bokeh discs. */
+  maxPx?: number;
+  /** 0 (default) = plain soft disc; 1 = full defocused-lens rim profile. */
+  rimGlow?: number;
+  /** Opt-in shared traveling-wave current (see coil-current.ts). */
+  current?: { dir: readonly [number, number]; amp: number; freq: number; k: number };
   opacityAt: (depth: number, o: AtmosphereParams | null) => number;
 }
 
@@ -134,6 +151,14 @@ export function DriftField({ config }: { config: DriftConfig }) {
     m.uWobble = config.wobble;
     m.uRise = config.rise;
     m.uRiseRange = config.riseRange;
+    m.uMaxPx = config.maxPx ?? 7;
+    m.uRimGlow = config.rimGlow ?? 0;
+    if (config.current) {
+      m.uCurrentDir = config.current.dir as [number, number];
+      m.uCurrentAmp = config.current.amp;
+      m.uCurrentFreq = config.current.freq;
+      m.uCurrentK = config.current.k;
+    }
     return m;
   }, [config]);
   useEffect(() => () => material.dispose(), [material]);

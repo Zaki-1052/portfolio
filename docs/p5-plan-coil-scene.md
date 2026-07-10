@@ -125,6 +125,32 @@ scale-manager.ts:28). CSS accent is rose `#d57aa5` (`--aod-rose`), fog
 > full interaction, Esc/scroll-release, reduced-motion pixel-stable,
 > 19 calls/frame at 61 fps with a region focused.
 
+> **Phase 5.6 implemented (2026-07-10, user-directed) — underwater
+> refinement + hub-dive transition** (full plan: `PLAN.md` at repo root;
+> log: `logs/2026-07-10_phase-5.6-underwater-refinement.md`). Four
+> user-critiqued problems fixed: (1) the arbor→coil camera swivel replaced
+> by a dive THROUGH the tree's glowing hub — target locks on at 0.442, the
+> hub's glow swells ×4 and widens (`uHubFill`) until it owns the frame, the
+> arbor fades to fog color BEFORE the near-plane crossing (0.446→0.458 +
+> `visible=false`), the fog spike peaks exactly at the crossing (0.458) with
+> a transient bloom swell, and the coil reveals only past it (lights
+> 0.462→0.48, body 0.468→0.5) — no frame ever holds both subjects; (2) the
+> band is now an underwater deep-dusk medium — sustained fog plateau
+> (+0.006), deep-teal tint `#20343a`, band CSS `--bg #232d31`, four water
+> layers (silt 650 / near bokeh / bubbles / veils via the generalized
+> CloudBank) all riding ONE shared current wave (`coil-current.ts`, λ≈105 u)
+> that the drums/cord/knobs also carry at `beadCurrentAmp 0.05` — one body
+> of water, nothing detaches; (3) the flashbang drums re-graded to mid-tone
+> slate `#607e9a` with light-from-above, procedural env reflections, and
+> caustic dapple; (4) the uncanny cord re-registered as a teal biolume
+> two-tone (`#3f7d8a` body + `#7fe3f2` camera-facing core), real cylindrical
+> shading, baked wrap AO (`aShade`), contact shadows both sides, and the
+> `vT*90` corduroy shimmer replaced by 3 slow traveling pulses. The ring
+> ornament's wall bands cut to a whisper. Verified previews-only at dpr 2:
+> 60 fps sweeps both ways, reduced-motion byte-identical parks, 24–27
+> calls/frame, focus interaction end-to-end; 208 tests green. All values
+> are slider starters pending Zara's live bless.
+
 ---
 
 ## Creative decisions (user-locked, do not relitigate)
