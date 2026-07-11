@@ -24,14 +24,19 @@
 //     that the exit azimuth aim anywhere ⇒ no quantized correction term.
 import type { CoilNode, Vec3 } from '@/utils/coil-generator';
 
-/** Length samples per wrap helix (covers wrapTurns revolutions). */
-export const WRAP_SAMPLES = 28;
+/** Length samples per wrap helix (covers wrapTurns revolutions) — raised
+ *  with the 5.6 winding retune (2.6 turns need ~17 samples/turn to stay
+ *  round). */
+export const WRAP_SAMPLES = 44;
 /** Length samples per bridge — it curves up to ~a quarter turn around the
  *  drum before docking, so it needs more than the old straight sag tube. */
 export const BRIDGE_SAMPLES = 10;
 /** Fraction of the drum's half-thickness the wrap spans along the axis —
- *  keeps the winding on the side wall, inside the rim bevels. */
-export const WRAP_Z_FRACTION = 0.55;
+ *  keeps the winding on the side wall, inside the rim bevels. Widened in
+ *  the 5.6 retune so the extra turns spread across the whole wall as a
+ *  visible wound band (must stay under (h − bevel)/h ≈ 0.68 at the
+ *  shipping bevel). */
+export const WRAP_Z_FRACTION = 0.62;
 /** Bridge control-point reach as a fraction of the bridge chord. */
 export const BRIDGE_TENSION = 0.35;
 /** Fraction of the cord radius sunk into the drum wall. A grazing tangent

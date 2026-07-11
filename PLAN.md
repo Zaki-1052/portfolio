@@ -64,6 +64,16 @@ sidecar plan files are invisible to that). Keep it updated as stages complete.
 > card backdrop deepened + meta text brightened; focus pose lifted
 > (LIFT 6 / DIST 19) with the silt shell widened so atmosphere stays in
 > frame at focus poses. Re-verified: 60 fps sweeps, 208 tests, build clean.
+>
+> **Feedback round 2 (2026-07-10, external, 5 modeling notes) —
+> implemented:** domed cap crowns (`beadDome` 0.1) + bevel 0.2 (puck, not
+> coin); per-drum `radiusJitter` 0.12 (seeded post-offsets — positions held
+> per seed); winding now unmistakable (`wrapTurns` 2.6 across a widened
+> band, `WRAP_Z_FRACTION` 0.62, `WRAP_SAMPLES` 44); packing loosened
+> (`coilPitch` 1.18, `jitter` 0.12 — face-on crack-slits became deliberate
+> gaps); cap ornament re-cut as a seam-free wound spiral (`ringAmp` 0.3,
+> `ringFreq` 4, wall whisper 0.2). Publication cards enlarged + brightened;
+> intro stepped down one type rank. Gates + 60 fps re-verified.
 
 | Stage | Scope | Harness | Status |
 |---|---|---|---|

@@ -60,19 +60,19 @@ void main() {
   float tone = broad * 0.75 + grain * 0.25;
   vec3 albedo = uBaseColor * mix(1.0 - uMottleAmp * 0.4, 1.0 + uMottleAmp * 0.15, tone);
 
-  // Ring designs: concentric rings across the caps (uRingFreq rings from
-  // hub to edge), soft bands around the wall, both wobbled by a slow fbm so
-  // they read as worked ornament rather than machining. Valleys deepen
-  // gently; ridges pick up a whisper of the accent — decoration made of
-  // light, not grooves cut into shadow.
+  // Cap dressing (5.6 feedback): a wound SPIRAL across each cap — thread
+  // coiled on the spool face — instead of the old concentric rings, which
+  // read as a sailing net. The angular term's coefficient is exactly 1, so
+  // the spiral is seam-free across the atan cut; a slow fbm wobble keeps it
+  // hand-wound. The wall keeps only a whisper of banding — the REAL winding
+  // carries the wall now.
   float wobble = fbm(vLocalPos * 2.3 + vec3(vSeed * 19.0)) * 0.35;
-  float capRings = 0.5 + 0.5 * sin((length(vLocalPos.xy) + wobble * 0.22) * uRingFreq * 6.2831);
+  float capAng = atan(vLocalPos.y, vLocalPos.x);
+  float capRings =
+    0.5 + 0.5 * sin((length(vLocalPos.xy) + wobble * 0.22) * uRingFreq * 6.2831 - capAng);
   float wallBands = 0.5 + 0.5 * sin((vLocalPos.z + wobble * 0.25) * uRingFreq * 9.0 + vSeed * 39.0);
   float ringPattern = mix(wallBands, capRings, vCapMask);
-  // The wall keeps only a whisper of the banding: full-strength vertical
-  // bands between the cord wraps read as melted stripes, not ornament —
-  // the caps carry the design, the wall carries the winding.
-  float ringMask = mix(0.3, 1.0, vCapMask);
+  float ringMask = mix(0.2, 1.0, vCapMask);
   albedo *= 1.0 - uRingAmp * (1.0 - ringPattern) * 0.2 * ringMask;
   albedo += uFresnelColor * uRingAmp * ringPattern * 0.07 * ringMask;
   // Faint lift on the flat faces — a stretched-skin read against the wall.

@@ -103,17 +103,28 @@ export function buildBeadTemplate(
   nodes: CoilNode[],
   beadAspect: number,
   beadBevel: number,
+  beadDome = 0,
 ): BufferGeometry {
   // Profile in (radial, axial) coordinates: unit outer radius, half-thickness
   // h, bevel arc of radius b centered at (1-b, h-b). Clamping b against h
-  // keeps the wall extent positive under any dev-slider pairing.
+  // keeps the wall extent positive under any dev-slider pairing. The cap is
+  // a shallow paraboloid crown (5.6 feedback: flat caps read as coins, not
+  // pucks) — z = h + dome·(1 − (r/rEdge)²), analytic slope normals.
   const h = beadAspect;
   const b = Math.min(beadBevel, h * 0.95, 0.95);
   const rEdge = 1 - b;
+  const dome = Math.max(0, beadDome);
+  // Paraboloid surface normal at radius r: ∝ (2·dome·r/rEdge², 1).
+  const capRow = (r: number): { r: number; z: number; nr: number; nz: number; cap: number } => {
+    const q = r / rEdge;
+    const slope = (2 * dome * r) / (rEdge * rEdge);
+    const len = Math.hypot(slope, 1);
+    return { r, z: h + dome * (1 - q * q), nr: slope / len, nz: 1 / len, cap: 1 };
+  };
   const profile: { r: number; z: number; nr: number; nz: number; cap: number }[] = [
-    { r: 0, z: h, nr: 0, nz: 1, cap: 1 },
-    { r: rEdge * 0.5, z: h, nr: 0, nz: 1, cap: 1 },
-    { r: rEdge, z: h, nr: 0, nz: 1, cap: 1 },
+    capRow(0),
+    capRow(rEdge * 0.5),
+    capRow(rEdge),
     ...PUCK_BEVEL_STEPS.map((alpha) => ({
       r: rEdge + b * Math.sin(alpha),
       z: h - b + b * Math.cos(alpha),

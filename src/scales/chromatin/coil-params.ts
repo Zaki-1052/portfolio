@@ -31,6 +31,9 @@ export interface CoilLookParams {
   /** Rim bevel size in template units (geometry-consumed — rebuilds the
    *  shared puck template, like threadRadius rebuilds the tube). */
   beadBevel: number;
+  /** Cap crown height in template units (geometry-consumed): a shallow
+   *  paraboloid dome per cap face — puck, not coin. 0 = flat. */
+  beadDome: number;
   /** Subtle extra rim glow on the two publication-region loci — the
    *  invitation markers for the unwind interaction. */
   locusGlow: number;
@@ -111,11 +114,15 @@ const LOOK_DEFAULTS: CoilLookParams = {
   beadFresnelColor: '#61afef',
   beadFresnelPower: 2.8,
   mottleAmp: 0.3,
-  ringAmp: 0.45,
-  ringFreq: 5,
+  // 5.6 feedback: the concentric cap rings read as an old sailing net —
+  // the pattern is now a wound SPIRAL (thread coiled on the spool face),
+  // quieter, and the real winding carries the structure.
+  ringAmp: 0.3,
+  ringFreq: 4,
   beadSpecStrength: 0.22,
   beadSpecPower: 26,
-  beadBevel: 0.14,
+  beadBevel: 0.2,
+  beadDome: 0.1,
   locusGlow: 0.25,
   focusDimStrength: 0.55,
   // The blessed suspended-stillness amplitude. The wound thread and knobs
@@ -143,11 +150,11 @@ const LOOK_DEFAULTS: CoilLookParams = {
   threadEmissive: 1.0,
   threadAo: 0.6,
   threadPulseCount: 3,
-  // Fractional part ≈ 0.6 lands each wrap's exit facing the next drum
-  // (entry faces the previous one; the next sits roughly opposite plus the
-  // helix advance), so the bridges hop short and tidy instead of looping
-  // a further quarter-turn around the drum.
-  wrapTurns: 1.6,
+  // 5.6 feedback: 2.6 turns spread across the widened wall band so each
+  // drum reads unmistakably WOUND, not merely linked. Fractional part ≈ 0.6
+  // still lands each wrap's exit facing the next drum (entry faces the
+  // previous one), so the bridges stay short and tidy.
+  wrapTurns: 2.6,
   shimmerSpeed: 0.6,
   knobColor: '#45737f',
   knobSize: 0.11,

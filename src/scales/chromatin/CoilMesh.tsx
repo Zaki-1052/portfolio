@@ -108,7 +108,7 @@ export function CoilMesh({ origin = COIL_ORIGIN }: CoilMeshProps) {
     return {
       baseNodes,
       threadOpts,
-      template: buildBeadTemplate(baseNodes, params.beadAspect, params.beadBevel),
+      template: buildBeadTemplate(baseNodes, params.beadAspect, params.beadBevel, params.beadDome),
       threads: buildThreadGeometry(baseNodes, threadOpts),
       knobs: buildKnobGeometry(baseNodes),
       ribbons: buildRibbonGeometry(baseNodes, params.ribbonWidth),

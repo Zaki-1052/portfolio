@@ -32,6 +32,9 @@ export interface CoilGrowthParams {
   /** Per-bead positional noise. Clamped internally against the natural
    *  bead spacing so a dev-panel slider can never interpenetrate beads. */
   jitter: number;
+  /** Per-bead radius variation (± fraction of beadRadius, seeded) — breaks
+   *  the stamped-uniform read; 0 = every drum identical. */
+  radiusJitter: number;
   /** Thread sag between consecutive beads (geometry-consumed). */
   linkerSag: number;
   /** Beads per publication region and the t-domain separation between the
@@ -82,15 +85,20 @@ export interface CoilNode {
 // 0.375 unchanged (5.4 rationale): 2.25 revolutions between the two locus
 // centers keeps them ~80° apart on the rim, so labels and unwind bearings
 // never stack at one azimuth.
+// 5.6 feedback retune: pitch 1.05 → 1.18 opens a real gap between stacked
+// turns (the near-touching turns read as cracked columns face-on), and the
+// raised jitter + new radiusJitter make the stack loosely coiled and
+// hand-wound instead of stamped.
 export const COIL_GROWTH_DEFAULTS: CoilGrowthParams = {
   seed: 11,
   beadCount: 55,
   coilRadius: 2.2,
-  coilPitch: 1.05,
+  coilPitch: 1.18,
   coilTurns: 6,
   beadRadius: 0.5,
   beadAspect: 0.62,
-  jitter: 0.08,
+  jitter: 0.12,
+  radiusJitter: 0.12,
   linkerSag: 0.1,
   regionSize: 9,
   regionGap: 0.375,
@@ -151,7 +159,8 @@ export function generateCoil(params: CoilGrowthParams, open?: CoilOpenState | nu
 
   // Jitter offsets drawn up front (one per bead). The stream depends only on
   // the seed — never on the open state — so every openT of the same coil
-  // shares the same organic irregularity.
+  // shares the same organic irregularity. Radius factors draw AFTER the
+  // offsets so adding them (5.6) left every seed's positions untouched.
   const jitterOffsets: Vec3[] = [];
   for (let i = 0; i < count; i++) {
     jitterOffsets.push([
@@ -159,6 +168,10 @@ export function generateCoil(params: CoilGrowthParams, open?: CoilOpenState | nu
       (rng() * 2 - 1) * jitterAmp,
       (rng() * 2 - 1) * jitterAmp,
     ]);
+  }
+  const radiusFactors: number[] = [];
+  for (let i = 0; i < count; i++) {
+    radiusFactors.push(1 + (rng() * 2 - 1) * Math.max(0, Math.min(params.radiusJitter, 0.4)));
   }
 
   // --- Publication regions: centers symmetric around the coil midpoint,
@@ -282,7 +295,7 @@ export function generateCoil(params: CoilGrowthParams, open?: CoilOpenState | nu
       tangent,
       normal: side,
       binormal,
-      radius: params.beadRadius,
+      radius: params.beadRadius * radiusFactors[i]!,
       index: i,
       t: i / (count - 1),
       region,
