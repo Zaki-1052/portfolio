@@ -1717,13 +1717,16 @@ hr {
 }
 .coil-intro__title {
   margin: 0 0 var(--space-4);
-  /* The band's heading register is the sans (middle-scale bridge). */
+  /* The band's heading register is the sans (middle-scale bridge).
+     5.6 prominence pass: one scale step down — the intro cedes visual
+     rank to the publication cards. */
   font-family: var(--font-sans);
-  font-size: var(--text-3xl);
+  font-size: var(--text-2xl);
   max-width: 18ch;
 }
 .coil-intro .prose {
   color: var(--text-strong);
+  font-size: var(--text-base);
 }
 
 /* ============================================================
@@ -2056,12 +2059,13 @@ hr {
   padding: 4px 6px;
   cursor: pointer;
   font-family: var(--font-sans);
-  font-size: 13px;
+  /* 5.6 prominence pass: the card was dwarfed by the scene. */
+  font-size: 15px;
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   /* Publication titles run longer than the arbor's group labels. */
-  max-width: min(300px, 36vw);
+  max-width: min(360px, 42vw);
   color: var(--text-strong);
   text-shadow:
     0 0 14px color-mix(in srgb, var(--accent) 80%, transparent),
@@ -2082,8 +2086,8 @@ hr {
 }
 .coil-annotation__entries {
   position: relative;
-  width: min(300px, 38vw);
-  margin-top: 6px;
+  width: min(380px, 46vw);
+  margin-top: 8px;
   visibility: hidden;
   opacity: 0;
   transform: translateY(6px);
@@ -2095,13 +2099,15 @@ hr {
 .coil-annotation__entries::before {
   content: '';
   position: absolute;
-  inset: -52px -84px;
+  inset: -72px -124px;
   z-index: -1;
+  /* 5.6: a deeper cooled-lens pool — the card floats over the drum mass and
+     needs real separation, not a whisper of shade. */
   background: radial-gradient(
-    ellipse 72% 78% at 50% 44%,
-    rgba(8, 10, 16, 0.62),
-    rgba(8, 10, 16, 0.3) 52%,
-    transparent 72%
+    ellipse 74% 80% at 50% 44%,
+    rgba(10, 16, 20, 0.86),
+    rgba(10, 16, 20, 0.55) 54%,
+    transparent 76%
   );
   pointer-events: none;
 }
@@ -2120,13 +2126,13 @@ hr {
   background: none;
   border: 0;
   padding: 2px 4px;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   cursor: pointer;
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: 12.5px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: #d6dfe9;
   text-shadow:
     0 0 10px color-mix(in srgb, var(--accent) 45%, transparent),
     0 1px 3px rgba(0, 0, 0, 0.9);
@@ -2137,12 +2143,12 @@ hr {
   color: var(--text-strong);
 }
 .coil-entries__hint {
-  margin: 8px 0 0;
+  margin: 10px 0 0;
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: 12px;
   font-style: italic;
-  color: var(--text-muted);
-  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.85);
+  color: #c4cfdb;
+  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.9);
 }
 
 .coil-entry {
@@ -2151,25 +2157,25 @@ hr {
 .coil-entry__status {
   display: block;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12.5px;
   letter-spacing: 0.05em;
-  color: var(--accent);
+  color: color-mix(in srgb, var(--accent) 68%, #ffffff);
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
 }
 .coil-entry p {
-  margin: 3px 0;
+  margin: 4px 0;
   font-family: var(--font-sans);
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: #d9dfe8;
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.85);
+  font-size: 15px;
+  line-height: 1.55;
+  color: #fafcfe;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.95);
 }
 .coil-entry__venue {
   display: block;
   font-family: var(--font-mono);
-  font-size: 11px;
-  color: #aeb9c6;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+  font-size: 13px;
+  color: #e4ebf3;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
 }
 .coil-entry__links {
   display: block;
@@ -2177,9 +2183,9 @@ hr {
 }
 .coil-entry__links a {
   font-family: var(--font-sans);
-  font-size: 12px;
-  margin-right: 10px;
-  color: #f2f5f9;
+  font-size: 13.5px;
+  margin-right: 12px;
+  color: #ffffff;
   text-decoration: none;
   text-shadow:
     0 0 14px color-mix(in srgb, var(--accent) 45%, transparent),

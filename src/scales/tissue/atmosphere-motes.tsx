@@ -40,6 +40,7 @@ const DriftMaterial = shaderMaterial(
     // (amp 0 = no sway) — existing fields stay byte-identical.
     uMaxPx: 7,
     uRimGlow: 0,
+    uTwinkle: 0,
     uCurrentDir: [1, 0],
     uCurrentAmp: 0,
     uCurrentFreq: 0,
@@ -67,6 +68,9 @@ export interface DriftConfig {
   maxPx?: number;
   /** 0 (default) = plain soft disc; 1 = full defocused-lens rim profile. */
   rimGlow?: number;
+  /** Per-point brightness pulse depth (0 default = steady; ~0.8 = starry
+   *  twinkle, each point on its own phase). */
+  twinkle?: number;
   /** Opt-in shared traveling-wave current (see coil-current.ts). */
   current?: { dir: readonly [number, number]; amp: number; freq: number; k: number };
   opacityAt: (depth: number, o: AtmosphereParams | null) => number;
@@ -153,6 +157,7 @@ export function DriftField({ config }: { config: DriftConfig }) {
     m.uRiseRange = config.riseRange;
     m.uMaxPx = config.maxPx ?? 7;
     m.uRimGlow = config.rimGlow ?? 0;
+    m.uTwinkle = config.twinkle ?? 0;
     if (config.current) {
       m.uCurrentDir = config.current.dir as [number, number];
       m.uCurrentAmp = config.current.amp;

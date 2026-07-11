@@ -109,6 +109,8 @@ export function useCoilWaterControls(): void {
       {
         siltCount: { value: d.siltCount, min: 100, max: 1200, step: 10 },
         siltOpacity: { value: d.siltOpacity, min: 0, max: 1, step: 0.01 },
+        sparkleCount: { value: d.sparkleCount, min: 0, max: 400, step: 5 },
+        sparkleOpacity: { value: d.sparkleOpacity, min: 0, max: 1, step: 0.01 },
         bokehCount: { value: d.bokehCount, min: 0, max: 150, step: 1 },
         bokehOpacity: { value: d.bokehOpacity, min: 0, max: 1, step: 0.01 },
         bokehMaxPx: { value: d.bokehMaxPx, min: 7, max: 128, step: 1 },

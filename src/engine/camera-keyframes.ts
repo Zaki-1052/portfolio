@@ -96,35 +96,40 @@ export const CAMERA_KEYFRAMES: readonly CameraKeyframe[] = [
     reducedAnchor: true,
   }, // off-axis rule-of-thirds settle — hub above the frame bottom with the filament's fall visible, canopy generous in frame (user-tuned midpoint framing, 2026-07-05)
   { depth: 0.43, position: [-11.5, -4, 5], target: [1, -5, -24], roll: 0, fov: 49 }, // hold with a breath of downward drift while the next section covers (= SCALE_BOUNDARIES[3])
-  // --- The coil band (third scale), 5.6 hub-dive: after the hold the
-  // camera locks onto the tree's glowing hub (world ≈ [2,-10.6,-28], r≈2)
-  // and pushes INTO it — the swelling glow + fog spike + bloom swell own
-  // the frame through the crossing (the arbor has already dissolved to fog
-  // color, so the near-plane pass is fog-on-fog), and the spool resolves
-  // out of the same glow on the far side. No frame holds tree and coil as
-  // simultaneous subjects. The three dive knots are non-anchor — the
-  // reduced-motion track still cuts 0.41 → 0.48 → 0.565. Framing
-  // COIL_ORIGIN [0, -26, -40]; tuned in the descent-preview harness. ---
-  { depth: 0.442, position: [-6.1, -6.6, -8.2], target: [2, -10.6, -28], roll: -0.01, fov: 49 }, // lock-on — the target snaps to the hub, the push begins along the view ray
-  { depth: 0.454, position: [0.33, -9.78, -23.9], target: [4.2, -11.7, -33.5], roll: 0, fov: 49 }, // 4.5 u out — the glow fills the frame; target pushed THROUGH the center so the ray never degenerates
-  { depth: 0.464, position: [3.3, -11.2, -31.2], target: [1.5, -17, -38], roll: 0, fov: 48.5 }, // out the far side — aim easing down toward the coil zone
+  // --- The coil band (third scale), 5.6 hub-dive — TOP entry (user note):
+  // after the hold the camera crests OVER the tree and plunges DOWN through
+  // the glowing hub's crown (world ≈ [2,-10.6,-28], r≈2). Mechanically the
+  // descent continues straight to the coil waiting below; visually the
+  // clean glow face fills the frame instead of the limbs' jagged
+  // silhouettes. The swelling glow + fog spike + bloom swell own the frame
+  // through the crossing (the arbor has already dissolved to fog color, so
+  // the near-plane pass is fog-on-fog), and the spool resolves out of the
+  // same glow beneath. No frame holds tree and coil as simultaneous
+  // subjects. The three dive knots are non-anchor — the reduced-motion
+  // track still cuts 0.41 → 0.48 → 0.565. Plunge targets keep a small
+  // lateral offset off the straight-down axis (same guard as the 0.175
+  // overhead knots — an exactly-vertical view degenerates the lookAt up
+  // vector). Tuned in the descent-preview harness. ---
+  { depth: 0.442, position: [-3.5, -1.5, -16], target: [2, -10.6, -28], roll: -0.005, fov: 49 }, // crest — swinging up and over the canopy, target locked on the glowing crown below-ahead
+  { depth: 0.454, position: [2, -5.4, -24.1], target: [2.4, -18, -30], roll: 0, fov: 49 }, // steep dive from upper-front — the plunge line is biased forward so it crosses the sphere's glowing front-top QUADRANT, never the dark limb junction at the crown
+  { depth: 0.464, position: [2.3, -15.8, -28.7], target: [0.5, -23, -36], roll: 0, fov: 48.5 }, // out the underside — still descending, aim easing onto the coil below
   {
     depth: 0.48,
     position: [11, -19.5, -21],
-    target: [-6.5, -24.5, -40.5],
+    target: [-6.5, -23.8, -40.5],
     roll: 0.01,
     fov: 48,
     reducedAnchor: true,
-  }, // spool resolved, broadside orbital — the fiber-visible beat, column lower-right of the fading intro
-  { depth: 0.52, position: [11, -30, -52], target: [-0.5, -25.5, -39], roll: -0.01, fov: 47 }, // the sweep orbits behind and below — reads as thread parallax, not framing change (the annotation window, stage 5.4)
+  }, // spool resolved, broadside orbital from just above its shoulder — the fiber-visible beat; target aimed a touch high so the column sits low in frame (user note: never a monolith towering overhead)
+  { depth: 0.52, position: [10, -22, -52], target: [-0.5, -27, -39], roll: -0.01, fov: 47 }, // the sweep orbits behind at shoulder height, gazing gently DOWN — the annotation window keeps a human POV instead of the old under-and-up plunge
   {
     depth: 0.565,
-    position: [-8, -29.5, -54.5],
-    target: [-3, -26.8, -36.5],
+    position: [-9, -23, -53.5],
+    target: [-2.5, -28, -37],
     roll: 0,
     fov: 50,
     reducedAnchor: true,
-  }, // settled hold, target pulled past the cluster so it rests on the left third — echoes the arbor settle, annotation room right (≈ SCALE_BOUNDARIES[4])
+  }, // settled hold above the shoulder line, target pulled past the cluster so it rests low on the left third — annotation room right (≈ SCALE_BOUNDARIES[4])
   {
     depth: 1.0,
     position: [0, -46, -14],

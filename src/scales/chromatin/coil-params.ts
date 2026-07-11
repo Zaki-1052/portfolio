@@ -130,12 +130,16 @@ const LOOK_DEFAULTS: CoilLookParams = {
   causticAmp: 0.18,
   causticScale: 0.45,
   wrapShadow: 0.35,
-  // Teal biolume cord (5.6): a dark slate-teal body whose light lives in
-  // the bright cyan core filament — the old full-value champagne cord
-  // outlined every silhouette and read as fondant.
-  threadColor: '#3f7d8a',
+  // Teal biolume cord (5.6): a slate-teal body whose light lives in the
+  // bright cyan core filament — the old full-value champagne cord outlined
+  // every silhouette and read as fondant. Body sits close to the drum
+  // wall's value (face-on fix: a much darker cord read as cracks cut INTO
+  // the wall, not a cord raised on it).
+  threadColor: '#4c8d9b',
   threadCoreColor: '#7fe3f2',
-  threadRadius: 0.055,
+  // 5.6 face-on fix: a chunkier cord — at 0.055 the wraps read as thin
+  // cracks against the wall when a drum faces the camera.
+  threadRadius: 0.07,
   threadEmissive: 1.0,
   threadAo: 0.6,
   threadPulseCount: 3,

@@ -13,6 +13,7 @@ uniform float uWobble; // drift amplitude (world units)
 uniform float uRise; // upward conveyor speed (units/s; embers)
 uniform float uRiseRange; // vertical wrap band (0 disables the conveyor)
 uniform float uMaxPx; // point-size ceiling (7 = classic mote; large = bokeh disc)
+uniform float uTwinkle; // per-point brightness pulse depth (0 = steady glow)
 uniform vec2 uCurrentDir; // shared traveling-wave current (amp 0 disables)
 uniform float uCurrentAmp;
 uniform float uCurrentFreq;
@@ -49,6 +50,9 @@ void main() {
   // Near fade (nothing smears across the lens as the camera flies through)
   // and a far fade so the field doesn't end at a hard shell.
   vAlpha = smoothstep(uFadeNear.x, uFadeNear.y, dist) * (1.0 - smoothstep(uFadeFar.x, uFadeFar.y, dist));
+  // Twinkle: a slow per-point brightness pulse (each point on its own
+  // phase) — zero-depth for the classic fields, so they stay byte-identical.
+  vAlpha *= mix(1.0, 0.5 + 0.5 * sin(uTime * 1.7 + aSeed * 44.7), uTwinkle);
 
   float worldSize = uSize.x + uSize.y * fract(aSeed * 13.7);
   gl_PointSize = clamp(worldSize * uPixelScale / dist, 1.0, uMaxPx);

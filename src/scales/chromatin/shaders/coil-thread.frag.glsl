@@ -72,8 +72,8 @@ void main() {
   float b = 0.5 + 0.5 * sin(vT * 6.2831 * uPulseCount - uTime * uShimmerSpeed);
   float pulse = b * b * b;
   pulse *= pulse; // ^6 — distinct traveling packets, not banding
-  float coreK = pow(max(dot(N, V), 0.0), 1.5);
-  color += uCoreColor * uThreadEmissive * coreK * (0.55 + 0.45 * pulse);
+  float coreK = pow(max(dot(N, V), 0.0), 1.3);
+  color += uCoreColor * uThreadEmissive * coreK * (0.65 + 0.35 * pulse);
 
   // Focus dim: the cord outside an unwound region recedes with the drums.
   float mine = step(abs(vRegion - uFocusRegion), 0.5);

@@ -97,6 +97,12 @@ void main() {
   color += hubGlow *
     (hubK * uHubGlowStrength * (mix(0.25, 0.7, uHubFill) + 0.75 * pow(ndv, 1.4)) *
       (0.55 + 0.65 * grain2));
+  // Fill spill (5.6 top dive): as the swell peaks, the light spills over the
+  // WHOLE structure — strong enough that the limbs crossing the glow cross
+  // the bloom threshold WITH it, so the tree ignites into one body of light
+  // as it dissolves instead of eclipsing the orb with dark shapes. Squared
+  // so the spill arrives late in the swell.
+  color += hubGlow * (uHubFill * uHubFill * 0.75);
 
   // Focus dim: while a branch is focused the other limbs recede; the shared
   // trunk (vLimb < 0) never dims. Hover lifts its limb slightly.

@@ -13,6 +13,11 @@ export interface CoilWaterParams {
    *  field — smaller, dimmer, denser than the old twinkle motes). */
   siltCount: number;
   siltOpacity: number;
+  /** Sparkle: the band's twinkling star-points (user-requested return of
+   *  the pre-5.6 vibe, sparser) — brighter than silt, each pulsing on its
+   *  own phase. */
+  sparkleCount: number;
+  sparkleOpacity: number;
   /** Near-field bokeh: sparse large soft discs close to the lens — the
    *  out-of-focus foreground that sells "inside a medium". */
   bokehCount: number;
@@ -39,6 +44,8 @@ export interface CoilWaterParams {
 export const COIL_WATER_DEFAULTS: CoilWaterParams = {
   siltCount: 650,
   siltOpacity: 0.32,
+  sparkleCount: 150,
+  sparkleOpacity: 0.45,
   bokehCount: 60,
   bokehOpacity: 0.35,
   bokehMaxPx: 64,

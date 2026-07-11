@@ -20,12 +20,12 @@ import { smoothstep } from '@/utils/math';
 // Depth window (canonical 0..1). 5.6 retime: the column resolves only
 // AFTER the hub-dive's fill beat (the glow-filled frame stays clean of
 // text) and is mostly gone before CoilAnnotations begins its reveal
-// (0.505), so the two text layers never fight. These four numbers are the
+// (0.5), so the two text layers never fight. These four numbers are the
 // tuning knob.
-const REVEAL_START = 0.465;
-const REVEAL_END = 0.487;
-const FADE_START = 0.498;
-const FADE_END = 0.52;
+const REVEAL_START = 0.462;
+const REVEAL_END = 0.478;
+const FADE_START = 0.49;
+const FADE_END = 0.51;
 
 // Resolve-from-haze magnitudes at zero envelope (fully faded): the column
 // sits this much lower and blurrier, then sharpens/settles as it peaks.

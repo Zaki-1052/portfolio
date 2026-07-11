@@ -45,11 +45,12 @@ export function focusPoseFor(branch: BranchKey): CameraSample {
 // Region focus (third band): the open arc is wide (~13 across at full
 // unwind on the 5.5 rising-coil packing) and the dimmed compact spool should
 // stay in frame behind it, so the stand-off is much longer than the limb
-// poses'. Lengthened 17 → 20 in the 5.5 retune: the wound thread swings out
-// with the drums, and the publication card needs clear air in front of the
-// opened composition.
-const REGION_FOCUS_DISTANCE = 20;
-const REGION_FOCUS_LIFT = 2;
+// poses'. 5.6 retune (user note): the old near-level pose read as tendrils
+// lunging at the lens — the lift now raises the camera well above the
+// opened arc so it looks gently DOWN at a specimen laid out below, matching
+// the band's above-the-shoulder POV.
+const REGION_FOCUS_DISTANCE = 19;
+const REGION_FOCUS_LIFT = 6;
 const REGION_FOCUS_FOV = 45;
 
 /**

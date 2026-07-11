@@ -142,12 +142,13 @@ export function CoilAtmosphere({ origin = COIL_ORIGIN }: CoilAtmosphereProps) {
 
   // Fine suspended silt — the volume-filling particulate. Buoyant sway
   // (slow rise + wobble + current), dim and desaturated: presence, not
-  // twinkle. First "water" signal inside the transition's fill beat.
+  // twinkle. First "water" signal inside the transition's fill beat. The
+  // wide shell keeps particles in frame from the region-focus poses too.
   const silt = useMemo<DriftConfig>(
     () => ({
       count: water.siltCount,
       rInner: 2.5,
-      rOuter: 20,
+      rOuter: 26,
       color: '#7fb4d8',
       palette: ['#6fa3c4', '#7fb4d8', '#6fc7d8', '#7c93b8'],
       size: [0.12, 0.2],
@@ -159,6 +160,32 @@ export function CoilAtmosphere({ origin = COIL_ORIGIN }: CoilAtmosphereProps) {
       current,
       opacityAt: (depth) =>
         water.siltOpacity * smoothstep(0.455, 0.475, depth) * (1 - smoothstep(0.55, 0.585, depth)),
+    }),
+    [water, current],
+  );
+
+  // Sparkle — the band's twinkling star-points (the pre-5.6 vibe, sparser):
+  // the old mote recipe with a per-point brightness pulse, riding the same
+  // current so the stars belong to the water.
+  const sparkle = useMemo<DriftConfig>(
+    () => ({
+      count: water.sparkleCount,
+      rInner: 2.5,
+      rOuter: 22,
+      color: '#7fb4e8',
+      palette: ['#61afef', '#7fb4e8', '#8d94cf', '#6fc7d8'],
+      size: [0.26, 0.42],
+      wobble: 0.55,
+      rise: 0.05,
+      riseRange: 4,
+      fadeNear: [1.2, 3],
+      fadeFar: [26, 48],
+      twinkle: 0.85,
+      current,
+      opacityAt: (depth) =>
+        water.sparkleOpacity *
+        smoothstep(0.455, 0.475, depth) *
+        (1 - smoothstep(0.55, 0.585, depth)),
     }),
     [water, current],
   );
@@ -216,6 +243,7 @@ export function CoilAtmosphere({ origin = COIL_ORIGIN }: CoilAtmosphereProps) {
       {!reduced && (
         <>
           <DriftField config={silt} />
+          <DriftField config={sparkle} />
           <CoilBubbles water={water} />
           <group position={[BOKEH_OFFSET[0], BOKEH_OFFSET[1], BOKEH_OFFSET[2]]}>
             <DriftField config={bokeh} />

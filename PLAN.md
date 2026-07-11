@@ -52,6 +52,18 @@ sidecar plan files are invisible to that). Keep it updated as stages complete.
 > fix), ring ornament's WALL bands cut to 0.3× (the melted-stripe read came
 > from wall banding + slit-gap wraps, not only the vT·90 shimmer).
 > Session log: `logs/2026-07-10_phase-5.6-underwater-refinement.md`.
+>
+> **Feedback round (2026-07-10, 7 user notes) — implemented:** top-entry
+> hub dive (crest over the canopy, plunge through the crown's glowing
+> front-top quadrant) + a `uHubFill²` glow spill (×0.75) that ignites the
+> whole tree at the fill peak; twinkle sparkle layer restored (150 pts, new
+> defaulted `uTwinkle` mote-shader pulse); main view re-posed to the coil's
+> shoulder gazing gently down (0.52/0.565 knots raised ~7 u; intro
+> 0.462→0.478 / 0.49→0.51; annotations 0.5→0.525); thread face-on fix
+> (RADIAL 8, radius 0.07, body #4c8d9b near-wall value, core floor 0.65);
+> card backdrop deepened + meta text brightened; focus pose lifted
+> (LIFT 6 / DIST 19) with the silt shell widened so atmosphere stays in
+> frame at focus poses. Re-verified: 60 fps sweeps, 208 tests, build clean.
 
 | Stage | Scope | Harness | Status |
 |---|---|---|---|

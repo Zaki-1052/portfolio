@@ -38,9 +38,10 @@ const PUCK_RADIAL = 28;
 // boundary rows on the cap edge and wall top).
 const PUCK_BEVEL_STEPS = [Math.PI / 8, Math.PI / 4, (3 * Math.PI) / 8];
 
-// Wound-thread tube tessellation: 6 radial segments — a lit solid cord with
-// a specular edge, not the old 4-sided additive glow line.
-const THREAD_RADIAL = 6;
+// Wound-thread tube tessellation: 8 radial segments (5.6 face-on fix — at
+// 6 the interpolation bands split the cord into two dark rails when a wrap
+// faces the camera; 8 rounds the highlight into one continuous core).
+const THREAD_RADIAL = 8;
 
 // Cinch-knob template: a small squashed dome stud, 6×10 lattice — reads
 // round under the rim highlight at its ~0.11-unit size.
