@@ -155,27 +155,29 @@ const LOOK_DEFAULTS: CoilLookParams = {
   threadColor: '#4c8d9b',
   threadCoreColor: '#7fe3f2',
   // Double-helix duplex: two thin strands (strandRadius) offset ±helixRadius
-  // off the axis give an envelope Ø ≈ 0.23 — ~1.6× the old single cord, so the
-  // wrap reads substantial while each strand stays delicate. twistPitch 2.0
-  // world-units/turn → a few visible twists per wrap (legible, not busy).
-  // linkerWidthScale 0.6 tapers the linkers slim between the wraps.
-  strandRadius: 0.04,
-  helixRadius: 0.075,
-  twistPitch: 2.0,
+  // off the axis give an envelope Ø ≈ 0.18 — ~18% of the disc diameter, close
+  // to the real ~20% DNA-to-octamer ratio, so the wire reads clearly THINNER
+  // than the disc and its turns leave gaps instead of a solid caging mass.
+  // twistPitch 2.4 world-units/turn → a gentle twist (~2–3 crossings per wrap,
+  // orderly not tangled). linkerWidthScale 0.6 tapers the linkers slim.
+  strandRadius: 0.03,
+  helixRadius: 0.06,
+  twistPitch: 2.4,
   linkerWidthScale: 0.6,
   // Sparse base-pair rungs — occasional cross-bars, restrained enough to stay
   // organic underwater.
   rungRadius: 0.018,
-  rungSpacing: 1.0,
+  rungSpacing: 0.6,
   threadEmissive: 1.0,
   // The per-strand occlusion rotates with the twist (more dynamic than the old
   // static tube bake), so it sits a touch lighter than the old 0.6.
   threadAo: 0.45,
   threadPulseCount: 3,
-  // The superhelical wind of the duplex axis around each drum — biological
-  // ~1.65–2; the double-helix twist now carries the "wound" read, so fewer
-  // axis turns than the old single-cord 2.6.
-  wrapTurns: 1.75,
+  // The superhelical wind of the duplex axis around each drum — the exact
+  // nucleosomal ~1.65 turns; its fractional part (0.65) also lands each wrap's
+  // exit facing the next drum, so the linkers route cleanly (the double-helix
+  // twist carries the "wound" read, so far fewer axis turns than the old 2.6).
+  wrapTurns: 1.65,
   shimmerSpeed: 0.6,
   knobColor: '#45737f',
   knobSize: 0.11,

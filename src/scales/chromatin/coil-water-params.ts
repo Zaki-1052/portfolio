@@ -44,8 +44,8 @@ export interface CoilWaterParams {
 export const COIL_WATER_DEFAULTS: CoilWaterParams = {
   siltCount: 650,
   siltOpacity: 0.32,
-  sparkleCount: 150,
-  sparkleOpacity: 0.45,
+  sparkleCount: 200,
+  sparkleOpacity: 0.7,
   bokehCount: 60,
   bokehOpacity: 0.35,
   bokehMaxPx: 64,

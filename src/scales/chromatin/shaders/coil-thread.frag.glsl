@@ -38,6 +38,7 @@ varying float vT;
 varying float vRegion;
 varying float vShade;
 varying float vStrand;
+varying float vLinker;
 
 void main() {
   vec3 N = normalize(vWorldNormal);
@@ -65,6 +66,13 @@ void main() {
   // and where adjacent turns crowd it — the contact shadow that seats the
   // winding on the drum. Bridges carry it only near their junctions.
   color *= 1.0 - uThreadAo * vShade;
+
+  // Linker DNA reads as distinct connective strand: the bridges between drums
+  // recede (darker + slightly cooler) so the eye traces wrap → linker → wrap
+  // along the fiber, not a field of identical discs-with-wires. Applied before
+  // the core glow so the filament still runs continuously through the linkers.
+  color *= mix(1.0, 0.78, vLinker);
+  color = mix(color, color * vec3(0.9, 0.97, 1.06), vLinker * 0.5);
 
   // Bioluminescent core: brightest where the tube faces the camera — a
   // filament INSIDE the cord, not a painted-on brightness. It carries a

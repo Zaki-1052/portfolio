@@ -54,6 +54,25 @@ too thick, wraps too thin, and nothing had helix shape.
   (cost gate < 2ms after ~1.6× vert count) and visual preview at
   `http://localhost:5173/chromatin-preview.html` (spin, region open, seed sweep).
 
+## Follow-up tweaks (same session, post-preview feedback)
+
+- Sparkles: `sparkleCount 150→200`, `sparkleOpacity 0.45→0.70` (coil-water-params).
+- `rungSpacing 1.0→0.6` (more frequent base-pair bars).
+- **Linker traceability**: new static `aLinker` attribute (0=wrap, 1=bridge) →
+  `vLinker`; the frag darkens + slightly cools the linker segments so the eye
+  can trace wrap→linker→wrap along the fiber (addresses "reads as discs-with-
+  wires" feedback). Left drum-spacing/jitter alone (whole-composition change —
+  `jitter` is the lever if wanted).
+- **Thin-wire / orderly-wrap pass** (third AI: "wrapping too chaotic / wire too
+  thick, reads as caging not wrapping"): `strandRadius 0.04→0.03`,
+  `helixRadius 0.075→0.06` (envelope Ø 0.23→~0.18, ≈18% of disc — the real
+  DNA↔octamer ratio; thinner turns leave gaps instead of a solid mass),
+  `twistPitch 2.0→2.4` (gentler twist, fewer crossings), `wrapTurns 1.75→1.65`
+  (exact nucleosomal turn count; frac 0.65 also routes linkers cleaner). Unwind
+  cost gate measured 0.494 ms (< 2 ms). Not yet done: the deeper "DNA enters/
+  exits the same side of the disc" ask (would touch wrapEntryAzimuth + bridge
+  docking) — deferred unless still needed after this pass.
+
 ## Open items
 
 - Visual bless of defaults in the isolated preview (`strandRadius`, `helixRadius`,

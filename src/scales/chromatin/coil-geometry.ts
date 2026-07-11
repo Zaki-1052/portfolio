@@ -328,6 +328,7 @@ export function buildThreadGeometry(nodes: CoilNode[], opts: ThreadPathOpts): Bu
   const aSeedB = new Float32Array(totalVerts);
   const aDriftMix = new Float32Array(totalVerts);
   const aStrand = new Float32Array(totalVerts);
+  const aLinker = new Float32Array(totalVerts); // 0 = wrap, 1 = linker/bridge
   const indices: number[] = [];
 
   // Per-axis-point metadata: describes which drum(s) the sample belongs to —
@@ -338,6 +339,7 @@ export function buildThreadGeometry(nodes: CoilNode[], opts: ThreadPathOpts): Bu
   const sap = new Float32Array(totalPoints);
   const sbp = new Float32Array(totalPoints);
   const dmp = new Float32Array(totalPoints);
+  const lp = new Float32Array(totalPoints);
   {
     let pt = 0;
     for (let i = 0; i < n; i++) {
@@ -349,6 +351,7 @@ export function buildThreadGeometry(nodes: CoilNode[], opts: ThreadPathOpts): Bu
         sap[pt] = seed;
         sbp[pt] = seed;
         dmp[pt] = 0;
+        lp[pt] = 0;
         pt++;
       }
       if (i === n - 1) break;
@@ -361,6 +364,7 @@ export function buildThreadGeometry(nodes: CoilNode[], opts: ThreadPathOpts): Bu
         sap[pt] = seed;
         sbp[pt] = nextSeed;
         dmp[pt] = s / (BRIDGE_SAMPLES - 1);
+        lp[pt] = 1;
         pt++;
       }
     }
@@ -378,6 +382,7 @@ export function buildThreadGeometry(nodes: CoilNode[], opts: ThreadPathOpts): Bu
         aSeedB[v] = sbp[pt]!;
         aDriftMix[v] = dmp[pt]!;
         aStrand[v] = strand;
+        aLinker[v] = lp[pt]!;
       }
     }
   }
@@ -391,6 +396,7 @@ export function buildThreadGeometry(nodes: CoilNode[], opts: ThreadPathOpts): Bu
       aSeedB[v] = sbp[pt]!;
       aDriftMix[v] = dmp[pt]!;
       aStrand[v] = 0; // rungs share strand A's pulse phase
+      aLinker[v] = lp[pt]!;
     }
   }
 
@@ -439,6 +445,7 @@ export function buildThreadGeometry(nodes: CoilNode[], opts: ThreadPathOpts): Bu
   geo.setAttribute('aSeedB', new BufferAttribute(aSeedB, 1));
   geo.setAttribute('aDriftMix', new BufferAttribute(aDriftMix, 1));
   geo.setAttribute('aStrand', new BufferAttribute(aStrand, 1));
+  geo.setAttribute('aLinker', new BufferAttribute(aLinker, 1));
   geo.setIndex(indices);
   geo.userData.rungPointIdx = rungPointIdx;
   geo.userData.rungCount = rungCount;
