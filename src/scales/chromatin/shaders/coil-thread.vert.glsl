@@ -21,6 +21,7 @@ attribute float aSeedA;
 attribute float aSeedB;
 attribute float aDriftMix;
 attribute float aShade;
+attribute float aStrand; // 0 = strand A (and rungs), 1 = strand B
 
 varying vec3 vWorldNormal;
 varying vec3 vViewDir;
@@ -28,6 +29,7 @@ varying float vViewDist;
 varying float vT;
 varying float vRegion;
 varying float vShade;
+varying float vStrand;
 
 // Identical to the bead vert's drift — same frequencies, same phase layout.
 vec3 driftFor(float seed) {
@@ -42,6 +44,7 @@ void main() {
   vT = aT;
   vRegion = aRegion;
   vShade = aShade;
+  vStrand = aStrand;
 
   vec3 drift = mix(driftFor(aSeedA), driftFor(aSeedB), aDriftMix) * uDriftAmp;
   vec3 swayed = position + drift;

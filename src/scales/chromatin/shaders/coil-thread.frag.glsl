@@ -37,6 +37,7 @@ varying float vViewDist;
 varying float vT;
 varying float vRegion;
 varying float vShade;
+varying float vStrand;
 
 void main() {
   vec3 N = normalize(vWorldNormal);
@@ -68,8 +69,10 @@ void main() {
   // Bioluminescent core: brightest where the tube faces the camera — a
   // filament INSIDE the cord, not a painted-on brightness. It carries a
   // slow traveling pulse: uPulseCount soft packets along the whole cord
-  // (frozen mid-beat at uTime = 0 under reduced motion).
-  float b = 0.5 + 0.5 * sin(vT * 6.2831 * uPulseCount - uTime * uShimmerSpeed);
+  // (frozen mid-beat at uTime = 0 under reduced motion). The two backbone
+  // strands run their packets a half-cycle out of phase (vStrand·π) so they
+  // read as two independent strands, not one blurred cord.
+  float b = 0.5 + 0.5 * sin(vT * 6.2831 * uPulseCount - uTime * uShimmerSpeed + vStrand * 3.14159);
   float pulse = b * b * b;
   pulse *= pulse; // ^6 — distinct traveling packets, not banding
   float coreK = pow(max(dot(N, V), 0.0), 1.3);

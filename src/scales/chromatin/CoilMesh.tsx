@@ -81,10 +81,17 @@ interface CoilMeshProps {
  *  params change (memoized in `built`), never on the tween path. */
 function threadOptsFor(p: CoilParams): ThreadPathOpts {
   return {
-    threadRadius: p.threadRadius,
+    // Soft guard: the two strands can only self-intersect if the offset drops
+    // below the strand radius; keep the offset clear of a bad manual combo.
+    strandRadius: p.strandRadius,
+    helixRadius: Math.max(p.helixRadius, p.strandRadius * 1.3),
+    twistPitch: p.twistPitch,
+    linkerWidthScale: p.linkerWidthScale,
     wrapTurns: p.wrapTurns,
     beadAspect: p.beadAspect,
     linkerSag: p.linkerSag,
+    rungRadius: p.rungRadius,
+    rungSpacing: p.rungSpacing,
   };
 }
 

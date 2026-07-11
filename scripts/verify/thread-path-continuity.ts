@@ -7,16 +7,23 @@ import { COIL_GROWTH_DEFAULTS, generateCoil } from '@/utils/coil-generator';
 import {
   BRIDGE_SAMPLES,
   WRAP_SAMPLES,
+  cumulativeArcLength,
+  computeTwistPhase,
   sampleThreadPath,
   threadPointCount,
   type ThreadPathOpts,
 } from '@/scales/chromatin/coil-thread-path';
 
 const OPTS: ThreadPathOpts = {
-  threadRadius: 0.08,
+  strandRadius: 0.04,
+  helixRadius: 0.075,
+  twistPitch: 2.0,
+  linkerWidthScale: 0.6,
   wrapTurns: 1.75,
   beadAspect: COIL_GROWTH_DEFAULTS.beadAspect,
   linkerSag: COIL_GROWTH_DEFAULTS.linkerSag,
+  rungRadius: 0.018,
+  rungSpacing: 1.0,
 };
 
 function sampleAt(region: 0 | 1, openT: number): Float32Array {
@@ -26,6 +33,31 @@ function sampleAt(region: 0 | 1, openT: number): Float32Array {
   const ups = new Float32Array(out.length);
   sampleThreadPath(nodes, OPTS, out, sides, ups);
   return out;
+}
+
+// Derived strand-A centers — where a broken twist rebase would pop even when
+// the axis path stays smooth. The offending signature is a step-INVARIANT jump.
+function strandAAt(region: 0 | 1, openT: number): Float32Array {
+  const nodes = generateCoil(COIL_GROWTH_DEFAULTS, { region, openT });
+  const total = threadPointCount(nodes.length);
+  const pts = new Float32Array(total * 3);
+  const sides = new Float32Array(total * 3);
+  const ups = new Float32Array(total * 3);
+  sampleThreadPath(nodes, OPTS, pts, sides, ups);
+  const arc = new Float32Array(total);
+  cumulativeArcLength(pts, total, arc);
+  const psi = new Float32Array(total);
+  computeTwistPhase(nodes.length, sides, ups, arc, OPTS.twistPitch, psi);
+  const a = new Float32Array(total * 3);
+  for (let i = 0; i < total; i++) {
+    const k = i * 3;
+    const c = Math.cos(psi[i]!);
+    const s = Math.sin(psi[i]!);
+    a[k] = pts[k]! + OPTS.helixRadius * (c * sides[k]! + s * ups[k]!);
+    a[k + 1] = pts[k + 1]! + OPTS.helixRadius * (c * sides[k + 1]! + s * ups[k + 1]!);
+    a[k + 2] = pts[k + 2]! + OPTS.helixRadius * (c * sides[k + 2]! + s * ups[k + 2]!);
+  }
+  return a;
 }
 
 function maxMove(a: Float32Array, b: Float32Array): { move: number; point: number } {
@@ -88,6 +120,32 @@ for (const region of [0, 1] as const) {
     const a = sampleAt(region, hotT - step);
     const b = sampleAt(region, hotT);
     const { move, point } = maxMove(a, b);
+    console.log(`  step ${step}: move ${move.toFixed(4)} at ${locate(point)}`);
+  }
+}
+
+// Same step-scaling probe on the DERIVED strand-A centers — a broken twist
+// rebase shows as a step-invariant jump here even while the axis probe above
+// stays clean.
+console.log('\n=== derived strand-A step-scaling probe ===');
+for (const region of [0, 1] as const) {
+  let hotT = 0;
+  let hotMove = 0;
+  let prev = strandAAt(region, 0);
+  for (let t = 0.01; t <= 1.0001; t += 0.01) {
+    const cur = strandAAt(region, t);
+    const { move } = maxMove(prev, cur);
+    if (move > hotMove) {
+      hotMove = move;
+      hotT = t;
+    }
+    prev = cur;
+  }
+  console.log(
+    `region ${region}: hottest strand-A window ends at openT=${hotT.toFixed(3)} (move ${hotMove.toFixed(3)})`,
+  );
+  for (const step of [0.01, 0.005, 0.0025, 0.00125, 0.000625]) {
+    const { move, point } = maxMove(strandAAt(region, hotT - step), strandAAt(region, hotT));
     console.log(`  step ${step}: move ${move.toFixed(4)} at ${locate(point)}`);
   }
 }

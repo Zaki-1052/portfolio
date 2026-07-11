@@ -1,15 +1,17 @@
 // src/scales/chromatin/coil-geometry.ts
 // Coil bead list → GPU resources, three instanced/merged layers: an
 // InstancedMesh of beveled drum beads (ONE shared puck template, per-bead
-// placement in instance matrices), one merged tube sweep of the wound amber
-// thread (per-drum rim wraps + free bridges, path math in coil-thread-path),
-// and an InstancedMesh of cinch knobs at each drum's thread entry/exit.
+// placement in instance matrices), one merged tube sweep of the wound DNA-style
+// double-helix thread (two backbone strands twisting around the coil-thread-path
+// axis + sparse rung bars), and an InstancedMesh of cinch knobs at each drum's
+// thread entry/exit.
 //
 // Approach-B contract: the unwind engine re-runs the generator per animation
 // tick and pushes the new state through the write* functions here — instance
-// matrix writes for beads and knobs, a position/normal rewrite-in-place for
-// the thread. Buffer SIZES are open-state invariant (bead count and segment
-// topology never change), so the writers never reallocate.
+// matrix writes for beads and knobs, a position/normal/aShade rewrite-in-place
+// for the thread. Buffer SIZES are open-state invariant (bead count and segment
+// topology never change — rung count is fixed at build), so the writers never
+// reallocate.
 import {
   BufferAttribute,
   BufferGeometry,
@@ -23,6 +25,8 @@ import {
   BRIDGE_SAMPLES,
   WRAP_SAMPLES,
   WRAP_Z_FRACTION,
+  cumulativeArcLength,
+  computeTwistPhase,
   knobPlacements,
   sampleThreadPath,
   threadPointCount,
@@ -38,10 +42,13 @@ const PUCK_RADIAL = 28;
 // boundary rows on the cap edge and wall top).
 const PUCK_BEVEL_STEPS = [Math.PI / 8, Math.PI / 4, (3 * Math.PI) / 8];
 
-// Wound-thread tube tessellation: 8 radial segments (5.6 face-on fix — at
-// 6 the interpolation bands split the cord into two dark rails when a wrap
-// faces the camera; 8 rounds the highlight into one continuous core).
-const THREAD_RADIAL = 8;
+// Backbone-strand tube tessellation: each of the two strands is a thin tube
+// swept with 6 radial segments — rounder than a hexagon at this small radius,
+// and modest since there are now two strands where there was one cord.
+const STRAND_RADIAL = 6;
+// Rung-bar tessellation: the sparse base-pair cross-bars are tiny and nearly
+// straight, so a 2-ring, 4-sided stub reads round enough.
+const RUNG_RADIAL = 4;
 
 // Cinch-knob template: a small squashed dome stud, 6×10 lattice — reads
 // round under the rim highlight at its ~0.11-unit size.
@@ -242,27 +249,19 @@ export function writeBeadInstances(mesh: InstancedMesh, nodes: CoilNode[]): void
   mesh.instanceMatrix.needsUpdate = true;
 }
 
-// Ring sweep tables — THREAD_RADIAL is fixed, so the per-ring trig is
+// Ring sweep tables — the radial counts are fixed, so the per-ring trig is
 // precomputed once for the whole module.
-const RING_COS = Array.from({ length: THREAD_RADIAL }, (_, r) =>
-  Math.cos((r / THREAD_RADIAL) * Math.PI * 2),
+const STRAND_COS = Array.from({ length: STRAND_RADIAL }, (_, r) =>
+  Math.cos((r / STRAND_RADIAL) * Math.PI * 2),
 );
-const RING_SIN = Array.from({ length: THREAD_RADIAL }, (_, r) =>
-  Math.sin((r / THREAD_RADIAL) * Math.PI * 2),
+const STRAND_SIN = Array.from({ length: STRAND_RADIAL }, (_, r) =>
+  Math.sin((r / STRAND_RADIAL) * Math.PI * 2),
 );
-
-// Static occlusion profiles for the cord's baked aShade (5.6): the wrap ring
-// basis always has side = radial-outward from the drum axis, so ring angle π
-// faces the drum wall (contact shadow) and ±π/2 face along the drum axis
-// (where adjacent turns crowd). Ring index → angle never changes, so these
-// are exact for wraps at every unwind tick — the attribute stays static.
-const RING_WALL_SHADE = Array.from(
-  { length: THREAD_RADIAL },
-  (_, r) => 0.45 * Math.pow(Math.max(0, -RING_COS[r]!), 1.5),
+const RUNG_COS = Array.from({ length: RUNG_RADIAL }, (_, r) =>
+  Math.cos((r / RUNG_RADIAL) * Math.PI * 2),
 );
-const RING_AXIAL_SHADE = Array.from(
-  { length: THREAD_RADIAL },
-  (_, r) => 0.35 * Math.pow(Math.abs(RING_SIN[r]!), 1.5),
+const RUNG_SIN = Array.from({ length: RUNG_RADIAL }, (_, r) =>
+  Math.sin((r / RUNG_RADIAL) * Math.PI * 2),
 );
 
 function smoothstep01(e0: number, e1: number, x: number): number {
@@ -271,151 +270,239 @@ function smoothstep01(e0: number, e1: number, x: number): number {
 }
 
 /**
- * One merged tube sweep of the wound thread — per drum, a helical wrap
- * around the rim, then a free bridge to the next drum's entry (path math and
- * point order in coil-thread-path). Structure (index buffer, aT, aRegion,
- * drift seeds, the baked aShade occlusion) is open-state invariant and
- * computed once here;
- * positions/normals are filled by writeThreadGeometry, which the unwind
- * engine re-calls per tick with the re-generated node state. Junction rings
- * are duplicated (wrap exit == bridge start by construction), so segments
- * never share vertices and the surface stays sealed through any frame phase.
- * No bounding sphere is maintained — the mesh renders with culling disabled
- * (the thread follows the drums out during the unwind).
+ * The wound thread as a DNA-style double helix: the coil-thread-path centerline
+ * is the duplex AXIS, and TWO thin backbone strands twist around it (offset by
+ * ±helixRadius at the twist phase ψ), joined by sparse rung bars. One merged
+ * geometry, one material — strand A verts, then strand B verts, then the rungs.
  *
- * Drift registration: the drums drift in their vertex shader, so the thread
- * carries the SAME formula — a per-vertex seed pair + blend factor (wrap
- * verts ride their drum exactly; bridge verts blend their two endpoint
- * drums). Without this the wound cord would visibly detach from a drifting
- * drum.
+ * Static per-vertex data (index buffer, aT, aRegion, drift seeds, aStrand) is
+ * open-state invariant and baked once here. Dynamic data — position, normal,
+ * and aShade (whose occlusion now rotates with ψ) — is rewritten every unwind
+ * tick by writeThreadGeometry. Junction rings are duplicated per strand (wrap
+ * exit == bridge start by construction), so segments never share vertices and
+ * each strand's surface stays sealed through any frame phase. No bounding
+ * sphere is maintained — the mesh renders with culling disabled.
+ *
+ * Rung count is fixed at build time from the compact path's arc length (so the
+ * buffers never resize during the unwind); their world spacing simply stretches
+ * with the strands as a region opens.
+ *
+ * Drift registration: the drums drift in their vertex shader, so both strands
+ * and the rungs carry the SAME formula — a per-vertex seed pair + blend factor,
+ * inherited from the axis sample they ride (wrap samples pin to one drum; bridge
+ * samples blend their two endpoint drums). Without this the winding would
+ * visibly detach from a drifting drum.
  */
 export function buildThreadGeometry(nodes: CoilNode[], opts: ThreadPathOpts): BufferGeometry {
   const n = nodes.length;
   const totalPoints = threadPointCount(n);
-  const vertCount = totalPoints * THREAD_RADIAL;
-  const aT = new Float32Array(vertCount);
-  const aRegion = new Float32Array(vertCount);
-  const aSeedA = new Float32Array(vertCount);
-  const aSeedB = new Float32Array(vertCount);
-  const aDriftMix = new Float32Array(vertCount);
-  const aShade = new Float32Array(vertCount);
+  const strandVerts = totalPoints * STRAND_RADIAL;
+
+  // Choose sparse rung anchor points by arc length along the COMPACT path.
+  // Build runs only on a param change, so this local sampling is off the
+  // per-tick path; the count is FIXED here (open-state invariant).
+  const cp = new Float32Array(totalPoints * 3);
+  const cs = new Float32Array(totalPoints * 3);
+  const cu = new Float32Array(totalPoints * 3);
+  sampleThreadPath(nodes, opts, cp, cs, cu);
+  const carc = new Float32Array(totalPoints);
+  cumulativeArcLength(cp, totalPoints, carc);
+  const spacing = opts.rungSpacing;
+  const rungCount = spacing > 1e-4 ? Math.max(0, Math.floor(carc[totalPoints - 1]! / spacing)) : 0;
+  const rungPointIdx = new Int32Array(rungCount);
+  {
+    let j = 0;
+    for (let r = 0; r < rungCount; r++) {
+      const target = (r + 0.5) * spacing;
+      while (j < totalPoints - 1 && carc[j]! < target) j++;
+      rungPointIdx[r] = j;
+    }
+  }
+
+  const rungBase = 2 * strandVerts;
+  const totalVerts = rungBase + rungCount * 2 * RUNG_RADIAL;
+
+  const aT = new Float32Array(totalVerts);
+  const aRegion = new Float32Array(totalVerts);
+  const aSeedA = new Float32Array(totalVerts);
+  const aSeedB = new Float32Array(totalVerts);
+  const aDriftMix = new Float32Array(totalVerts);
+  const aStrand = new Float32Array(totalVerts);
   const indices: number[] = [];
 
-  let point = 0;
-  let v = 0;
-  const pushRing = (
-    region: number,
-    seedA: number,
-    seedB: number,
-    mix: number,
-    wallK: number,
-    axialK: number,
-  ): void => {
-    const t = point / (totalPoints - 1);
-    for (let ring = 0; ring < THREAD_RADIAL; ring++) {
-      aT[v] = t;
-      aRegion[v] = region;
-      aSeedA[v] = seedA;
-      aSeedB[v] = seedB;
-      aDriftMix[v] = mix;
-      aShade[v] = wallK * RING_WALL_SHADE[ring]! + axialK * RING_AXIAL_SHADE[ring]!;
-      v++;
+  // Per-axis-point metadata: describes which drum(s) the sample belongs to —
+  // identical for both strands and any rung anchored there. Same drum/segment
+  // structure as the path's point order.
+  const tp = new Float32Array(totalPoints);
+  const rp = new Float32Array(totalPoints);
+  const sap = new Float32Array(totalPoints);
+  const sbp = new Float32Array(totalPoints);
+  const dmp = new Float32Array(totalPoints);
+  {
+    let pt = 0;
+    for (let i = 0; i < n; i++) {
+      const node = nodes[i]!;
+      const seed = hash01(i);
+      for (let s = 0; s < WRAP_SAMPLES; s++) {
+        tp[pt] = pt / (totalPoints - 1);
+        rp[pt] = node.region;
+        sap[pt] = seed;
+        sbp[pt] = seed;
+        dmp[pt] = 0;
+        pt++;
+      }
+      if (i === n - 1) break;
+      const next = nodes[i + 1]!;
+      const shared = node.region === next.region ? node.region : -1;
+      const nextSeed = hash01(i + 1);
+      for (let s = 0; s < BRIDGE_SAMPLES; s++) {
+        tp[pt] = pt / (totalPoints - 1);
+        rp[pt] = shared;
+        sap[pt] = seed;
+        sbp[pt] = nextSeed;
+        dmp[pt] = s / (BRIDGE_SAMPLES - 1);
+        pt++;
+      }
     }
-    point++;
-  };
-  const pushStrip = (ringCount: number, firstPoint: number): void => {
+  }
+
+  // Expand per-point metadata into each strand's ring, then the rungs.
+  for (let strand = 0; strand < 2; strand++) {
+    const base = strand * strandVerts;
+    for (let pt = 0; pt < totalPoints; pt++) {
+      for (let ring = 0; ring < STRAND_RADIAL; ring++) {
+        const v = base + pt * STRAND_RADIAL + ring;
+        aT[v] = tp[pt]!;
+        aRegion[v] = rp[pt]!;
+        aSeedA[v] = sap[pt]!;
+        aSeedB[v] = sbp[pt]!;
+        aDriftMix[v] = dmp[pt]!;
+        aStrand[v] = strand;
+      }
+    }
+  }
+  for (let r = 0; r < rungCount; r++) {
+    const pt = rungPointIdx[r]!;
+    for (let vv = 0; vv < 2 * RUNG_RADIAL; vv++) {
+      const v = rungBase + r * 2 * RUNG_RADIAL + vv;
+      aT[v] = tp[pt]!;
+      aRegion[v] = rp[pt]!;
+      aSeedA[v] = sap[pt]!;
+      aSeedB[v] = sbp[pt]!;
+      aDriftMix[v] = dmp[pt]!;
+      aStrand[v] = 0; // rungs share strand A's pulse phase
+    }
+  }
+
+  // Index strips: each strand tube segment-by-segment (wrap then bridge), with
+  // junction rings duplicated; then each rung's 2-ring stub.
+  const pushStrip = (base: number, firstPoint: number, ringCount: number, radial: number): void => {
     for (let s = 0; s < ringCount - 1; s++) {
-      for (let ring = 0; ring < THREAD_RADIAL; ring++) {
-        const r1 = (ring + 1) % THREAD_RADIAL;
-        const p0 = (firstPoint + s) * THREAD_RADIAL + ring;
-        const p1 = (firstPoint + s) * THREAD_RADIAL + r1;
-        const p2 = p0 + THREAD_RADIAL;
-        const p3 = p1 + THREAD_RADIAL;
+      for (let ring = 0; ring < radial; ring++) {
+        const r1 = (ring + 1) % radial;
+        const p0 = base + (firstPoint + s) * radial + ring;
+        const p1 = base + (firstPoint + s) * radial + r1;
+        const p2 = p0 + radial;
+        const p3 = p1 + radial;
         indices.push(p0, p2, p1, p1, p2, p3);
       }
     }
   };
-
-  for (let i = 0; i < n; i++) {
-    const node = nodes[i]!;
-    const seed = hash01(i);
-    // Adjacent-turn crowding: how tightly the wrap turns pack along the drum
-    // axis, in cord radii. Below ~2.5 radii the turns shade each other;
-    // fades out by 4 (at the shipping packing the turns sit apart, so this
-    // stays subtle — it earns its keep when wrapTurns is dialed up).
-    const zW = WRAP_Z_FRACTION * node.radius * opts.beadAspect;
-    const turnPitch = (2 * zW) / Math.max(opts.wrapTurns, 1e-3);
-    const adjacencyK = 1 - smoothstep01(2.5, 4, turnPitch / Math.max(opts.threadRadius, 1e-4));
-    const wrapFirst = point;
-    for (let s = 0; s < WRAP_SAMPLES; s++) pushRing(node.region, seed, seed, 0, 1, adjacencyK);
-    pushStrip(WRAP_SAMPLES, wrapFirst);
-    if (i === n - 1) break;
-    const next = nodes[i + 1]!;
-    const shared = node.region === next.region ? node.region : -1;
-    const nextSeed = hash01(i + 1);
-    const bridgeFirst = point;
-    for (let s = 0; s < BRIDGE_SAMPLES; s++) {
-      // The free span sheds its contact shadow: full at each junction ring
-      // (matching the coincident wrap ring so no seam shows), gone within a
-      // few samples of leaving the wall.
-      const wallK = Math.max(0, 1 - s / 2.5, 1 - (BRIDGE_SAMPLES - 1 - s) / 2.5);
-      pushRing(shared, seed, nextSeed, s / (BRIDGE_SAMPLES - 1), wallK, 0);
+  for (let strand = 0; strand < 2; strand++) {
+    const base = strand * strandVerts;
+    let fp = 0;
+    for (let i = 0; i < n; i++) {
+      pushStrip(base, fp, WRAP_SAMPLES, STRAND_RADIAL);
+      fp += WRAP_SAMPLES;
+      if (i === n - 1) break;
+      pushStrip(base, fp, BRIDGE_SAMPLES, STRAND_RADIAL);
+      fp += BRIDGE_SAMPLES;
     }
-    pushStrip(BRIDGE_SAMPLES, bridgeFirst);
+  }
+  for (let r = 0; r < rungCount; r++) {
+    pushStrip(rungBase + r * 2 * RUNG_RADIAL, 0, 2, RUNG_RADIAL);
   }
 
   const geo = new BufferGeometry();
-  const position = new BufferAttribute(new Float32Array(vertCount * 3), 3);
-  const normal = new BufferAttribute(new Float32Array(vertCount * 3), 3);
+  const position = new BufferAttribute(new Float32Array(totalVerts * 3), 3);
+  const normal = new BufferAttribute(new Float32Array(totalVerts * 3), 3);
+  const shade = new BufferAttribute(new Float32Array(totalVerts), 1);
   position.setUsage(DynamicDrawUsage);
   normal.setUsage(DynamicDrawUsage);
+  shade.setUsage(DynamicDrawUsage);
   geo.setAttribute('position', position);
   geo.setAttribute('normal', normal);
+  geo.setAttribute('aShade', shade);
   geo.setAttribute('aT', new BufferAttribute(aT, 1));
   geo.setAttribute('aRegion', new BufferAttribute(aRegion, 1));
   geo.setAttribute('aSeedA', new BufferAttribute(aSeedA, 1));
   geo.setAttribute('aSeedB', new BufferAttribute(aSeedB, 1));
   geo.setAttribute('aDriftMix', new BufferAttribute(aDriftMix, 1));
-  geo.setAttribute('aShade', new BufferAttribute(aShade, 1));
+  geo.setAttribute('aStrand', new BufferAttribute(aStrand, 1));
   geo.setIndex(indices);
+  geo.userData.rungPointIdx = rungPointIdx;
+  geo.userData.rungCount = rungCount;
   writeThreadGeometry(geo, nodes, opts);
   return geo;
 }
 
-// Path scratch for writeThreadGeometry — sized on first use, resized only
-// when the bead count changes (a dev-slider event); zero allocation on the
-// tween path.
+// Path + twist scratch for writeThreadGeometry — sized on first use, resized
+// only when the bead count changes (a dev-slider event); zero allocation on
+// the tween path.
 let _threadPts = new Float32Array(0);
 let _threadSides = new Float32Array(0);
 let _threadUps = new Float32Array(0);
+let _arc = new Float32Array(0);
+let _psi = new Float32Array(0);
 
 /**
- * Rewrite the thread tube positions/normals in place from a node state:
- * re-sample the wound path from the live transport frames, then sweep each
- * ring frame into THREAD_RADIAL vertices. The winding follows the unwind
- * naturally because the wrap is defined ON the drum's live frame.
+ * Rewrite the duplex positions/normals/aShade in place from a node state:
+ * re-sample the axis path + its arc length + the twist phase ψ, then per axis
+ * sample offset the two strands by ±effHelix along (cos ψ·side + sin ψ·up) and
+ * sweep each into STRAND_RADIAL vertices; finally sweep the sparse rungs
+ * between the two strand centers. The winding (and its twist) follows the
+ * unwind naturally because everything is defined ON the drum's live frame.
+ *
+ * Linker taper: bridge samples scale both radii down by radiusScale (1 at each
+ * junction → seamless with the flanking wrap, dipping to linkerWidthScale
+ * mid-span), so linkers read as slim delicate strands while the wraps stay
+ * full — most visible on the long stretched linkers of an open region.
  */
 export function writeThreadGeometry(
   geo: BufferGeometry,
   nodes: CoilNode[],
   opts: ThreadPathOpts,
 ): void {
-  const floats = threadPointCount(nodes.length) * 3;
+  const n = nodes.length;
+  const totalPoints = threadPointCount(n);
+  const floats = totalPoints * 3;
   if (_threadPts.length !== floats) {
     _threadPts = new Float32Array(floats);
     _threadSides = new Float32Array(floats);
     _threadUps = new Float32Array(floats);
+    _arc = new Float32Array(totalPoints);
+    _psi = new Float32Array(totalPoints);
   }
   sampleThreadPath(nodes, opts, _threadPts, _threadSides, _threadUps);
+  cumulativeArcLength(_threadPts, totalPoints, _arc);
+  computeTwistPhase(n, _threadSides, _threadUps, _arc, opts.twistPitch, _psi);
 
   const position = geo.getAttribute('position') as BufferAttribute;
   const normal = geo.getAttribute('normal') as BufferAttribute;
+  const shade = geo.getAttribute('aShade') as BufferAttribute;
   const pArr = position.array as Float32Array;
   const nArr = normal.array as Float32Array;
-  const rho = opts.threadRadius;
+  const shArr = shade.array as Float32Array;
 
-  let w = 0;
-  for (let k = 0; k < floats; k += 3) {
+  const cyc = WRAP_SAMPLES + BRIDGE_SAMPLES;
+  const strandVerts = totalPoints * STRAND_RADIAL;
+  const helixR = opts.helixRadius;
+  const strandR = opts.strandRadius;
+  const linkerScale = opts.linkerWidthScale;
+  let curAdj = 0;
+
+  for (let i = 0; i < totalPoints; i++) {
+    const k = i * 3;
     const px = _threadPts[k]!;
     const py = _threadPts[k + 1]!;
     const pz = _threadPts[k + 2]!;
@@ -425,25 +512,171 @@ export function writeThreadGeometry(
     const ux = _threadUps[k]!;
     const uy = _threadUps[k + 1]!;
     const uz = _threadUps[k + 2]!;
-    for (let ring = 0; ring < THREAD_RADIAL; ring++) {
-      const cos = RING_COS[ring]!;
-      const sin = RING_SIN[ring]!;
-      const nx = sx * cos + ux * sin;
-      const ny = sy * cos + uy * sin;
-      const nz = sz * cos + uz * sin;
-      pArr[w] = px + nx * rho;
+    const psi = _psi[i]!;
+    const c = Math.cos(psi);
+    const s = Math.sin(psi);
+    // Strand A offset direction (also its outward ring normal at ring 0) and
+    // its in-plane ring partner. Strand B is the diametric mirror.
+    const sAx = c * sx + s * ux;
+    const sAy = c * sy + s * uy;
+    const sAz = c * sz + s * uz;
+    const uAx = -s * sx + c * ux;
+    const uAy = -s * sy + c * uy;
+    const uAz = -s * sz + c * uz;
+
+    const cyclePos = i % cyc;
+    let wallK: number;
+    let axialK: number;
+    let scale: number;
+    if (cyclePos < WRAP_SAMPLES) {
+      if (cyclePos === 0) {
+        // Adjacent-turn crowding for this drum's wrap (in strand radii),
+        // recomputed once per wrap. Below ~2.5 the turns shade each other.
+        const node = nodes[(i / cyc) | 0]!;
+        const zW = WRAP_Z_FRACTION * node.radius * opts.beadAspect;
+        const turnPitch = (2 * zW) / Math.max(opts.wrapTurns, 1e-3);
+        curAdj = 1 - smoothstep01(2.5, 4, turnPitch / Math.max(strandR, 1e-4));
+      }
+      wallK = 1;
+      axialK = curAdj;
+      scale = 1;
+    } else {
+      const sb = cyclePos - WRAP_SAMPLES;
+      const capK = Math.max(0, 1 - sb / 2.5, 1 - (BRIDGE_SAMPLES - 1 - sb) / 2.5);
+      wallK = capK;
+      axialK = 0;
+      scale = linkerScale + (1 - linkerScale) * capK;
+    }
+    const effHelix = helixR * scale;
+    const effStrand = strandR * scale;
+
+    // Baked occlusion, now keyed to ψ (strand A faces the wall at ψ≈π, strand
+    // B at ψ≈0). Constant within each strand's own thin ring.
+    const ash = 0.35 * Math.pow(Math.abs(s), 1.5);
+    const shadeA = wallK * 0.45 * Math.pow(Math.max(0, -c), 1.5) + axialK * ash;
+    const shadeB = wallK * 0.45 * Math.pow(Math.max(0, c), 1.5) + axialK * ash;
+
+    const ax = px + effHelix * sAx;
+    const ay = py + effHelix * sAy;
+    const az = pz + effHelix * sAz;
+    const bx = px - effHelix * sAx;
+    const by = py - effHelix * sAy;
+    const bz = pz - effHelix * sAz;
+
+    // Strand A ring.
+    let w = i * STRAND_RADIAL * 3;
+    let vs = i * STRAND_RADIAL;
+    for (let ring = 0; ring < STRAND_RADIAL; ring++) {
+      const cc = STRAND_COS[ring]!;
+      const ss = STRAND_SIN[ring]!;
+      const nx = sAx * cc + uAx * ss;
+      const ny = sAy * cc + uAy * ss;
+      const nz = sAz * cc + uAz * ss;
+      pArr[w] = ax + nx * effStrand;
       nArr[w] = nx;
       w++;
-      pArr[w] = py + ny * rho;
+      pArr[w] = ay + ny * effStrand;
       nArr[w] = ny;
       w++;
-      pArr[w] = pz + nz * rho;
+      pArr[w] = az + nz * effStrand;
       nArr[w] = nz;
       w++;
+      shArr[vs++] = shadeA;
+    }
+    // Strand B ring (basis −sA, −uA → normals negate A's; same winding sense).
+    w = (strandVerts + i * STRAND_RADIAL) * 3;
+    vs = strandVerts + i * STRAND_RADIAL;
+    for (let ring = 0; ring < STRAND_RADIAL; ring++) {
+      const cc = STRAND_COS[ring]!;
+      const ss = STRAND_SIN[ring]!;
+      const nx = -(sAx * cc + uAx * ss);
+      const ny = -(sAy * cc + uAy * ss);
+      const nz = -(sAz * cc + uAz * ss);
+      pArr[w] = bx + nx * effStrand;
+      nArr[w] = nx;
+      w++;
+      pArr[w] = by + ny * effStrand;
+      nArr[w] = ny;
+      w++;
+      pArr[w] = bz + nz * effStrand;
+      nArr[w] = nz;
+      w++;
+      shArr[vs++] = shadeB;
     }
   }
+
+  // Sparse rungs: a short bar between the two strand centers at each anchor,
+  // its axis along (cos ψ·side + sin ψ·up), cross-section in the plane of the
+  // path tangent (T = side × up).
+  const ud = geo.userData as { rungPointIdx?: Int32Array; rungCount?: number };
+  const rungPointIdx = ud.rungPointIdx;
+  const rungCount = ud.rungCount ?? 0;
+  const rungBase = 2 * strandVerts;
+  const rho = opts.rungRadius;
+  for (let r = 0; r < rungCount && rungPointIdx; r++) {
+    const p = rungPointIdx[r]!;
+    const k = p * 3;
+    const px = _threadPts[k]!;
+    const py = _threadPts[k + 1]!;
+    const pz = _threadPts[k + 2]!;
+    const sx = _threadSides[k]!;
+    const sy = _threadSides[k + 1]!;
+    const sz = _threadSides[k + 2]!;
+    const ux = _threadUps[k]!;
+    const uy = _threadUps[k + 1]!;
+    const uz = _threadUps[k + 2]!;
+    const psi = _psi[p]!;
+    const c = Math.cos(psi);
+    const s = Math.sin(psi);
+    const sAx = c * sx + s * ux;
+    const sAy = c * sy + s * uy;
+    const sAz = c * sz + s * uz;
+    // Path tangent T = side × up, and the third cross-section axis sA × T.
+    const tx = sy * uz - sz * uy;
+    const ty = sz * ux - sx * uz;
+    const tz = sx * uy - sy * ux;
+    const w2x = sAy * tz - sAz * ty;
+    const w2y = sAz * tx - sAx * tz;
+    const w2z = sAx * ty - sAy * tx;
+    const cyclePos = p % cyc;
+    let scale = 1;
+    if (cyclePos >= WRAP_SAMPLES) {
+      const sb = cyclePos - WRAP_SAMPLES;
+      const capK = Math.max(0, 1 - sb / 2.5, 1 - (BRIDGE_SAMPLES - 1 - sb) / 2.5);
+      scale = linkerScale + (1 - linkerScale) * capK;
+    }
+    const effHelix = helixR * scale;
+    let w = (rungBase + r * 2 * RUNG_RADIAL) * 3;
+    let vs = rungBase + r * 2 * RUNG_RADIAL;
+    for (let end = 0; end < 2; end++) {
+      // end 0 = strand B center, end 1 = strand A center.
+      const sign = end === 0 ? -1 : 1;
+      const ex = px + sign * effHelix * sAx;
+      const ey = py + sign * effHelix * sAy;
+      const ez = pz + sign * effHelix * sAz;
+      for (let ring = 0; ring < RUNG_RADIAL; ring++) {
+        const cc = RUNG_COS[ring]!;
+        const ss = RUNG_SIN[ring]!;
+        const nx = tx * cc + w2x * ss;
+        const ny = ty * cc + w2y * ss;
+        const nz = tz * cc + w2z * ss;
+        pArr[w] = ex + nx * rho;
+        nArr[w] = nx;
+        w++;
+        pArr[w] = ey + ny * rho;
+        nArr[w] = ny;
+        w++;
+        pArr[w] = ez + nz * rho;
+        nArr[w] = nz;
+        w++;
+        shArr[vs++] = 0.4;
+      }
+    }
+  }
+
   position.needsUpdate = true;
   normal.needsUpdate = true;
+  shade.needsUpdate = true;
 }
 
 /**

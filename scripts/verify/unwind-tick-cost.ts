@@ -20,10 +20,15 @@ import type { ThreadPathOpts } from '@/scales/chromatin/coil-thread-path';
 
 const p = COIL_DEFAULTS;
 const threadOpts: ThreadPathOpts = {
-  threadRadius: p.threadRadius,
+  strandRadius: p.strandRadius,
+  helixRadius: p.helixRadius,
+  twistPitch: p.twistPitch,
+  linkerWidthScale: p.linkerWidthScale,
   wrapTurns: p.wrapTurns,
   beadAspect: p.beadAspect,
   linkerSag: p.linkerSag,
+  rungRadius: p.rungRadius,
+  rungSpacing: p.rungSpacing,
 };
 
 const baseNodes = generateCoil(COIL_GROWTH_DEFAULTS);

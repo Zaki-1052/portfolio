@@ -1,10 +1,14 @@
 // src/scales/chromatin/coil-thread-path.ts
-// Pure path math for the wound thread (5.5 fidelity pass): per drum, a
-// helical WRAP of exactly `wrapTurns` revolutions around the drum's side
-// wall, then a free BRIDGE curve to the next drum's wrap entry. Fill-style
-// API — callers own the output arrays, so the per-tick rewrite allocates
-// nothing. No three imports; foundation layer like coil-generator, and
-// node-tested the same way.
+// Pure path math for the wound thread — the duplex AXIS that the two backbone
+// strands twist around (the sweep in coil-geometry offsets each strand off
+// this centerline by ±helixRadius at the twist phase). Per drum, a helical
+// WRAP of exactly `wrapTurns` revolutions around the drum's side wall, then a
+// free BRIDGE curve to the next drum's wrap entry. Fill-style API — callers
+// own the output arrays, so the per-tick rewrite allocates nothing. Also owns
+// two continuity-critical helpers the sweep needs: cumulativeArcLength and
+// computeTwistPhase (the strand twist, with its frame-rebase argument). No
+// three imports; foundation layer like coil-generator, and node-tested the
+// same way.
 //
 // Continuity contract (the reason this module looks the way it does): the
 // unwind engine re-runs the generator per animation tick and re-samples this
@@ -46,16 +50,33 @@ export const BRIDGE_TENSION = 0.35;
 export const WRAP_SINK = 0.18;
 
 export interface ThreadPathOpts {
-  /** Tube radius — the wrap helix sits at drum radius + (1 − WRAP_SINK) of
-   *  this, so the cord presses shallowly into the wall surface. */
-  threadRadius: number;
-  /** Revolutions per drum, exact (not quantized — see header). */
+  /** Each backbone strand's own tube radius (geometry-consumed). The two
+   *  strands twist around the axis path this module samples. */
+  strandRadius: number;
+  /** Axis→strand offset — half the duplex width (geometry-consumed). The
+   *  wound envelope sits at drum radius + (1 − WRAP_SINK)·(helixRadius +
+   *  strandRadius), so the outer strand still presses shallowly into the
+   *  wall exactly as the old single cord did. */
+  helixRadius: number;
+  /** World-space length per full duplex twist revolution (geometry-consumed).
+   *  Consumed by the sweep in coil-geometry; carried here so one opts bag
+   *  threads both modules. */
+  twistPitch: number;
+  /** Bridge-only width multiplier: linkers taper thinner than wraps
+   *  (geometry-consumed by the sweep). */
+  linkerWidthScale: number;
+  /** Revolutions the duplex axis winds around each drum, exact (not
+   *  quantized — see header). */
   wrapTurns: number;
   /** Drum half-thickness factor (mirrors the puck template bake). */
   beadAspect: number;
   /** Bridge sag, ramped in only on long spans (an unwound region's
    *  stretched cord droops; compact rim-to-rim hops stay taut). */
   linkerSag: number;
+  /** Sparse rung-bar radius (geometry-consumed by the sweep). */
+  rungRadius: number;
+  /** Arc-length between sparse rung bars (geometry-consumed by the sweep). */
+  rungSpacing: number;
 }
 
 const TWO_PI = Math.PI * 2;
@@ -165,6 +186,9 @@ export function sampleThreadPath(
 ): void {
   const n = nodes.length;
   const deltaPhi = opts.wrapTurns * TWO_PI;
+  // Compound envelope: the axis path sits where the OUTER strand would ride,
+  // so the old single-cord wall contact is preserved by the duplex.
+  const W = opts.helixRadius + opts.strandRadius;
   let w = 0;
 
   // Bridge endpoint state carried between drums (positions/tangents/sides of
@@ -182,7 +206,7 @@ export function sampleThreadPath(
   for (let i = 0; i < n; i++) {
     const node = nodes[i]!;
     const phiIn = wrapEntryAzimuth(nodes, i, opts.wrapTurns);
-    const rWrap = node.radius + opts.threadRadius * (1 - WRAP_SINK);
+    const rWrap = node.radius + W * (1 - WRAP_SINK);
     const zW = WRAP_Z_FRACTION * node.radius * opts.beadAspect;
 
     for (let s = 0; s < WRAP_SAMPLES; s++) {
@@ -216,14 +240,7 @@ export function sampleThreadPath(
     const next = nodes[i + 1]!;
     const nextPhiIn = wrapEntryAzimuth(nodes, i + 1, opts.wrapTurns);
     const nextZW = WRAP_Z_FRACTION * next.radius * opts.beadAspect;
-    wrapSample(
-      next,
-      nextPhiIn,
-      deltaPhi,
-      nextZW,
-      next.radius + opts.threadRadius * (1 - WRAP_SINK),
-      0,
-    );
+    wrapSample(next, nextPhiIn, deltaPhi, nextZW, next.radius + W * (1 - WRAP_SINK), 0);
     entryP[0] = _p[0];
     entryP[1] = _p[1];
     entryP[2] = _p[2];
@@ -311,11 +328,12 @@ export function knobPlacements(
   outTangent: Float32Array,
 ): void {
   const deltaPhi = opts.wrapTurns * TWO_PI;
+  const W = opts.helixRadius + opts.strandRadius;
   let w = 0;
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i]!;
     const phiIn = wrapEntryAzimuth(nodes, i, opts.wrapTurns);
-    const rWrap = node.radius + opts.threadRadius * (1 - WRAP_SINK);
+    const rWrap = node.radius + W * (1 - WRAP_SINK);
     const zW = WRAP_Z_FRACTION * node.radius * opts.beadAspect;
     for (const u of [0, 1]) {
       wrapSample(node, phiIn, deltaPhi, zW, rWrap, u);
@@ -330,5 +348,88 @@ export function knobPlacements(
       outTangent[w + 2] = node.tangent[2];
       w += 3;
     }
+  }
+}
+
+/**
+ * Cumulative Euclidean arc length along the merged path, filled into a
+ * caller-owned array (length === totalPoints): s[0] = 0, s[k] = s[k-1] +
+ * |P_k − P_{k-1}|. A continuous, monotonic function of the sampled points, so
+ * any phase derived from it is continuous under the unwind. Each duplicated
+ * wrap↔bridge junction contributes a ~0 chord, so it is invisible here too.
+ */
+export function cumulativeArcLength(
+  points: Float32Array,
+  totalPoints: number,
+  outArc: Float32Array,
+): void {
+  outArc[0] = 0;
+  for (let i = 1; i < totalPoints; i++) {
+    const k = i * 3;
+    const dx = points[k]! - points[k - 3]!;
+    const dy = points[k + 1]! - points[k - 2]!;
+    const dz = points[k + 2]! - points[k - 1]!;
+    outArc[i] = outArc[i - 1]! + Math.hypot(dx, dy, dz);
+  }
+}
+
+/**
+ * Duplex twist phase ψ per axis sample, filled into a caller-owned array:
+ * ψ_i = 2π·s_i/twistPitch + psiOffset. The strand sweep places each backbone
+ * at `cos ψ·side + sin ψ·up` off the axis, so ψ must be a CONTINUOUS function
+ * of node state or the offset strands pop mid-unwind.
+ *
+ * The load-bearing subtlety (the second continuity trick in this file): each
+ * wrap's (side, up) ENTRY frame is computed independently (fresh
+ * wrapEntryAzimuth + wrapSample) from the incoming bridge's TRANSPORTED frame
+ * — two different orthonormal bases of the same tangent-plane. For the
+ * rotationally-symmetric axis tube that mismatch is invisible (a circle has no
+ * "angle 0"), but an OFFSET strand would jump by up to 2·helixRadius·sin(Δ/2)
+ * at every bridge→wrap junction. Fix: at each such junction rebase the running
+ * phase by
+ *     Δ = atan2(S_end·U_entry, S_end·S_entry)
+ * the signed angle from the entry frame to the end frame (U = T×S in both, so
+ * rotating S by Δ rotates U by Δ). A world direction at angle φ in the end
+ * frame reads as φ + Δ in the entry frame, so carrying `psiOffset += Δ` keeps
+ * the strand's WORLD direction continuous across the junction. One atan2 per
+ * drum transition. Continuous under the unwind: the atan2 branch cut only ever
+ * feeds cos/sin downstream, so a 2π jump is invisible — the same argument that
+ * makes wrapEntryAzimuth's own cut invisible.
+ *
+ * The wrap↔bridge junction WITHIN a drum needs no rebase: the bridge seeds its
+ * frame directly from the wrap exit (Δ = 0 there by construction).
+ */
+export function computeTwistPhase(
+  beadCount: number,
+  sides: Float32Array,
+  ups: Float32Array,
+  arc: Float32Array,
+  twistPitch: number,
+  outPsi: Float32Array,
+): void {
+  const total = threadPointCount(beadCount);
+  const cyc = WRAP_SAMPLES + BRIDGE_SAMPLES;
+  const k = TWO_PI / Math.max(twistPitch, 1e-4);
+  let psiOffset = 0;
+  for (let i = 0; i < total; i++) {
+    // A new wrap begins at every `cyc` boundary after the first — point i-1 is
+    // the previous drum's bridge exit, a rotated basis of this wrap's entry.
+    if (i > 0 && i % cyc === 0) {
+      const e = (i - 1) * 3;
+      const nn = i * 3;
+      const seSx = sides[e]!;
+      const seSy = sides[e + 1]!;
+      const seSz = sides[e + 2]!;
+      const enSx = sides[nn]!;
+      const enSy = sides[nn + 1]!;
+      const enSz = sides[nn + 2]!;
+      const enUx = ups[nn]!;
+      const enUy = ups[nn + 1]!;
+      const enUz = ups[nn + 2]!;
+      const dotSS = seSx * enSx + seSy * enSy + seSz * enSz;
+      const dotSU = seSx * enUx + seSy * enUy + seSz * enUz;
+      psiOffset += Math.atan2(dotSU, dotSS);
+    }
+    outPsi[i] = k * arc[i]! + psiOffset;
   }
 }

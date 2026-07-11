@@ -16,6 +16,8 @@ import {
   WRAP_SAMPLES,
   WRAP_SINK,
   WRAP_Z_FRACTION,
+  cumulativeArcLength,
+  computeTwistPhase,
   knobPlacements,
   sampleThreadPath,
   threadPointCount,
@@ -24,11 +26,57 @@ import {
 } from './coil-thread-path';
 
 const OPTS: ThreadPathOpts = {
-  threadRadius: 0.08,
+  // strandRadius + helixRadius = 0.08 keeps the compound wall envelope W equal
+  // to the old single-cord test radius, so the "on the wall" contract is
+  // unchanged.
+  strandRadius: 0.03,
+  helixRadius: 0.05,
+  twistPitch: 2.0,
+  linkerWidthScale: 0.6,
   wrapTurns: 1.75,
   beadAspect: COIL_GROWTH_DEFAULTS.beadAspect,
   linkerSag: COIL_GROWTH_DEFAULTS.linkerSag,
+  rungRadius: 0.018,
+  rungSpacing: 1.0,
 };
+
+/** Compound wall envelope — where the axis path rides, mirroring the sweep. */
+const WALL_W = OPTS.helixRadius + OPTS.strandRadius;
+
+/** Derive the two backbone strand centers exactly as coil-geometry's sweep
+ *  does (ignoring the linker taper, which is 1 at junctions and a continuous
+ *  function elsewhere) — the object under test for twist continuity. */
+function strandCenters(
+  ns: CoilNode[],
+  opts: ThreadPathOpts = OPTS,
+): { a: Float32Array; b: Float32Array } {
+  const total = threadPointCount(ns.length);
+  const pts = new Float32Array(total * 3);
+  const sides = new Float32Array(total * 3);
+  const ups = new Float32Array(total * 3);
+  sampleThreadPath(ns, opts, pts, sides, ups);
+  const arc = new Float32Array(total);
+  cumulativeArcLength(pts, total, arc);
+  const psi = new Float32Array(total);
+  computeTwistPhase(ns.length, sides, ups, arc, opts.twistPitch, psi);
+  const a = new Float32Array(total * 3);
+  const b = new Float32Array(total * 3);
+  for (let i = 0; i < total; i++) {
+    const k = i * 3;
+    const c = Math.cos(psi[i]!);
+    const s = Math.sin(psi[i]!);
+    const sAx = c * sides[k]! + s * ups[k]!;
+    const sAy = c * sides[k + 1]! + s * ups[k + 1]!;
+    const sAz = c * sides[k + 2]! + s * ups[k + 2]!;
+    a[k] = pts[k]! + opts.helixRadius * sAx;
+    a[k + 1] = pts[k + 1]! + opts.helixRadius * sAy;
+    a[k + 2] = pts[k + 2]! + opts.helixRadius * sAz;
+    b[k] = pts[k]! - opts.helixRadius * sAx;
+    b[k + 1] = pts[k + 1]! - opts.helixRadius * sAy;
+    b[k + 2] = pts[k + 2]! - opts.helixRadius * sAz;
+  }
+  return { a, b };
+}
 
 interface Sampled {
   points: Float32Array;
@@ -101,7 +149,7 @@ describe('sampleThreadPath', () => {
     const { points } = sample(nodes);
     for (let i = 0; i < nodes.length; i++) {
       const node = nodes[i]!;
-      const rWrap = node.radius + OPTS.threadRadius * (1 - WRAP_SINK);
+      const rWrap = node.radius + WALL_W * (1 - WRAP_SINK);
       const zW = WRAP_Z_FRACTION * node.radius * OPTS.beadAspect;
       for (let s = 0; s < WRAP_SAMPLES; s++) {
         const p = at(points, wrapStart(i) + s);
@@ -209,6 +257,65 @@ describe('sampleThreadPath', () => {
       for (let openT = 0.01; openT <= 1.0001; openT += 0.01) {
         cur = sample(generateCoil(COIL_GROWTH_DEFAULTS, { region, openT }));
         expect(maxPointMove(prev.points, cur.points)).toBeLessThan(0.9);
+        prev = cur;
+      }
+    }
+  });
+});
+
+describe('cumulativeArcLength', () => {
+  it('starts at zero and is monotonic non-decreasing and finite', () => {
+    const total = threadPointCount(nodes.length);
+    const { points } = sample(nodes);
+    const arc = new Float32Array(total);
+    cumulativeArcLength(points, total, arc);
+    expect(arc[0]).toBe(0);
+    for (let i = 1; i < total; i++) {
+      expect(Number.isFinite(arc[i]!)).toBe(true);
+      expect(arc[i]!).toBeGreaterThanOrEqual(arc[i - 1]!);
+    }
+  });
+});
+
+describe('computeTwistPhase', () => {
+  it('yields deterministic, finite strand centers', () => {
+    const { a, b } = strandCenters(nodes);
+    expect(a.some(Number.isNaN)).toBe(false);
+    expect(b.some(Number.isNaN)).toBe(false);
+    expect(strandCenters(nodes).a).toEqual(a);
+  });
+
+  it('keeps both strands continuous across every bridge→wrap junction', () => {
+    // The load-bearing rebase test: the wrap-entry frame is computed
+    // independently of the incoming bridge's transported frame, so WITHOUT the
+    // psiOffset correction (or with the wrong sign) the offset strands jump
+    // ~2·helixRadius·sin(Δ/2) — order 0.05–0.08 for the real per-junction frame
+    // rotations here. The correct rebase leaves only a ~1e-3 finite-sampling
+    // residual (the tangents at the docked junction are equal only to sampling
+    // precision), so 5e-3 passes the correct impl by 5× and fails a sign error
+    // by 10×+.
+    const { a, b } = strandCenters(nodes);
+    for (let i = 1; i < nodes.length; i++) {
+      const entry = wrapStart(i);
+      const prev = entry - 1; // bridge-last of the previous drum
+      expect(dist(at(a, prev), at(a, entry))).toBeLessThan(5e-3);
+      expect(dist(at(b, prev), at(b, entry))).toBeLessThan(5e-3);
+    }
+  });
+
+  it('derived strand positions are continuous in openT — no gross pop', () => {
+    // Mirrors the axis openT test on the DERIVED strand centers. Smooth motion
+    // (incl. the fast-but-smooth frame swings near the region boundary the axis
+    // test documents, here amplified by the ±helixRadius offset) stays well
+    // under a genuine winding pop (step-invariant ≥ π·rWrap ≈ 1.8); 1.3 cleanly
+    // separates. (A subtle twist-rebase sign error is caught by the junction
+    // test above, not here — its jump hides under the smooth boundary swing.)
+    for (const region of [0, 1] as const) {
+      let prev = strandCenters(generateCoil(COIL_GROWTH_DEFAULTS, { region, openT: 0 }));
+      for (let openT = 0.01; openT <= 1.0001; openT += 0.01) {
+        const cur = strandCenters(generateCoil(COIL_GROWTH_DEFAULTS, { region, openT }));
+        expect(maxPointMove(prev.a, cur.a)).toBeLessThan(1.3);
+        expect(maxPointMove(prev.b, cur.b)).toBeLessThan(1.3);
         prev = cur;
       }
     }

@@ -29,7 +29,7 @@ export interface CoilLookParams {
   beadSpecStrength: number;
   beadSpecPower: number;
   /** Rim bevel size in template units (geometry-consumed — rebuilds the
-   *  shared puck template, like threadRadius rebuilds the tube). */
+   *  shared puck template, like strandRadius rebuilds the duplex). */
   beadBevel: number;
   /** Cap crown height in template units (geometry-consumed): a shallow
    *  paraboloid dome per cap face — puck, not coin. 0 = flat. */
@@ -59,15 +59,25 @@ export interface CoilLookParams {
   /** Cord seating: how strongly the wrapped thread shades the drum wall
    *  band it rides (0 = painted-on, 1 = deeply seated). */
   wrapShadow: number;
-  /** Wound thread (5.6 teal biolume): dark cord body + bright cyan CORE
-   *  color (the camera-facing filament carrying the emissive), tube radius
-   *  (geometry-consumed), the register dial (0 = fully matte physical cord,
-   *  higher = luminous core), revolutions wrapped around each drum
-   *  (geometry-consumed), the baked wrap-occlusion strength, the number of
-   *  traveling light packets along the cord, and their travel speed. */
+  /** Wound thread (teal biolume double helix): dark cord body + bright cyan
+   *  CORE color (the camera-facing filament carrying the emissive), the
+   *  register dial (0 = fully matte physical cord, higher = luminous core),
+   *  revolutions the duplex axis winds around each drum (geometry-consumed),
+   *  the baked wrap-occlusion strength, the number of traveling light packets
+   *  along the cord, and their travel speed. */
   threadColor: string;
   threadCoreColor: string;
-  threadRadius: number;
+  /** Duplex geometry (all geometry-consumed): each backbone strand's own tube
+   *  radius; the axis→strand offset (half the duplex width); the world-space
+   *  length per full twist revolution; the bridge-only width multiplier that
+   *  tapers linkers thinner than the wraps; and the sparse rung bars' radius +
+   *  arc-length spacing. */
+  strandRadius: number;
+  helixRadius: number;
+  twistPitch: number;
+  linkerWidthScale: number;
+  rungRadius: number;
+  rungSpacing: number;
   threadEmissive: number;
   threadAo: number;
   threadPulseCount: number;
@@ -144,17 +154,28 @@ const LOOK_DEFAULTS: CoilLookParams = {
   // the wall, not a cord raised on it).
   threadColor: '#4c8d9b',
   threadCoreColor: '#7fe3f2',
-  // 5.6 face-on fix: a chunkier cord — at 0.055 the wraps read as thin
-  // cracks against the wall when a drum faces the camera.
-  threadRadius: 0.07,
+  // Double-helix duplex: two thin strands (strandRadius) offset ±helixRadius
+  // off the axis give an envelope Ø ≈ 0.23 — ~1.6× the old single cord, so the
+  // wrap reads substantial while each strand stays delicate. twistPitch 2.0
+  // world-units/turn → a few visible twists per wrap (legible, not busy).
+  // linkerWidthScale 0.6 tapers the linkers slim between the wraps.
+  strandRadius: 0.04,
+  helixRadius: 0.075,
+  twistPitch: 2.0,
+  linkerWidthScale: 0.6,
+  // Sparse base-pair rungs — occasional cross-bars, restrained enough to stay
+  // organic underwater.
+  rungRadius: 0.018,
+  rungSpacing: 1.0,
   threadEmissive: 1.0,
-  threadAo: 0.6,
+  // The per-strand occlusion rotates with the twist (more dynamic than the old
+  // static tube bake), so it sits a touch lighter than the old 0.6.
+  threadAo: 0.45,
   threadPulseCount: 3,
-  // 5.6 feedback: 2.6 turns spread across the widened wall band so each
-  // drum reads unmistakably WOUND, not merely linked. Fractional part ≈ 0.6
-  // still lands each wrap's exit facing the next drum (entry faces the
-  // previous one), so the bridges stay short and tidy.
-  wrapTurns: 2.6,
+  // The superhelical wind of the duplex axis around each drum — biological
+  // ~1.65–2; the double-helix twist now carries the "wound" read, so fewer
+  // axis turns than the old single-cord 2.6.
+  wrapTurns: 1.75,
   shimmerSpeed: 0.6,
   knobColor: '#45737f',
   knobSize: 0.11,
