@@ -8,7 +8,7 @@
 // stays clickable throughout. Scroll stays locked (app.tsx stops Lenis at
 // boot) until finish; the initial #hash jump is deferred to that moment so
 // the sequence always plays from the top.
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { invalidate } from '@react-three/fiber';
 import { getLenis } from '@/engine/scroll-engine';
@@ -22,6 +22,9 @@ import { visibleTextAt, type TypingSnapshot } from './intro-typing';
 const INTRO_LINES = getIntro().lines;
 const PUSH_SECONDS = 2.5;
 const OVERLAY_FADE_SECONDS = 0.8;
+// Skip: dissolve the overlay over the instantly-landed hero. Shorter than the
+// push fade — a skip should feel prompt, not ceremonial.
+const SKIP_FADE_SECONDS = 0.5;
 // The finished last line holds for a beat (cursor still blinking) before the
 // flight begins — the sequence lands, breathes, then descends.
 const TYPED_HOLD_MS = 850;
@@ -31,6 +34,11 @@ export function LoadingSequence() {
   const reduced = useReducedMotion();
   const overlayRef = useRef<HTMLDivElement>(null);
   const [snap, setSnap] = useState<TypingSnapshot>(() => visibleTextAt(INTRO_LINES, 0));
+  // Skip-control state: `revealed` fades the affordance in a beat after the
+  // overlay appears (never over the first typed chars); `skipping` fades it out
+  // in lockstep with the overlay dissolve once the visitor bails.
+  const [revealed, setRevealed] = useState(false);
+  const [skipping, setSkipping] = useState(false);
 
   // Typing loop. Reduced motion renders the full text instantly (a live
   // mid-typing toggle flip lands here too and completes on the spot).
@@ -107,20 +115,86 @@ export function LoadingSequence() {
     invalidate();
   }, [phase]);
 
+  // Skip: land the hero instantly underneath, then dissolve the dark overlay
+  // over it (reduced motion cuts straight). The scroll target and immediate
+  // scrollTo mirror jumpToInitialHash; url-scale-sync rewrites the hash to
+  // #tissue on its own as currentScale flips. finish() is idempotent, so this
+  // is safe mid-push (the flight tween tears down on the phase change).
+  const skip = useCallback(() => {
+    setSkipping(true);
+    const lenis = getLenis();
+    lenis?.start();
+    lenis?.scrollTo('#tissue', { immediate: true, force: true });
+    invalidate();
+    const overlay = overlayRef.current;
+    if (reduced || !overlay) {
+      useIntroStore.getState().finish();
+      return;
+    }
+    gsap.to(overlay, {
+      opacity: 0,
+      duration: SKIP_FADE_SECONDS,
+      ease: 'power1.out',
+      onComplete: () => useIntroStore.getState().finish(),
+    });
+  }, [reduced]);
+
+  // Reveal the skip affordance a beat after the overlay opens.
+  useEffect(() => {
+    const t = window.setTimeout(() => setRevealed(true), 800);
+    return () => window.clearTimeout(t);
+  }, []);
+
+  // Escape is the keyboard escape hatch — works with or without focus on the
+  // button, for as long as the overture is up.
+  useEffect(() => {
+    if (phase === 'done') return;
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        skip();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [phase, skip]);
+
   if (phase === 'done') return null;
 
   return (
-    <div ref={overlayRef} className="intro-overlay" aria-hidden="true">
-      <div className="intro-lines">
-        {snap.lines.map((text, i) => (
-          <p key={i} className="intro-line">
-            {text}
-            {/* Cursor keeps blinking through the held beat after the last
-                line completes; it vanishes when the flight takes over. */}
-            {i === snap.activeLine && phase === 'typing' && <span className="intro-cursor" />}
-          </p>
-        ))}
+    <>
+      <div ref={overlayRef} className="intro-overlay" aria-hidden="true">
+        <div className="intro-lines">
+          {snap.lines.map((text, i) => (
+            <p key={i} className="intro-line">
+              {text}
+              {/* Cursor keeps blinking through the held beat after the last
+                  line completes; it vanishes when the flight takes over. */}
+              {i === snap.activeLine && phase === 'typing' && <span className="intro-cursor" />}
+            </p>
+          ))}
+        </div>
       </div>
-    </div>
+      {/* Sibling of the aria-hidden overlay (never inside it — a focusable
+          control in an aria-hidden subtree is the focusable-but-hidden
+          anti-pattern). Sits at --z-nav above the overlay, like MotionToggle. */}
+      <button
+        type="button"
+        className="skip-intro"
+        data-phase={phase}
+        data-revealed={revealed || undefined}
+        data-skipping={skipping || undefined}
+        onClick={skip}
+        aria-label="Skip intro and jump to content"
+      >
+        <span className="skip-prompt" aria-hidden="true">
+          {'>'}
+        </span>{' '}
+        skip
+        <span className="skip-caret" aria-hidden="true">
+          _
+        </span>
+      </button>
+    </>
   );
 }

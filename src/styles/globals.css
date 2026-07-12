@@ -1494,13 +1494,68 @@ hr {
   }
 }
 
+/* Skip affordance — a sibling of the overlay (not a child), so the overlay's
+   scoped --intro-text/--intro-cursor don't cascade here; mirror them locally.
+   Prompt-style `> skip_` in the overture's warm-gold mono register. */
+.skip-intro {
+  --skip-text: #b3a184; /* mirrors .intro-overlay --intro-text */
+  --skip-accent: var(--aod-gold); /* mirrors --intro-cursor */
+  position: fixed;
+  top: clamp(16px, 4vh, 40px);
+  right: clamp(12px, 2vw, 28px);
+  z-index: var(--z-nav); /* above --z-intro — clickable over the overlay */
+  appearance: none;
+  background: none;
+  border: none;
+  padding: var(--space-1) var(--space-2);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.01em;
+  color: var(--skip-text);
+  opacity: 0; /* entrance handled by [data-revealed] */
+  transition:
+    color var(--dur-fast) var(--ease-out),
+    opacity var(--dur-slow) var(--ease-out);
+}
+.skip-intro .skip-prompt,
+.skip-intro .skip-caret {
+  color: var(--skip-accent);
+}
+.skip-intro .skip-caret {
+  display: inline-block;
+  margin-left: 0.05em;
+  animation: intro-blink 1.06s steps(2, start) infinite; /* reuses overture keyframe */
+}
+.skip-intro[data-revealed] {
+  opacity: 1;
+}
+.skip-intro:hover,
+.skip-intro:focus-visible {
+  color: var(--skip-accent);
+}
+.skip-intro:focus-visible {
+  outline: 1px solid var(--skip-accent);
+  outline-offset: 3px;
+}
+/* Exit rules LAST so equal-specificity source order lets them beat
+   [data-revealed]: fade out with the overlay dissolve (skip) or as the natural
+   push flight begins. */
+.skip-intro[data-phase='push'],
+.skip-intro[data-skipping] {
+  opacity: 0;
+  pointer-events: none;
+}
+
 [data-motion='reduced'] .intro-cursor,
-[data-motion='reduced'] .intro-overlay {
+[data-motion='reduced'] .intro-overlay,
+[data-motion='reduced'] .skip-intro .skip-caret {
   animation: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .intro-cursor {
+  .intro-cursor,
+  .skip-intro .skip-caret {
     animation: none;
   }
 }
