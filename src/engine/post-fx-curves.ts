@@ -28,7 +28,8 @@ export function postFxCurveFor(depth: number): PostFxCurve {
     // the hub-dive swell rides on top through its own window.
     bloomIntensity: lerp(0.18, 1.25, warm * warm) + swell.intensity,
     bloomThreshold: Math.max(0, lerp(0.6, 1.0, d) - swell.thresholdDip),
-    // Grain hits 0 by the start of the code scale (depth 0.67).
+    // Grain drains to 0 at depth 0.67 — fully clear just before the code
+    // band begins at 0.71 (SCALE_BOUNDARIES[5]).
     grainOpacity: 0.055 * clamp(1 - d / 0.67, 0, 1),
     vignetteDarkness: lerp(0.18, 0.55, warm),
   };

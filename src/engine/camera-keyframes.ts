@@ -130,6 +130,31 @@ export const CAMERA_KEYFRAMES: readonly CameraKeyframe[] = [
     fov: 50,
     reducedAnchor: true,
   }, // settled hold above the shoulder line, target pulled past the cluster so it rests low on the left third — annotation room right (≈ SCALE_BOUNDARIES[4])
+  // --- The code band (fifth scale): the terminal void. The camera all but
+  // PARKS — the window does the flying (code-window-pose.ts) and is
+  // camera-locked through the plateau, so these knots only steer the
+  // environment parallax and thread the descent line into and out of the
+  // band. Every axis keeps a breath of drift (an exactly-stationary axis
+  // reads as a camera stall). The knots sit on the existing 0.565 → 1.0
+  // descent line so the void transit through the unbuilt protein band is
+  // reshaped as little as possible. Starter values — tuned live via
+  // camera-dev-tools (bake → paste). ---
+  { depth: 0.71, position: [-5, -31, -38], target: [-1, -36, -55], roll: -0.005, fov: 51 }, // band arrival — the window flies in against the receding void (= SCALE_BOUNDARIES[5])
+  {
+    depth: 0.79,
+    position: [-4.6, -31.9, -37.2],
+    target: [-0.6, -36.6, -54.2],
+    roll: 0,
+    fov: 50,
+    reducedAnchor: true,
+  }, // plateau center — parked drift while the listing is live (the boot/exit midpoint)
+  {
+    depth: 0.86,
+    position: [-4.1, -32.8, -36.3],
+    target: [-0.2, -37.4, -53.4],
+    roll: 0.004,
+    fov: 50.5,
+  }, // band exit — the dissolve hands the void to the surviving cursor (= SCALE_BOUNDARIES[6])
   {
     depth: 1.0,
     position: [0, -46, -14],

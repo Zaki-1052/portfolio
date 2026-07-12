@@ -223,7 +223,13 @@ export function CameraController(): null {
       camera.quaternion.w,
       s.fov,
     );
-  });
+    // Priority -1: R3F stable-sorts useFrame subscribers, so the camera pose
+    // is FINAL before any default-priority subscriber runs — the code band's
+    // screen-locked window reads state.camera directly with zero frame lag
+    // (and the halo's old tolerated 1-frame lag is gone too). Negative
+    // priority never trips R3F's manual-render mode (that's priority > 0;
+    // the EffectComposer at priority 1 still owns rendering).
+  }, -1);
 
   return null;
 }

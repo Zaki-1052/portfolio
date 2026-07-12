@@ -78,6 +78,22 @@ describe('REDUCED_ANCHOR_KEYFRAMES', () => {
   });
 });
 
+describe('code band (the terminal plateau)', () => {
+  it('parks a reduced-motion anchor inside the band', () => {
+    const inBand = REDUCED_ANCHOR_KEYFRAMES.filter((k) => k.depth >= 0.71 && k.depth < 0.86);
+    expect(inBand.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('keeps the camera essentially parked across the band (the window does the flying)', () => {
+    // The screen-locked window cancels camera motion by construction, but the
+    // ENVIRONMENT parallax rides it — a few units of drift is the beat, a
+    // full travel move would fight the plateau. Loose bound, tune-friendly.
+    const a = sampleCamera(0.72).position;
+    const b = sampleCamera(0.85).position;
+    expect(Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])).toBeLessThan(4);
+  });
+});
+
 describe('lookAtQuaternion', () => {
   it('is identity when looking down -z from +z', () => {
     const q = lookAtQuaternion([0, 0, 10], [0, 0, 0], 0);

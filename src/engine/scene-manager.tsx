@@ -13,6 +13,7 @@ import { scalesToMount } from '@/engine/scene-registry';
 import { SurfaceScene } from '@/scales/tissue/TissueScene';
 import { CellularScene } from '@/scales/cellular/CellularScene';
 import { ChromatinScene } from '@/scales/chromatin/ChromatinScene';
+import { CodeScene } from '@/scales/code/CodeScene';
 
 // The shell spans TWO bands on purpose: the whole approach journey outside it,
 // then — after the plunge — its interior walls linger behind the first content
@@ -24,12 +25,14 @@ const SCENE_REGISTRY: Partial<Record<ScaleName, ComponentType>> = {
   tissue: SurfaceScene,
   cellular: CellularScene,
   chromatin: ChromatinScene,
+  code: CodeScene,
 };
 
 const SCENE_KEYS = new Map<ComponentType, string>([
   [SurfaceScene, 'shell'],
   [CellularScene, 'arbor'],
   [ChromatinScene, 'coil'],
+  [CodeScene, 'code-window'],
 ]);
 
 export function SceneManager() {

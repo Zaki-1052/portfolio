@@ -54,6 +54,9 @@ const FlagFlightDevTools = import.meta.env.DEV
 const CoilDevTools = import.meta.env.DEV
   ? lazy(() => import('@/dev/coil-dev-tools').then((m) => ({ default: m.CoilDevTools })))
   : null;
+const CodeDevTools = import.meta.env.DEV
+  ? lazy(() => import('@/dev/code-dev-tools').then((m) => ({ default: m.CodeDevTools })))
+  : null;
 const CameraTheatreSpike = theatreEnabled
   ? lazy(() =>
       import('@/engine/camera-theatre-spike').then((m) => ({ default: m.CameraTheatreSpike })),
@@ -228,6 +231,12 @@ export function App() {
       {CoilDevTools && (
         <Suspense fallback={null}>
           <CoilDevTools />
+        </Suspense>
+      )}
+      {/* Terminal window/beat/environment sliders ('code …' folders, same panel). */}
+      {CodeDevTools && (
+        <Suspense fallback={null}>
+          <CodeDevTools />
         </Suspense>
       )}
     </>

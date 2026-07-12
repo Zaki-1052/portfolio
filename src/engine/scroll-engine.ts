@@ -7,7 +7,12 @@ import Lenis from 'lenis';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useDepthStore } from '@/stores/depth';
-import { SCALE_BOUNDARIES, measureSectionBoundaries, rawProgressToDepth } from './scale-manager';
+import {
+  SCALE_BOUNDARIES,
+  depthToRawProgress,
+  measureSectionBoundaries,
+  rawProgressToDepth,
+} from './scale-manager';
 
 export const DEFAULT_LERP = 0.1;
 
@@ -64,6 +69,21 @@ export function initScrollEngine(): void {
   const main = document.querySelector('main');
   if (main) resizeObserver.observe(main);
   void document.fonts?.ready.then(() => ScrollTrigger.refresh());
+}
+
+/**
+ * Document scroll position (px) for a canonical depth, through the master
+ * ScrollTrigger's own start/end span — the exact inverse of the onUpdate
+ * remap, so a programmatic scrollTo lands on precisely the depth asked for
+ * (the terminal's tap-to-complete accelerator: scroll position and session
+ * state can never disagree). Null before the engine boots. DOM-coupled:
+ * excluded from unit tests, verified manually (measureSectionBoundaries
+ * precedent).
+ */
+export function depthToScrollY(depth: number): number | null {
+  if (!trigger) return null;
+  const raw = depthToRawProgress(depth, rawBoundaries);
+  return trigger.start + raw * (trigger.end - trigger.start);
 }
 
 export function destroyScrollEngine(): void {

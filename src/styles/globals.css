@@ -425,7 +425,8 @@
 [data-webgl='active'] [data-scale='approach'],
 [data-webgl='active'] [data-scale='tissue'],
 [data-webgl='active'] [data-scale='cellular'],
-[data-webgl='active'] [data-scale='chromatin'] {
+[data-webgl='active'] [data-scale='chromatin'],
+[data-webgl='active'] [data-scale='code'] {
   --section-bg: transparent;
 }
 [data-webgl='active'] [data-scale='approach']::before,
@@ -435,13 +436,22 @@
 [data-webgl='active'] [data-scale='cellular']::before,
 [data-webgl='active'] [data-scale='cellular']::after,
 [data-webgl='active'] [data-scale='chromatin']::before,
-[data-webgl='active'] [data-scale='chromatin']::after {
+[data-webgl='active'] [data-scale='chromatin']::after,
+[data-webgl='active'] [data-scale='code']::before,
+[data-webgl='active'] [data-scale='code']::after {
   display: none;
 }
 [data-webgl='active'] [data-scale='approach'] + [data-scale],
 [data-webgl='active'] [data-scale='tissue'] + [data-scale],
 [data-webgl='active'] [data-scale='cellular'] + [data-scale],
-[data-webgl='active'] [data-scale='chromatin'] + [data-scale] {
+[data-webgl='active'] [data-scale='chromatin'] + [data-scale],
+[data-webgl='active'] [data-scale='code'] + [data-scale] {
+  border-top: none;
+}
+/* The code band's OWN top seam: its predecessor (protein) is not yet
+   scene-native, so no sibling rule above strips the hairline the base
+   [data-scale] + [data-scale] rule puts on code itself. */
+[data-webgl='active'] [data-scale='code'] {
   border-top: none;
 }
 
@@ -1604,6 +1614,28 @@ hr {
   height: 130vh;
 }
 
+/* Fifth-band scene-native runways: arrival (the window flies in + the boot
+   command scrubs), plateau (the parked, screen-locked interactive listing),
+   exit (the exit command, farewell hold, and dissolve). Same contract as
+   the coil runways. NOTE: per-beat pacing is set by the beat DEPTHS
+   (terminal-beats.ts) — these heights only control how much real scroll the
+   whole band takes (rawProgressToDepth is linear within a scale). */
+.code-runway {
+  display: none;
+}
+[data-webgl='active'] .code-runway--arrival {
+  display: block;
+  height: 110vh;
+}
+[data-webgl='active'] .code-runway--plateau {
+  display: block;
+  height: 140vh;
+}
+[data-webgl='active'] .code-runway--exit {
+  display: block;
+  height: 70vh;
+}
+
 /* The band's document register yields entirely to the scene-native one:
    the annotation overlay (below) is the real interface under WebGL, so the
    in-flow copy is fully removed (not sr-only — no phantom tab stops, no
@@ -1637,6 +1669,24 @@ hr {
   letter-spacing: 0.02em;
 }
 .chromatin-doc__title {
+  margin: 0 0 var(--space-6);
+  font-size: var(--text-3xl);
+  max-width: 20ch;
+}
+
+/* Fifth band: same document-register yield — the scene-native terminal
+   (TerminalWindowContent, Stage C) is the real interface under WebGL. */
+[data-webgl='active'] [data-scale='code'] .code-doc {
+  display: none;
+}
+.code-doc__kicker {
+  margin: 0 0 var(--space-2);
+  color: var(--accent);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  letter-spacing: 0.02em;
+}
+.code-doc__title {
   margin: 0 0 var(--space-6);
   font-size: var(--text-3xl);
   max-width: 20ch;
@@ -2306,4 +2356,380 @@ hr {
   .content-scrim {
     background: rgba(26, 22, 18, 0.8);
   }
+}
+
+/* ============================================================
+   TERMINAL WINDOW — the code band's scene-native interior (Phase 7).
+   The HTML layer glued to the flat window plane: the projection tick
+   (TerminalWindowContent) sets this container's LAYOUT BOX in px — never
+   transform:scale, which blurs rasterized text. Register: Fira Code on the
+   One-Dark deep ground, phosphor green, SHARP corners everywhere inside the
+   window (the window shell itself keeps macOS rounding — drawn by the
+   chrome shader, not CSS). The glow token is applied to the live prompt +
+   focused row only — a listing-wide text-shadow is blur soup, not phosphor.
+   ============================================================ */
+.terminal-window {
+  --terminal-glow: 0 0 6px rgba(152, 195, 121, 0.35);
+  display: none;
+  position: fixed;
+  z-index: var(--z-overlay);
+  pointer-events: none;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  color: var(--aod-green);
+}
+[data-webgl='active'] .terminal-window[data-live='1'] {
+  display: block;
+}
+
+/* Title-bar text sits over the shader's band (no in-shader text ever). */
+.terminal-window__titlebar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--term-bar-h, 32px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-xs);
+  letter-spacing: 0.02em;
+  color: var(--aod-fg-dim, #7f848e);
+  user-select: none;
+}
+
+/* The inner content area — inset below the title band so square HTML
+   corners never poke past the rounded chrome. */
+.terminal-window__body {
+  position: absolute;
+  top: calc(var(--term-bar-h, 32px) + var(--term-inset, 12px));
+  left: calc(var(--term-inset, 12px) * 1.8);
+  right: calc(var(--term-inset, 12px) * 1.8);
+  bottom: var(--term-inset, 12px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.term-line {
+  white-space: pre-wrap;
+}
+.term-prompt-user {
+  color: var(--aod-green);
+}
+.term-prompt-cwd {
+  color: var(--syntax-fn, #61afef);
+}
+.term-prompt-sigil {
+  color: var(--text-faint);
+}
+.term-cmd {
+  color: var(--aod-fg, #abb2bf);
+}
+
+/* The block cursor — the CSS renderer in the three-renderer relay. The
+   1.06s steps(2) overture keyframe IS the design's 530 ms xterm rhythm. */
+.term-cursor {
+  display: inline-block;
+  width: 1ch;
+  height: 1.15em;
+  vertical-align: text-bottom;
+  background: var(--aod-green);
+  box-shadow: var(--terminal-glow);
+  animation: intro-blink 1.06s steps(2, start) infinite; /* reuses overture keyframe */
+}
+
+/* Event-clock print reveal: output APPEARS line-by-line (1ms opacity hop at
+   a staggered delay — a shell dump, not a fade), and rewinding clears
+   instantly because the delays live only under the printed state. */
+.term-print {
+  opacity: 0;
+  transition: opacity 1ms linear 0ms;
+}
+[data-booted='1'] .term-print {
+  opacity: 1;
+  transition-delay: var(--print-delay, 0ms);
+}
+.term-print--farewell {
+  opacity: 0;
+  transition: opacity 1ms linear 0ms;
+}
+[data-exited='1'] .term-print--farewell {
+  opacity: 1;
+  transition-delay: var(--print-delay, 0ms);
+}
+[data-exited='0'] .term-print--farewell {
+  opacity: 0;
+}
+
+/* The listing — dirs then symlinks, every row a real control. */
+.term-listing {
+  margin: var(--space-2) 0;
+}
+.term-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.term-row {
+  --row-perm: var(--syntax-perm);
+  --row-name: var(--text-strong);
+  --row-desc: var(--text-muted);
+  --row-badge: var(--syntax-star);
+  display: grid;
+  grid-template-columns: minmax(0, max-content) minmax(0, 1fr) max-content;
+  gap: var(--space-4);
+  align-items: baseline;
+  width: 100%;
+  padding: 1px var(--space-2);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  font: inherit;
+  line-height: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.term-rows li:nth-child(even) .term-row {
+  background: rgba(255, 255, 255, 0.02);
+}
+.term-row__perms {
+  color: var(--row-perm);
+}
+.term-row__name {
+  color: var(--row-name);
+  font-weight: var(--weight-medium);
+}
+.term-row__desc {
+  color: var(--row-desc);
+  margin-left: var(--space-4);
+}
+.term-row__badge {
+  color: var(--row-badge);
+  white-space: nowrap;
+  text-align: right;
+}
+/* Inverse-video selection bar (pure TUI): hover and keyboard focus share
+   one visual. No hover-scale (anti-slop). */
+.term-row:hover,
+.term-row:focus-visible {
+  --row-perm: var(--aod-bg-deep);
+  --row-name: var(--aod-bg-deep);
+  --row-desc: rgba(33, 37, 43, 0.75);
+  --row-badge: var(--aod-bg-deep);
+  background: var(--aod-green);
+  outline: none;
+}
+.term-row:hover .term-row__name,
+.term-row:focus-visible .term-row__name {
+  text-decoration: underline;
+}
+@media (pointer: coarse) {
+  .term-row {
+    min-height: 44px;
+    align-content: center;
+  }
+}
+
+/* Completion chips — zsh menu-select costume, same inverse-video treatment. */
+.term-chips {
+  display: flex;
+  gap: var(--space-3);
+  margin: var(--space-1) 0 var(--space-2);
+}
+.term-chip {
+  padding: 0 var(--space-1);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  font: inherit;
+  color: var(--aod-green);
+  cursor: pointer;
+  pointer-events: auto;
+}
+.term-chip:hover,
+.term-chip:focus-visible {
+  background: var(--aod-green);
+  color: var(--aod-bg-deep);
+  outline: none;
+}
+@media (pointer: coarse) {
+  .term-chip {
+    min-height: 44px;
+  }
+}
+
+/* The live prompt carries the phosphor glow (focused-element treatment). */
+.term-line--prompt .term-cmd {
+  text-shadow: var(--terminal-glow);
+}
+
+/* Exit beat: the pending chips retire while `exit` scrubs. */
+[data-beat='exit'] .term-chips,
+[data-beat='farewell'] .term-chips,
+[data-beat='dissolve'] .term-chips {
+  visibility: hidden;
+}
+
+.term-farewell {
+  margin-top: var(--space-1);
+  color: var(--aod-fg, #abb2bf);
+}
+
+/* The status bar — vim/ranger idiom, hairline top border, quiet. */
+.term-status-bar {
+  margin-top: auto;
+  min-height: 1.6em;
+  padding-top: var(--space-1);
+  border-top: 1px solid var(--hairline);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+.term-status-bar__hint {
+  color: var(--text-faint);
+}
+.term-status-bar__detail {
+  color: var(--text-muted);
+}
+
+/* Mid-scrub commands are tappable accelerators (§3.6 — pointer garnish;
+   they stay aria-hidden and unfocusable). */
+[data-beat='boot'] .term-line--prompt,
+[data-beat='exit'] .term-line--prompt {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* Symlink departure flash — appears instantly, fades on its way out. */
+.term-status-bar__flash {
+  color: var(--aod-green);
+  animation: term-flash-fade 1.6s var(--ease-out) forwards;
+}
+@keyframes term-flash-fade {
+  0%,
+  55% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ============================================================
+   TERMINAL PAGER — `less <id>/README.md` (§3.8). Fills the terminal body
+   over the listing (the alternate-screen metaphor: listing state untouched
+   underneath, restored on q). A project card in pager costume: # title,
+   one-liner, highlight bullets, [tag] chips, [GitHub ↗], and the less
+   status line. Sharp corners, opaque body ground.
+   ============================================================ */
+.term-pager {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--aod-bg-deep);
+  pointer-events: auto;
+  outline: none;
+}
+.term-pager__close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: var(--space-1) var(--space-2);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  font: inherit;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.term-pager__close:hover,
+.term-pager__close:focus-visible {
+  background: var(--aod-green);
+  color: var(--aod-bg-deep);
+  outline: none;
+}
+.term-pager__doc {
+  flex: 1;
+  min-height: 0;
+  padding: var(--space-2) var(--space-2) 0;
+  overflow-y: auto;
+}
+.term-pager__title {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-medium);
+  color: var(--aod-green);
+  text-shadow: var(--terminal-glow);
+}
+.term-pager__oneliner {
+  margin: 0 0 var(--space-3);
+  color: var(--aod-fg, #abb2bf);
+  max-width: 62ch;
+}
+.term-pager__highlights {
+  list-style: none;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  color: var(--text-muted);
+  max-width: 62ch;
+}
+.term-pager__highlights li::before {
+  content: '· ';
+  color: var(--aod-green);
+}
+.term-pager__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  color: var(--syntax-fn, #61afef);
+  font-size: var(--text-xs);
+}
+.term-pager__link {
+  display: inline-block;
+  color: var(--aod-green);
+  text-decoration: none;
+}
+.term-pager__link:hover,
+.term-pager__link:focus-visible {
+  background: var(--aod-green);
+  color: var(--aod-bg-deep);
+  outline: none;
+  text-decoration: none;
+}
+.term-pager__status {
+  padding-top: var(--space-1);
+  border-top: 1px solid var(--hairline);
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+}
+
+/* Reduced motion: static cursor, instant prints (delays collapse), no
+   flash fade animation. */
+@media (prefers-reduced-motion: reduce) {
+  .term-cursor {
+    animation: none;
+  }
+  .term-print,
+  .term-print--farewell {
+    transition: none;
+  }
+  .term-status-bar__flash {
+    animation: none;
+  }
+}
+[data-motion='reduced'] .term-cursor {
+  animation: none;
+}
+[data-motion='reduced'] .term-print,
+[data-motion='reduced'] .term-print--farewell {
+  transition: none;
+}
+[data-motion='reduced'] .term-status-bar__flash {
+  animation: none;
 }

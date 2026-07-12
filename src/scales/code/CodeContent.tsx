@@ -1,6 +1,16 @@
 // src/scales/code/CodeContent.tsx
-import { ScaleSection } from '@/components/ScaleSection';
+// The fifth band's content, in two registers (the ChromatinContent shape):
+//   · WebGL active — the band is scene-native: the code runways pace the
+//     terminal's arrival/plateau/exit beats, and the real interface is the
+//     scene-native terminal window (TerminalWindowContent mounts beside the
+//     runways in Stage C). The document register below is display:none'd
+//     (globals.css).
+//   · No WebGL — the runways collapse and the full document register renders:
+//     kicker/title/prose, the featured software cards, and the static
+//     listing. Unchanged Phase-1 output.
+import { ScaleBadge, ScaleSection } from '@/components/ScaleSection';
 import { TerminalListing, type TerminalRow } from '@/scales/code/TerminalListing';
+import { TerminalWindowContent } from '@/scales/code/TerminalWindowContent';
 import { MarkdownRenderer } from '@/content/markdown';
 import { getSection, getProjects } from '@/content/loader';
 import { useReveal } from '@/hooks/useReveal';
@@ -71,24 +81,41 @@ export function CodeContent() {
   }));
 
   return (
-    <ScaleSection scale="code" title={section?.frontmatter.title} kicker="the sequence level">
-      {section && <MarkdownRenderer content={section.body} className="prose" />}
+    // hideBadge: the floating scale badge reads as a document artifact over
+    // the scene-native band — the depth indicator already carries the scale
+    // identity there; the fallback document keeps its own badge below.
+    <ScaleSection scale="code" hideBadge>
+      {/* Scene-native runways — heights pace the whole band's scroll length
+          (globals.css Scroll runways block); the per-beat depths live in
+          terminal-beats.ts. They only take space when the Canvas owns the
+          band. */}
+      <div className="code-runway code-runway--arrival" aria-hidden="true" />
+      <div className="code-runway code-runway--plateau" aria-hidden="true" />
+      <div className="code-runway code-runway--exit" aria-hidden="true" />
+      <TerminalWindowContent />
 
-      <div
-        ref={featuredRef}
-        className="featured-grid reveal"
-        style={{
-          marginTop: 'var(--space-6)',
-          marginBottom: 'var(--space-6)',
-        }}
-      >
-        {featuredSoftware.map((p) => (
-          <FeaturedProject key={p.id} name={p.id} line={p.oneLiner} href={p.links.github} />
-        ))}
-      </div>
+      <div className="code-doc">
+        <ScaleBadge scale="code" />
+        <p className="code-doc__kicker">the sequence level</p>
+        <h2 className="code-doc__title">{section?.frontmatter.title ?? 'Software'}</h2>
+        {section && <MarkdownRenderer content={section.body} className="prose" />}
 
-      <div ref={terminalRef} className="reveal">
-        <TerminalListing cwd="~/projects" items={terminalItems} />
+        <div
+          ref={featuredRef}
+          className="featured-grid reveal"
+          style={{
+            marginTop: 'var(--space-6)',
+            marginBottom: 'var(--space-6)',
+          }}
+        >
+          {featuredSoftware.map((p) => (
+            <FeaturedProject key={p.id} name={p.id} line={p.oneLiner} href={p.links.github} />
+          ))}
+        </div>
+
+        <div ref={terminalRef} className="reveal">
+          <TerminalListing cwd="~/projects" items={terminalItems} />
+        </div>
       </div>
     </ScaleSection>
   );

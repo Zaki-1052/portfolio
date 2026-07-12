@@ -2,6 +2,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useTerminalMail } from '@/hooks/useTerminalMail';
 import { getLenis } from '@/engine/scroll-engine';
+import { trapFocus } from '@/utils/focus-trap';
 
 interface TerminalMailProps {
   open: boolean;
@@ -269,21 +270,4 @@ export function TerminalMail({ open, onClose }: TerminalMailProps) {
       </div>
     </div>
   );
-}
-
-function trapFocus(e: KeyboardEvent, container: HTMLElement | null) {
-  if (!container) return;
-  const focusable = container.querySelectorAll<HTMLElement>(
-    'input:not([disabled]):not([type="hidden"]):not([style*="display: none"]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])',
-  );
-  if (focusable.length === 0) return;
-  const first = focusable[0]!;
-  const last = focusable[focusable.length - 1]!;
-  if (e.shiftKey && document.activeElement === first) {
-    e.preventDefault();
-    last.focus();
-  } else if (!e.shiftKey && document.activeElement === last) {
-    e.preventDefault();
-    first.focus();
-  }
 }

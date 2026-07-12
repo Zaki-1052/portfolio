@@ -26,6 +26,7 @@ import {
   coilFogColorBlendT,
   coilFogDensityDeltaFor,
 } from '@/scales/chromatin/coil-fog';
+import { CODE_FOG_TINT, codeFogColorBlendT, codeFogDensityDeltaFor } from '@/scales/code/code-fog';
 
 // Deep warm-interior fog target the breakthrough drifts toward (dim amber-umber).
 const INTERIOR_FOG = new Color('#31221a');
@@ -41,6 +42,7 @@ export function SceneAtmosphere() {
   const interiorFog = useRef(new Color('#31221a'));
   const arborTint = useRef(new Color(ARBOR_FOG_TINT));
   const coilTint = useRef(new Color(COIL_FOG_TINT));
+  const codeTint = useRef(new Color(CODE_FOG_TINT));
 
   useFrame(() => {
     const depth = useDepthStore.getState().depth;
@@ -78,12 +80,18 @@ export function SceneAtmosphere() {
     // composing AFTER the arbor term does the navy→blue crossfade.
     const coilT = coilFogColorBlendT(depth);
     if (coilT > 0) fogColor.current.lerp(coilTint.current, coilT);
+    // Band-five handoff: the terminal's green-leaned dark takes over as the
+    // theme reaches the digital register — a whisper of tint over the very
+    // light density, gone before the expression scale (the sparsest).
+    const codeT = codeFogColorBlendT(depth);
+    if (codeT > 0) fogColor.current.lerp(codeTint.current, codeT);
     const density =
       (o
         ? fogDensityFor(depth, o.densityEstablish, o.densityBase, o.densityInterior, o.densityVeil)
         : fogDensityFor(depth)) +
       arborFogDensityDeltaFor(depth) +
-      coilFogDensityDeltaFor(depth);
+      coilFogDensityDeltaFor(depth) +
+      codeFogDensityDeltaFor(depth);
     if (fogRef.current) {
       fogRef.current.color.copy(fogColor.current);
       fogRef.current.density = density;

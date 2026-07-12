@@ -10,6 +10,11 @@ export interface Project {
   tags: string[];
   links: { github?: string; paper?: string };
   scale?: ScaleName;
+  /** Terminal-pager highlight bullets (2–3) — lorem placeholder until real
+   *  copy is written (the established content workflow). */
+  highlights?: string[];
+  /** Displayed README size for the listing's status-bar detail (e.g. "2.1 kB"). */
+  readmeSize?: string;
 }
 
 export interface Tier2Project {
