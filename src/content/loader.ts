@@ -7,6 +7,7 @@ import type {
   FormConfig,
   ParsedSection,
   SectionFrontmatter,
+  TerminalIdentity,
 } from './types';
 import type { ScaleName } from '@/stores/depth';
 
@@ -17,6 +18,7 @@ import statusData from '../../content/status.json';
 import toolkitData from '../../content/toolkit.json';
 import formData from '../../content/form.json';
 import introData from '../../content/intro.json';
+import terminalData from '../../content/terminal.json';
 
 const markdownFiles = import.meta.glob('/content/sections/*.md', {
   eager: true,
@@ -96,10 +98,18 @@ export interface ToolkitEntry {
   key: string;
   value: string;
   blurb?: string;
+  /** ls -laht size column in the terminal listing (placeholder metric). */
+  size?: string;
+  /** ls -laht date column in the terminal listing. */
+  date?: string;
 }
 
 export function getToolkit(): ToolkitEntry[] {
   return toolkitData as ToolkitEntry[];
+}
+
+export function getTerminalIdentity(): TerminalIdentity {
+  return terminalData as TerminalIdentity;
 }
 
 export function getFormConfig(): FormConfig {

@@ -195,7 +195,7 @@ describe('windowOpacityFor', () => {
 
 describe('session script', () => {
   it('boots with an honest working directory and exits with the authentic farewell', () => {
-    expect(BOOT_COMMAND).toBe('cd projects && ls -la');
+    expect(BOOT_COMMAND).toBe('cd projects && ls -laht');
     expect(EXIT_COMMAND).toBe('exit');
     expect(FAREWELL_LINES).toEqual(['logout', 'Saving session ...completed.']);
   });

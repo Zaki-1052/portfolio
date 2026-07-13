@@ -1,16 +1,18 @@
 // src/scales/expression/ExpressionContent.tsx
+// The toolkit moved UP to the code band (2026-07-13): the terminal's listing
+// and focus cards are its native home, and the redesigned expression scale
+// (DESIGN-terminal-expression §5, the signal-origin scene) has no seat for
+// a document-register disclosure.
 import { useState } from 'react';
 import { ScaleSection } from '@/components/ScaleSection';
 import { MarkdownRenderer } from '@/content/markdown';
-import { getSection, getLinks, getToolkit } from '@/content/loader';
+import { getSection, getLinks } from '@/content/loader';
 import { useReveal } from '@/hooks/useReveal';
 import { TerminalMail } from './TerminalMail';
 
 export function ExpressionContent() {
   const section = getSection('expression');
   const links = getLinks();
-  const toolkit = getToolkit();
-  const [expandedBlurb, setExpandedBlurb] = useState<string | null>(null);
   const [mailOpen, setMailOpen] = useState(false);
   const contactRef = useReveal<HTMLElement>();
 
@@ -38,30 +40,7 @@ export function ExpressionContent() {
         />
       </div>
       <div className="content-grid content-grid--equal">
-        <div>
-          {section && <MarkdownRenderer content={section.body} className="prose" />}
-
-          <details className="toolkit">
-            <summary>
-              <span style={{ color: 'var(--text-faint)' }}>$ </span>
-              <span style={{ color: 'var(--accent)' }}>cat</span> ~/.toolkit
-            </summary>
-            <div className="toolkit__body">
-              {toolkit.map((entry) => (
-                <div key={entry.key} className="toolkit__group">
-                  <div
-                    className="toolkit__key"
-                    data-has-blurb={entry.blurb ? '' : undefined}
-                    onClick={entry.blurb ? () => setExpandedBlurb(entry.key) : undefined}
-                  >
-                    {entry.key}
-                  </div>
-                  <div className="toolkit__val">{entry.value}</div>
-                </div>
-              ))}
-            </div>
-          </details>
-        </div>
+        <div>{section && <MarkdownRenderer content={section.body} className="prose" />}</div>
 
         <div>
           <nav ref={contactRef} className="contact-links reveal" aria-label="Contact">
@@ -117,22 +96,6 @@ export function ExpressionContent() {
         </a>
       </div>
       <TerminalMail open={mailOpen} onClose={() => setMailOpen(false)} />
-      {expandedBlurb &&
-        (() => {
-          const entry = toolkit.find((t) => t.key === expandedBlurb);
-          if (!entry?.blurb) return null;
-          return (
-            <div className="holo-overlay" onClick={() => setExpandedBlurb(null)}>
-              <div className="holo-popup" onClick={(e) => e.stopPropagation()}>
-                <button className="holo-popup__close" onClick={() => setExpandedBlurb(null)}>
-                  esc
-                </button>
-                <div className="holo-popup__header">{entry.key}</div>
-                <div className="holo-popup__body">{entry.blurb}</div>
-              </div>
-            </div>
-          );
-        })()}
     </ScaleSection>
   );
 }

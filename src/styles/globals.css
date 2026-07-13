@@ -2375,7 +2375,7 @@ hr {
   z-index: var(--z-overlay);
   pointer-events: none;
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   line-height: 1.6;
   color: var(--aod-green);
 }
@@ -2393,14 +2393,15 @@ hr {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   letter-spacing: 0.02em;
   color: var(--aod-fg-dim, #7f848e);
   user-select: none;
 }
 
 /* The inner content area — inset below the title band so square HTML
-   corners never poke past the rounded chrome. */
+   corners never poke past the rounded chrome. When a focus card is open,
+   the body splits tmux-style on wide viewports (below). */
 .terminal-window__body {
   position: absolute;
   top: calc(var(--term-bar-h, 32px) + var(--term-inset, 12px));
@@ -2410,6 +2411,13 @@ hr {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+.term-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
 }
 
 .term-line {
@@ -2463,9 +2471,11 @@ hr {
   opacity: 0;
 }
 
-/* The listing — dirs then symlinks, every row a real control. */
+/* The listing — honest ls -lht columns (perms · size · date · name), every
+   row a real control. One-liners live in the click-expansion + status bar.
+   No margins: real output sits flush under its command line. */
 .term-listing {
-  margin: var(--space-2) 0;
+  margin: 0;
 }
 .term-rows {
   list-style: none;
@@ -2474,11 +2484,11 @@ hr {
 }
 .term-row {
   --row-perm: var(--syntax-perm);
+  --row-meta: var(--text-muted);
   --row-name: var(--text-strong);
-  --row-desc: var(--text-muted);
   --row-badge: var(--syntax-star);
   display: grid;
-  grid-template-columns: minmax(0, max-content) minmax(0, 1fr) max-content;
+  grid-template-columns: max-content max-content max-content minmax(0, 1fr) max-content;
   gap: var(--space-4);
   align-items: baseline;
   width: 100%;
@@ -2493,19 +2503,27 @@ hr {
   cursor: pointer;
   pointer-events: auto;
 }
-.term-rows li:nth-child(even) .term-row {
+/* :where() keeps the zebra rule at ZERO extra specificity, so the
+   inverse-video hover/focus background below always wins (without it, even
+   rows kept their dark ground while the text flipped dark — unreadable). */
+.term-rows li:nth-child(even) .term-row:where(:not(:hover):not(:focus-visible)) {
   background: rgba(255, 255, 255, 0.02);
 }
 .term-row__perms {
   color: var(--row-perm);
 }
+.term-row__size {
+  min-width: 3.5ch;
+  color: var(--row-meta);
+  text-align: right;
+}
+.term-row__date {
+  min-width: 8ch;
+  color: var(--row-meta);
+}
 .term-row__name {
   color: var(--row-name);
   font-weight: var(--weight-medium);
-}
-.term-row__desc {
-  color: var(--row-desc);
-  margin-left: var(--space-4);
 }
 .term-row__badge {
   color: var(--row-badge);
@@ -2517,8 +2535,8 @@ hr {
 .term-row:hover,
 .term-row:focus-visible {
   --row-perm: var(--aod-bg-deep);
+  --row-meta: rgba(33, 37, 43, 0.75);
   --row-name: var(--aod-bg-deep);
-  --row-desc: rgba(33, 37, 43, 0.75);
   --row-badge: var(--aod-bg-deep);
   background: var(--aod-green);
   outline: none;
@@ -2534,9 +2552,39 @@ hr {
   }
 }
 
-/* Completion chips — zsh menu-select costume, same inverse-video treatment. */
+/* File click-expansion (the two main projects): the one-liner TYPES OUT
+   beneath the row (time-driven — a response to the visitor), the GitHub
+   link AFTER the description; external is the second, deliberate tap. */
+.term-row-expand {
+  padding: var(--space-1) var(--space-2) var(--space-2) calc(var(--space-2) + 11ch);
+  pointer-events: auto;
+}
+.term-row-expand__desc {
+  display: block;
+  max-width: 68ch;
+  color: var(--text-muted);
+  min-height: 1.6em;
+}
+.term-row-expand__target {
+  display: inline-block;
+  margin-top: 2px;
+  color: var(--aod-green);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.term-row-expand__target:hover,
+.term-row-expand__target:focus-visible {
+  background: var(--aod-green);
+  color: var(--aod-bg-deep);
+  outline: none;
+}
+
+/* Completion chips — zsh menu-select costume: the toolkit's .txt documents
+   (`[languages.txt]`), the band's less-able set. Same inverse-video
+   treatment as the rows. */
 .term-chips {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-3);
   margin: var(--space-1) 0 var(--space-2);
 }
@@ -2562,16 +2610,16 @@ hr {
   }
 }
 
-/* The live prompt carries the phosphor glow (focused-element treatment). */
-.term-line--prompt .term-cmd {
-  text-shadow: var(--terminal-glow);
-}
-
 /* Exit beat: the pending chips retire while `exit` scrubs. */
 [data-beat='exit'] .term-chips,
 [data-beat='farewell'] .term-chips,
 [data-beat='dissolve'] .term-chips {
   visibility: hidden;
+}
+
+/* The live prompt carries the phosphor glow (focused-element treatment). */
+.term-line--prompt .term-cmd {
+  text-shadow: var(--terminal-glow);
 }
 
 .term-farewell {
@@ -2585,7 +2633,7 @@ hr {
   min-height: 1.6em;
   padding-top: var(--space-1);
   border-top: 1px solid var(--hairline);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--text-muted);
 }
 .term-status-bar__hint {
@@ -2619,13 +2667,16 @@ hr {
 }
 
 /* ============================================================
-   TERMINAL PAGER — `less <id>/README.md` (§3.8). Fills the terminal body
-   over the listing (the alternate-screen metaphor: listing state untouched
-   underneath, restored on q). A project card in pager costume: # title,
-   one-liner, highlight bullets, [tag] chips, [GitHub ↗], and the less
-   status line. Sharp corners, opaque body ground.
+   TERMINAL FOCUS CARD — `less <id>/README.md` (§3.8, revised 2026-07-13).
+   ONE DOM, two layouts:
+   · narrow viewports — the card fills the body over the listing (the
+     pager / alternate-screen metaphor: listing untouched underneath);
+   · wide viewports — the body splits tmux-style: listing stays live left,
+     the card docks right behind a 1px hairline, so the typed less command
+     stays visible at the prompt.
+   Sharp corners; title without markdown costume.
    ============================================================ */
-.term-pager {
+.term-card {
   position: absolute;
   inset: 0;
   display: flex;
@@ -2634,31 +2685,58 @@ hr {
   pointer-events: auto;
   outline: none;
 }
-.term-pager__close {
+@media (min-width: 760px) {
+  .term-card {
+    position: static;
+    inset: auto;
+    flex: 0 0 42%;
+    min-width: 0;
+    margin-left: var(--space-4);
+    padding-left: var(--space-4);
+    border-left: 1px solid var(--hairline);
+    background: transparent;
+  }
+  .terminal-window__body[data-open='1'] {
+    flex-direction: row;
+  }
+  .terminal-window__body[data-open='1'] .term-main {
+    flex: 1 1 58%;
+  }
+}
+.term-card__close {
   position: absolute;
   top: 0;
   right: 0;
-  padding: var(--space-1) var(--space-2);
+  padding: var(--space-2) var(--space-3);
   background: transparent;
-  border: 0;
+  border: 1px solid var(--accent-line);
   border-radius: 0;
   font: inherit;
-  color: var(--text-muted);
+  font-size: var(--text-md);
+  line-height: 1;
+  /* Visible at REST — a control you can find, not a hover surprise. */
+  color: var(--aod-green);
   cursor: pointer;
 }
-.term-pager__close:hover,
-.term-pager__close:focus-visible {
+@media (min-width: 760px) {
+  .term-card__close {
+    position: relative;
+    align-self: flex-end;
+  }
+}
+.term-card__close:hover,
+.term-card__close:focus-visible {
   background: var(--aod-green);
   color: var(--aod-bg-deep);
   outline: none;
 }
-.term-pager__doc {
+.term-card__doc {
   flex: 1;
   min-height: 0;
   padding: var(--space-2) var(--space-2) 0;
   overflow-y: auto;
 }
-.term-pager__title {
+.term-card__title {
   margin: 0 0 var(--space-2);
   font-family: var(--font-mono);
   font-size: var(--text-lg);
@@ -2666,46 +2744,39 @@ hr {
   color: var(--aod-green);
   text-shadow: var(--terminal-glow);
 }
-.term-pager__oneliner {
+.term-card__oneliner {
   margin: 0 0 var(--space-3);
   color: var(--aod-fg, #abb2bf);
   max-width: 62ch;
 }
-.term-pager__highlights {
-  list-style: none;
-  margin: 0 0 var(--space-3);
-  padding: 0;
-  color: var(--text-muted);
-  max-width: 62ch;
-}
-.term-pager__highlights li::before {
-  content: '· ';
-  color: var(--aod-green);
-}
-.term-pager__tags {
+.term-card__tags {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
   margin-bottom: var(--space-3);
   color: var(--syntax-fn, #61afef);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
 }
-.term-pager__link {
+/* The gold badge carried into the card as a bracket chip. */
+.term-card__tag--gold {
+  color: var(--syntax-star);
+}
+.term-card__link {
   display: inline-block;
   color: var(--aod-green);
   text-decoration: none;
 }
-.term-pager__link:hover,
-.term-pager__link:focus-visible {
+.term-card__link:hover,
+.term-card__link:focus-visible {
   background: var(--aod-green);
   color: var(--aod-bg-deep);
   outline: none;
   text-decoration: none;
 }
-.term-pager__status {
+.term-card__status {
   padding-top: var(--space-1);
   border-top: 1px solid var(--hairline);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--text-faint);
 }
 

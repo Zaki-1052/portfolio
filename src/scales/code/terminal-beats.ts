@@ -50,10 +50,15 @@ export const TERMINAL_BEAT_DEFAULTS: Readonly<TerminalBeatParams> = Object.freez
 // defaults above (the liveCameraKeyframes pattern).
 export const liveTerminalBeatParams: TerminalBeatParams = { ...TERMINAL_BEAT_DEFAULTS };
 
-// The session script. `cd projects && ls -la` (not `ls ~/projects/`) so the
-// working directory is honestly ~/projects and the pager's later
-// `less cleave/README.md` is path-correct — the terminal never lies.
-export const BOOT_COMMAND = 'cd projects && ls -la';
+// The session script. `cd projects && …` (not `ls ~/projects/`) so the
+// working directory is honestly ~/projects and the later
+// `less <dir>/README.md` is path-correct — the terminal never lies. The
+// -laht flags earn the listing's size + date columns (-h human sizes) and
+// its newest-first order (-t): the date column in the content JSON is the
+// sort key, so entries there should stay date-descending. The toolkit
+// stays honestly absent even under -a — it lives in the HOME-level
+// ~/.toolkit, not inside ~/projects; it surfaces as the completion chips.
+export const BOOT_COMMAND = 'cd projects && ls -laht';
 export const EXIT_COMMAND = 'exit';
 /** The authentic macOS login-shell farewell. */
 export const FAREWELL_LINES: readonly string[] = ['logout', 'Saving session ...completed.'];

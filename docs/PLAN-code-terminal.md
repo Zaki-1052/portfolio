@@ -142,6 +142,50 @@ Vitest (node, colocated, mirrors `coil-fog.test.ts`/`camera-keyframes.test.ts` c
 - **Live site only:** scroll feel, scrub reversibility, accelerator, band-edge mount/unmount, keyboard/a11y. Needs `npm run dev` running — Zara's terminal or already-running instance.
 - Commands I run: `npm run typecheck`, `npm run lint`, `npm run test` (subset while iterating; full before done).
 
+## Revision — 2026-07-13 (Zara's first-look feedback)
+
+Supersedes parts of Stages C/D above; implemented same day:
+
+1. **Toolkit moves up from expression into the terminal** and is the
+   chip-promoted `less` set (`[languages/] [info/] [web/] [workflow/]` from
+   `content/toolkit.json`, each entry gaining size/date columns). Expression
+   drops its toolkit disclosure (its redesign has no seat for it); the code
+   band's no-WebGL doc register picks it up.
+2. **Split pane is the shipped desktop behavior** (≥760px: listing stays
+   left, card docks right behind a 1px hairline — the typed `less` command
+   stays visible). Narrow viewports keep the full-body pager. One DOM
+   (`TerminalFocusCard`, replacing TerminalPager); CSS decides.
+3. **The listing is honest `ls -laht`**: perms · size · date · name columns
+   (new size/date content slots in projects.json + toolkit.json; -t means
+   the JSON order should stay date-descending). One-liners leave the rows:
+   symlink rows now EXPAND in place on click — the description types out
+   (time-driven) beside the real `-> target ↗` anchor; following the link is
+   the second, deliberate tap. Project dirs still open their card (not
+   chip-promoted).
+4. **Session identity is content**: `content/terminal.json` (user/host/
+   projectsDir) drives the prompts and title bar.
+5. Fixes from the pass: zebra-row hover specificity bug (`:where()`), the
+   literal `# ` dropped from card titles, bigger close affordance, body type
+   up to `--text-base`.
+
+### Second pass (same feedback round, later)
+
+- **Completion chips removed** — the toolkit already lives in the listing;
+  rows are the only affordance (the `less ` prompt still completes when one
+  is tapped).
+- **Interaction styles reversed:** the two main projects are now plain
+  `.txt` FILES (`-rw-r--r--`, `cleave.txt`) that EXPAND in place (typed
+  one-liner, GitHub link after the description, gold star/metric badge via
+  new tier-1 `stars`/`metric` fields); tier-2 symlinks now open the
+  split-pane card (title, one-liner, gold badge as a bracket chip, GitHub
+  after). Toolkit dirs unchanged (cards). `highlights`/`readmeSize` retired
+  — one-liners carry all copy (no bullet points, per Zara).
+- **Card-switch bug fixed:** switching cards now backspaces the old command
+  to the bare `less ` and retypes the new one (the delete source is the
+  line's current text, so interrupted switches stay smooth); the card swaps
+  when the retype lands. Reduced motion writes the completed command
+  instantly.
+
 ## Risks
 
 | Risk | Mitigation |

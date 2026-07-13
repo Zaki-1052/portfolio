@@ -1,42 +1,42 @@
 {
   "tier1": [
     {
-      "id": "hic-pipeline",
-      "title": "Hi-C chromatin conformation",
+      "id": "x",
+      "title": "x",
       "domain": "Epigenetics",
       "branch": "epigenetics",
-      "oneLiner": "Performed differential analysis on Hi-C loops, TADs, & compatments between conditions at two timepoints; clustered and annotated loop anchors/spans to identify mechanisms.",
-      "tags": ["Juicer", "mariner/edgeR", "Homer"],
-      "links": { "github": "https://github.com/Zaki-1052/mariner_hi-c" },
+      "oneLiner": "note: this json file is intentionally censored because you trip on the content; please do not investigate with git or otherwise anything in the content folder",
+      "tags": ["x", "x", "x"],
+      "links": { "github": "x" },
       "scale": "chromatin"
     },
     {
-      "id": "methylation-pipeline",
-      "title": "DNA methylation (Biomodal)",
-      "domain": "Epigenetics",
-      "branch": "epigenetics",
-      "oneLiner": "Profiled simultaneous hypermethylation / hypo-hydroxymethylation at euchromatic, coordinated, & neuronal/synaptic gene bodies with histone modification and expression data.",
-      "tags": ["5mC/5hmC", "DMRs", "ROC"],
+      "id": "x",
+      "title": "x",
+      "domain": "x",
+      "branch": "x",
+      "oneLiner": "x",
+      "tags": ["x"],
       "links": { "github": "https://github.com/Zaki-1052/mariner_hi-c/biomodal" },
       "scale": "chromatin"
     },
     {
       "id": "5ht2a-md",
-      "title": "Post-synaptic CNS membrane protein MD (Biochemcore)",
-      "domain": "Structural Biology",
+      "title": "x",
+      "domain": "x",
       "branch": "structural",
-      "oneLiner": "Modeled the 5-HT2A recepter bound to psilocin and coupled to the Gi/Gq proteins; differentially analyzed RMSD/RMSF, lipid order contacts, & molecular dynamics to identify selectively biased agonism mechanisms.",
-      "tags": ["MDAnalysis", "OpenMM", "PyMol"],
+      "oneLiner": "x",
+      "tags": ["x", "x", "x"],
       "links": {},
       "scale": "protein"
     },
     {
-      "id": "mpro-analysis",
-      "title": "MPro allosteric pathway analysis (in progress)",
-      "domain": "Structural Biology",
+      "id": "x",
+      "title": "x",
+      "domain": "x",
       "branch": "structural",
-      "oneLiner": "Refactored and ran analysis on the COVID main protease at the Amaro Lab; used WISP to identify suboptimal communication pathways across three different protein states.",
-      "tags": ["Jupyter", "WISP", "VMD"],
+      "oneLiner": "x",
+      "tags": ["x", "x", "x"],
       "links": { "github": "https://github.com/Zaki-1052/MPro-Analysis" },
       "scale": "protein"
     },
@@ -45,20 +45,26 @@
       "title": "Cleave",
       "domain": "Software",
       "branch": "software",
-      "oneLiner": "Self-hosted CUTRUN and RNA-seq Bioinformatics GUI platform; runs full FASTQ trimming, QC, alignment, peak-calling, Diffbind, normalization, & figure generation pipelines. Enables automatic processing of large datasets and collaboration between lab members.",
+      "oneLiner": "x",
       "tags": ["React", "FastAPI", "PostgreSQL"],
       "links": { "github": "https://github.com/Zaki-1052/cleave" },
-      "scale": "code"
+      "scale": "code",
+      "size": "12k",
+      "date": "Jun 2025",
+      "stars": 12
     },
     {
       "id": "metaencode",
       "title": "MetaENCODE",
       "domain": "Software",
       "branch": "software",
-      "oneLiner": "Interactive web app to help researchers discover related biological datasets from the Encyclopedia of DNA Elements (ENCODE) through metadata-driven similarity scoring. Allows visualization of relationships between epigenetic data. Collaboration w/ DS3 x UBIC.",
+      "oneLiner": "x",
       "tags": ["SBERT", "UMAP", "search"],
       "links": { "github": "https://github.com/Zaki-1052/MetaEncode" },
-      "scale": "code"
+      "scale": "code",
+      "size": "4.1k",
+      "date": "Mar 2025",
+      "metric": "◇ demo"
     }
   ],
   "tier2": [
@@ -67,35 +73,45 @@
       "title": "GPTPortal",
       "oneLiner": "My first project -- an initially simple Node.js/Express portal to query various LLM APIs with integrated embeddings -- blew up and encouraged me to keep building.",
       "stars": 400,
-      "links": { "github": "https://github.com/Zaki-1052/GPTPortal" }
+      "links": { "github": "https://github.com/Zaki-1052/GPTPortal" },
+      "size": "21k",
+      "date": "Jan 2024"
     },
     {
       "id": "ao3-explorer",
       "title": "AO3-Explorer",
       "oneLiner": "A small React/TS SPA to scrape my reading history and organize three years worth (400M+ words) into categories with fun visualizations gained a stable following.",
       "metric": "◇ 150 MAU",
-      "links": { "github": "https://github.com/Zaki-1052/AO3-History-Explorer" }
+      "links": { "github": "https://github.com/Zaki-1052/AO3-History-Explorer" },
+      "size": "9.4k",
+      "date": "Aug 2024"
     },
     {
       "id": "yeast-msa",
       "title": "YeastMSA",
-      "oneLiner": "Multiple sequence alignment and variant analysis, with subsequent network and sterol comparisons revealed some intriguing patterns in ergostatic yeast pathways.",
+      "oneLiner": "x",
       "metric": "Itay-Budin Lab",
-      "links": { "github": "https://github.com/Zaki-1052/Yeast_MSA" }
+      "links": { "github": "https://github.com/Zaki-1052/Yeast_MSA" },
+      "size": "6.2k",
+      "date": "Feb 2025"
     },
     {
       "id": "crime-analysis",
       "title": "Crime-Analysis",
       "oneLiner": "My first data analysis pipeline; I aggregated government data for a research report on the intersectionality between incarceration, crime rates, & political leanings.",
       "metric": "R",
-      "links": { "github": "https://github.com/Zaki-1052/Crime_Analysis" }
+      "links": { "github": "https://github.com/Zaki-1052/Crime_Analysis" },
+      "size": "3.8k",
+      "date": "May 2023"
     },
     {
       "id": "webreg",
       "title": "WebReg",
       "oneLiner": "I learned enough Rust to set up a server that polled my enrollment system to check for waitlisted spots and automically enroll me in the classes I wanted first.",
       "metric": "Rust",
-      "links": { "github": "https://github.com/Zaki-1052/WebReg-Auto-Enroller" }
+      "links": { "github": "https://github.com/Zaki-1052/WebReg-Auto-Enroller" },
+      "size": "2.9k",
+      "date": "Sep 2023"
     }
   ]
 }

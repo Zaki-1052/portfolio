@@ -1,20 +1,25 @@
 // src/scales/code/terminal-actions.ts
-// Shared tap/hover actions for the terminal's interactive elements — rows
-// and chips call the SAME functions so "tapping a chip is identical to
-// tapping the directory row" is true by construction. Dir taps run the
-// two-clock rule's THIRD clock: the pending command completes itself at
-// real-terminal speed (tapCompleteMs, time-driven — a response to the
-// visitor, not to scroll) and the pager opens when it lands. A small event
-// channel lets the prompt line animate the completion and the status bar
-// flash symlink departures without any store coupling.
+// Shared tap/hover actions for the terminal's interactive elements — toolkit
+// rows and symlink rows call the SAME open function so every card opens the
+// same way. Card opens run the two-clock rule's THIRD clock: the pending
+// command completes itself at real-terminal speed (time-driven — a response
+// to the visitor, not to scroll) and the card opens when it lands. SWITCHING
+// cards is honest terminal editing: the old command backspaces to the bare
+// `less ` prompt, the new one types out, and the card swaps at the end. A
+// small event channel lets the prompt line animate all of this and the
+// status bar flash external departures without any store coupling.
 import { useDepthStore } from '@/stores/depth';
 import { useMotionStore } from '@/stores/motion';
 import { useTerminalFocusStore } from '@/stores/terminal-focus';
+import { getToolkit } from '@/content/loader';
 import { TERMINAL_BEAT_DEFAULTS, liveTerminalBeatParams } from './terminal-beats';
 
+/** Backspace-phase duration when a previous command must clear first. */
+export const COMMAND_DELETE_MS = 150;
+
 export type TerminalTapEvent =
-  | { kind: 'complete'; id: string; command: string; totalMs: number }
-  | { kind: 'symlink'; id: string };
+  | { kind: 'complete'; id: string; command: string; deleteMs: number; typeMs: number }
+  | { kind: 'external'; id: string };
 
 const tapListeners = new Set<(e: TerminalTapEvent) => void>();
 
@@ -29,9 +34,18 @@ function emitTapEvent(e: TerminalTapEvent): void {
   for (const listener of tapListeners) listener(e);
 }
 
-/** The command a dir tap completes — path-correct from ~/projects. */
-export function lessCommandFor(id: string): string {
-  return `less ${id}/README.md`;
+let toolkitIds: Set<string> | null = null;
+function isToolkitId(id: string): boolean {
+  if (toolkitIds === null) toolkitIds = new Set(getToolkit().map((t) => t.key));
+  return toolkitIds.has(id);
+}
+
+/** The command a card open completes. The toolkit lives in the hidden
+ *  ~/.toolkit (absolute path, cwd-proof — and honestly invisible to the
+ *  boot listing, which has no -a); projects are dirs in ~/projects whose
+ *  README the pager follows into. */
+export function commandForId(id: string): string {
+  return isToolkitId(id) ? `less ~/.toolkit/${id}.txt` : `less ${id}/README.md`;
 }
 
 let pendingOpen: number | null = null;
@@ -41,29 +55,34 @@ export function openProjectFromRow(id: string): void {
   const p = import.meta.env.DEV ? liveTerminalBeatParams : TERMINAL_BEAT_DEFAULTS;
   const reduced = useMotionStore.getState().reduced;
 
+  const wasPending = pendingOpen !== null;
   if (pendingOpen !== null) {
     window.clearTimeout(pendingOpen);
     pendingOpen = null;
   }
 
-  // Already reading something (or reduced motion / instant tuning): open
-  // directly — the completion beat is a first-open flourish, not a gate.
-  if (store.openProject !== null || reduced || p.tapCompleteMs <= 0) {
+  // Reduced motion / instant tuning: open directly — the completion beat is
+  // a flourish, not a gate.
+  if (reduced || p.tapCompleteMs <= 0) {
     store.setOpenProject(id, useDepthStore.getState().depth);
     return;
   }
 
-  emitTapEvent({ kind: 'complete', id, command: lessCommandFor(id), totalMs: p.tapCompleteMs });
+  // A previous command on the line (an open card, or an interrupted
+  // completion) backspaces before the new one types.
+  const deleteMs = store.openProject !== null || wasPending ? COMMAND_DELETE_MS : 0;
+  const typeMs = p.tapCompleteMs;
+  emitTapEvent({ kind: 'complete', id, command: commandForId(id), deleteMs, typeMs });
   pendingOpen = window.setTimeout(() => {
     pendingOpen = null;
     useTerminalFocusStore.getState().setOpenProject(id, useDepthStore.getState().depth);
-  }, p.tapCompleteMs);
+  }, deleteMs + typeMs);
 }
 
-/** Symlink rows navigate natively; this just feeds the status bar's fading
- *  `opening <name> ↗` departure line. */
-export function notifySymlinkOpened(id: string): void {
-  emitTapEvent({ kind: 'symlink', id });
+/** External links (the expansions' GitHub anchors) navigate natively;
+ *  this feeds the status bar's fading `opening <id> ↗` departure line. */
+export function notifyExternalOpened(id: string): void {
+  emitTapEvent({ kind: 'external', id });
 }
 
 export function setHoveredRow(id: string | null): void {

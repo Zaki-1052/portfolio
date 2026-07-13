@@ -1,71 +1,119 @@
 // src/scales/code/terminal-rows.ts
-// projects.json → the ls -la session listing, pure and deterministic. The
-// file type teaches the behavior (design §3.5): tier-1 code projects are
-// real DIRECTORIES (in-terminal content — tapping opens the pager) and
-// tier-2 projects are SYMLINKS (external — the `->` announces "opens
-// elsewhere" before anyone taps). The presentation strings the listing
-// depends on (perms, labels) are derived HERE so the mapping is provable in
-// Vitest; the component stays a dumb projector of these rows.
+// content JSON → the terminal session's data, pure and deterministic
+// (design §3.5, revised 2026-07-14 second pass):
+//   · the ls LISTING is PROJECTS ONLY — every row a directory with its
+//     trailing slash (no symlink arrows, no .txt files here). The two main
+//     projects expand in place (typed one-liner + GitHub link); the tier-2
+//     projects open the split-pane focus card.
+//   · the TOOLKIT never appears in the listing (it lives in the hidden
+//     ~/.toolkit, and the boot command has no -a). It surfaces as the
+//     completion CHIPS under the live prompt — .txt files
+//     (`[languages.txt]`) that complete `less ~/.toolkit/<key>.txt` and
+//     open the card.
+// Rows carry the ls -lht columns (perms · size · date · name) so the
+// mapping is provable in Vitest; the components stay dumb projectors.
 import type { Project, ProjectsData, Tier2Project } from '@/content/types';
+import type { ToolkitEntry } from '@/content/loader';
 
 export const DIR_PERMS = 'drwxr-xr-x';
-export const SYMLINK_PERMS = 'lrwxr-xr-x';
+/** Main projects wear group-write perms — a visible cue that these two rows
+ *  behave differently (expand in place) from the card-opening rest. */
+export const MAIN_PERMS = 'drwxrwxr-x';
 
-export interface TerminalDirRow {
-  kind: 'dir';
+/** Column placeholder until real metrics are written (content workflow). */
+const NO_VALUE = '—';
+
+/** A main (tier-1) project — expands in place in the listing. */
+export interface TerminalMainRow {
+  kind: 'main';
   id: string;
   /** Listing label — the directory name with its trailing slash. */
   label: string;
-  perms: typeof DIR_PERMS;
+  perms: typeof MAIN_PERMS;
   oneLiner: string;
-  /** The full tier-1 record — the pager's content source (title, tags,
-   *  links, highlights, readmeSize). */
+  size: string;
+  date: string;
+  stars?: number;
+  metric?: string;
+  /** The full tier-1 record — the expansion's content source. */
   project: Project;
 }
 
-export interface TerminalSymlinkRow {
-  kind: 'symlink';
+/** A tier-2 project — opens the split-pane focus card. */
+export interface TerminalProjectRow {
+  kind: 'project';
   id: string;
-  /** Listing label — `name ->` in real ls symlink style. */
   label: string;
-  perms: typeof SYMLINK_PERMS;
+  perms: typeof DIR_PERMS;
+  title: string;
   oneLiner: string;
-  /** External target — the GitHub repo the row opens in a new tab. */
+  size: string;
+  date: string;
+  /** External target — the card's GitHub link. */
   href: string;
   stars?: number;
   metric?: string;
 }
 
-export type TerminalSessionRow = TerminalDirRow | TerminalSymlinkRow;
+export type TerminalSessionRow = TerminalMainRow | TerminalProjectRow;
 
-export function terminalDirRows(tier1: readonly Project[]): TerminalDirRow[] {
+/** A toolkit entry — a chip + card, never a listing row. */
+export interface TerminalToolkitItem {
+  kind: 'toolkit';
+  id: string;
+  /** Chip label — a plain document in the hidden ~/.toolkit (`languages.txt`). */
+  label: string;
+  /** The toolkit value line ("Python, R, TypeScript…") — the card's chips. */
+  oneLiner: string;
+  entry: ToolkitEntry;
+}
+
+export function terminalMainRows(tier1: readonly Project[]): TerminalMainRow[] {
   return tier1
     .filter((p) => p.scale === 'code')
     .map((p) => ({
-      kind: 'dir' as const,
+      kind: 'main' as const,
       id: p.id,
       label: `${p.id}/`,
-      perms: DIR_PERMS,
+      perms: MAIN_PERMS,
       oneLiner: p.oneLiner,
+      size: p.size ?? NO_VALUE,
+      date: p.date ?? NO_VALUE,
+      stars: p.stars,
+      metric: p.metric,
       project: p,
     }));
 }
 
-export function terminalSymlinkRows(tier2: readonly Tier2Project[]): TerminalSymlinkRow[] {
+export function terminalProjectRows(tier2: readonly Tier2Project[]): TerminalProjectRow[] {
   return tier2.map((p) => ({
-    kind: 'symlink' as const,
+    kind: 'project' as const,
     id: p.id,
-    label: `${p.id} ->`,
-    perms: SYMLINK_PERMS,
+    label: `${p.id}/`,
+    perms: DIR_PERMS,
+    title: p.title,
     oneLiner: p.oneLiner,
+    size: p.size ?? NO_VALUE,
+    date: p.date ?? NO_VALUE,
     href: p.links.github,
     stars: p.stars,
     metric: p.metric,
   }));
 }
 
-/** The full listing in print order: directories first, then symlinks —
- *  readable-here before reachable-elsewhere. */
+export function terminalToolkitItems(toolkit: readonly ToolkitEntry[]): TerminalToolkitItem[] {
+  return toolkit.map((entry) => ({
+    kind: 'toolkit' as const,
+    id: entry.key,
+    label: `${entry.key}.txt`,
+    oneLiner: entry.value,
+    entry,
+  }));
+}
+
+/** The ls listing in print order: main projects, then the rest. Within each
+ *  group the JSON order IS the display order (ls -lht's -t implies
+ *  newest-first; the date column doubles as the sort key Zara curates). */
 export function terminalSessionRows(data: ProjectsData): TerminalSessionRow[] {
-  return [...terminalDirRows(data.tier1), ...terminalSymlinkRows(data.tier2)];
+  return [...terminalMainRows(data.tier1), ...terminalProjectRows(data.tier2)];
 }

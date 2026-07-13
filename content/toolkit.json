@@ -2,21 +2,29 @@
   {
     "key": "languages",
     "value": "Python, R, TypeScript, Java, Rust, Bash",
-    "blurb": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+    "blurb": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+    "size": "6.1k",
+    "date": "Jul 2025"
   },
   {
-    "key": "bioinfo",
-    "value": "AMBER, cpptraj, ChimeraX, MDAnalysis, Bioconductor, samtools",
-    "blurb": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris."
+    "key": "info",
+    "value": "x",
+    "blurb": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.",
+    "size": "3.4k",
+    "date": "Jul 2025"
   },
   {
     "key": "web",
     "value": "React, Three.js, FastAPI, PostgreSQL, AWS",
-    "blurb": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum."
+    "blurb": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum.",
+    "size": "8.2k",
+    "date": "Jun 2025"
   },
   {
     "key": "workflow",
     "value": "Neovim, tmux, Git, SLURM, Claude Code",
-    "blurb": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia."
+    "blurb": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia.",
+    "size": "5.0k",
+    "date": "Jul 2025"
   }
 ]

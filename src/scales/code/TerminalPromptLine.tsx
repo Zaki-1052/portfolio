@@ -1,23 +1,26 @@
 // src/scales/code/TerminalPromptLine.tsx
 // The two prompt lines. All three of the terminal's text clocks meet here:
-//   · SCROLL — commands scrub: boot types `cd projects && ls -la` across its
-//     beat, the live prompt scrubs `exit` across the exit beat; both freeze
-//     mid-word at scroll rest and backspace on rewind.
-//   · TIME — a dir tap completes the pending `less <id>/README.md` at
-//     real-terminal speed (terminal-actions' tap channel) before the pager
-//     opens; while the pager is open the completed command holds.
+//   · SCROLL — commands scrub: boot types `cd projects && ls -laht` across
+//     its beat, the live prompt scrubs `exit` across the exit beat; both
+//     freeze mid-word at scroll rest and backspace on rewind.
+//   · TIME — a card-opening tap completes the pending `less <id>/README.md`
+//     at real-terminal speed before the card opens; SWITCHING cards
+//     backspaces the old command to the bare `less ` and retypes (honest
+//     terminal editing — the delete source is the line's CURRENT text, so
+//     even an interrupted switch animates from what's visible). While a
+//     card is open the completed command holds under the split.
 //   · The accelerator (§3.6, pointer-only garnish): tapping a mid-scrub
-//     command smooth-scrolls Lenis to that beat's execute threshold, so
-//     scroll position and session state can never disagree.
+//     command smooth-scrolls Lenis to that beat's execute threshold.
 // Text is written imperatively from a depth-store subscription (no React
 // churn at scroll rate). Scrub lines are decorative to AT (aria-hidden) —
-// the listing, chips, and pager are the accessible interface.
+// the listing and cards are the accessible interface.
 import { useEffect, useRef, type CSSProperties } from 'react';
 import { gsap } from 'gsap';
 import { useDepthStore } from '@/stores/depth';
 import { useMotionStore } from '@/stores/motion';
 import { useTerminalFocusStore } from '@/stores/terminal-focus';
 import { depthToScrollY, getLenis } from '@/engine/scroll-engine';
+import { getTerminalIdentity } from '@/content/loader';
 import {
   BOOT_COMMAND,
   EXIT_COMMAND,
@@ -27,15 +30,27 @@ import {
   liveTerminalBeatParams,
   type TerminalBeatParams,
 } from './terminal-beats';
-import { tapCommandCharsAt } from './terminal-output';
-import { subscribeTapEvents } from './terminal-actions';
+import { outputRevealAt } from './terminal-output';
+import { commandForId, subscribeTapEvents } from './terminal-actions';
 
 function beatParams(): TerminalBeatParams {
   return import.meta.env.DEV ? liveTerminalBeatParams : TERMINAL_BEAT_DEFAULTS;
 }
 
+/** The pending prompt every completion grows from / deletes back to. */
+const PROMPT_BASE = 'less ';
+
 interface TerminalPromptLineProps {
   variant: 'boot' | 'live';
+}
+
+interface TapAnimation {
+  command: string;
+  /** The line's text at animation start — the backspace source. */
+  deleteFrom: string;
+  deleteMs: number;
+  typeMs: number;
+  startMs: number;
 }
 
 export function TerminalPromptLine({ variant }: TerminalPromptLineProps) {
@@ -47,11 +62,7 @@ export function TerminalPromptLine({ variant }: TerminalPromptLineProps) {
     const cursor = cursorRef.current;
     if (!cmd || !cursor) return undefined;
 
-    // Time-driven tap completion (live prompt only): while running (or once
-    // the pager is open) the scroll clock keeps its hands off the line.
-    let tapCommand: string | null = null;
-    let tapStartMs = 0;
-    let tapTotalMs = 0;
+    let anim: TapAnimation | null = null;
 
     const writeLine = (text: string, cursorOn: boolean): void => {
       if (cmd.textContent !== text) cmd.textContent = text;
@@ -64,7 +75,8 @@ export function TerminalPromptLine({ variant }: TerminalPromptLineProps) {
       const reduced = useMotionStore.getState().reduced;
 
       if (variant === 'boot') {
-        // Reduced motion: no scrub — fully typed the moment the beat begins.
+        // Reduced motion: no scrub — the command appears fully typed the
+        // moment its beat begins (§3.11).
         const chars = reduced
           ? depth >= p.bootStart
             ? BOOT_COMMAND.length
@@ -74,19 +86,30 @@ export function TerminalPromptLine({ variant }: TerminalPromptLineProps) {
         return;
       }
 
-      // The live prompt: the tap clock and the open pager both outrank the
-      // scroll clock (the completed command holds under the alternate
-      // screen, exactly like real less).
-      if (tapCommand !== null) {
-        const chars = tapCommandCharsAt(tapCommand, performance.now() - tapStartMs, tapTotalMs);
-        writeLine(tapCommand.slice(0, chars), true);
-        if (chars >= tapCommand.length) tapCommand = null;
+      // The live prompt: the tap clock outranks everything (it also covers
+      // the gap between typing landing and the card actually opening), and
+      // an open card holds the completed command under the split.
+      if (anim !== null) {
+        const t = performance.now() - anim.startMs;
+        if (t < anim.deleteMs && anim.deleteFrom.length > PROMPT_BASE.length) {
+          const extra = anim.deleteFrom.length - PROMPT_BASE.length;
+          const removed = Math.min(extra, Math.floor((t / anim.deleteMs) * extra));
+          writeLine(anim.deleteFrom.slice(0, anim.deleteFrom.length - removed), true);
+        } else {
+          const sinceType = t - anim.deleteMs;
+          const typed = outputRevealAt(
+            anim.command.length - PROMPT_BASE.length,
+            sinceType,
+            anim.typeMs,
+          );
+          writeLine(anim.command.slice(0, PROMPT_BASE.length + typed), true);
+        }
         return;
       }
       if (useTerminalFocusStore.getState().openProject !== null) return;
 
       if (depth < p.exitStart) {
-        writeLine('less ', true);
+        writeLine(PROMPT_BASE, true);
       } else if (depth < p.exitExecute) {
         const chars = reduced ? EXIT_COMMAND.length : exitCharsTyped(depth, p);
         writeLine(EXIT_COMMAND.slice(0, chars), true);
@@ -103,29 +126,36 @@ export function TerminalPromptLine({ variant }: TerminalPromptLineProps) {
 
     if (variant === 'boot') return unsubscribeDepth;
 
-    // gsap-ticker animator for the tap completion (time-driven, independent
-    // of both scroll and the WebGL frameloop).
+    // gsap-ticker animator for the delete/retype completion (time-driven,
+    // independent of both scroll and the WebGL frameloop).
     const tick = (): void => {
-      if (tapCommand === null) return;
+      if (anim === null) return;
       syncFromDepth(useDepthStore.getState().depth);
     };
     gsap.ticker.add(tick);
 
     const unsubscribeTap = subscribeTapEvents((e) => {
       if (e.kind !== 'complete') return;
-      tapCommand = e.command;
-      tapStartMs = performance.now();
-      tapTotalMs = e.totalMs;
+      anim = {
+        command: e.command,
+        deleteFrom: cmd.textContent ?? PROMPT_BASE,
+        deleteMs: e.deleteMs,
+        typeMs: e.typeMs,
+        startMs: performance.now(),
+      };
+      syncFromDepth(useDepthStore.getState().depth);
     });
 
-    // Pager closed → hand the line back to the scroll clock.
+    // Card opened → the animation's job is done; write the completed command
+    // outright (a no-op after a full animation, and the instant path for
+    // reduced motion, where no animation ran). Card closed → hand the line
+    // back to the scroll clock.
     const unsubscribeFocus = useTerminalFocusStore.subscribe(
       (s) => s.openProject,
       (openProject) => {
-        if (openProject === null) {
-          tapCommand = null;
-          syncFromDepth(useDepthStore.getState().depth);
-        }
+        anim = null;
+        if (openProject === null) syncFromDepth(useDepthStore.getState().depth);
+        else writeLine(commandForId(openProject), true);
       },
     );
 
@@ -156,10 +186,13 @@ export function TerminalPromptLine({ variant }: TerminalPromptLineProps) {
     getLenis()?.scrollTo(y, { immediate: useMotionStore.getState().reduced });
   };
 
+  // Session identity is content, not code (content/terminal.json).
+  const identity = getTerminalIdentity();
+
   if (variant === 'boot') {
     return (
       <div className="term-line term-line--prompt" aria-hidden="true" onClick={accelerate}>
-        <span className="term-prompt-user">zara@macbook</span>
+        <span className="term-prompt-user">{`${identity.user}@${identity.host}`}</span>
         <span className="term-prompt-cwd"> ~ </span>
         <span className="term-prompt-sigil">% </span>
         <span ref={cmdRef} className="term-cmd" />
@@ -168,18 +201,18 @@ export function TerminalPromptLine({ variant }: TerminalPromptLineProps) {
     );
   }
 
-  // The live prompt prints LAST — one stagger step after the listing's
-  // final row (the shell settles, then offers the next command).
+  // The live prompt prints a clear beat AFTER the listing lands (the shell
+  // settles, then offers the next command; the chips follow it).
   const p = beatParams();
   return (
     <div
       className="term-line term-line--prompt term-print"
-      style={{ '--print-delay': `${p.outputPrintMs}ms` } as CSSProperties}
+      style={{ '--print-delay': `${p.outputPrintMs + 200}ms` } as CSSProperties}
       aria-hidden="true"
       onClick={accelerate}
     >
-      <span className="term-prompt-user">zara@macbook</span>
-      <span className="term-prompt-cwd"> projects </span>
+      <span className="term-prompt-user">{`${identity.user}@${identity.host}`}</span>
+      <span className="term-prompt-cwd">{` ${identity.projectsDir} `}</span>
       <span className="term-prompt-sigil">% </span>
       <span ref={cmdRef} className="term-cmd" />
       <span ref={cursorRef} className="term-cursor" />

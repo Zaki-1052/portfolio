@@ -8,11 +8,12 @@
 //   · No WebGL — the runways collapse and the full document register renders:
 //     kicker/title/prose, the featured software cards, and the static
 //     listing. Unchanged Phase-1 output.
+import { useState } from 'react';
 import { ScaleBadge, ScaleSection } from '@/components/ScaleSection';
 import { TerminalListing, type TerminalRow } from '@/scales/code/TerminalListing';
 import { TerminalWindowContent } from '@/scales/code/TerminalWindowContent';
 import { MarkdownRenderer } from '@/content/markdown';
-import { getSection, getProjects } from '@/content/loader';
+import { getSection, getProjects, getToolkit } from '@/content/loader';
 import { useReveal } from '@/hooks/useReveal';
 
 function FeaturedProject({ name, line, href }: { name: string; line: string; href?: string }) {
@@ -67,6 +68,8 @@ function FeaturedProject({ name, line, href }: { name: string; line: string; hre
 export function CodeContent() {
   const section = getSection('code');
   const { tier1, tier2 } = getProjects();
+  const toolkit = getToolkit();
+  const [expandedBlurb, setExpandedBlurb] = useState<string | null>(null);
   const featuredRef = useReveal<HTMLDivElement>();
   const terminalRef = useReveal<HTMLDivElement>();
 
@@ -116,7 +119,47 @@ export function CodeContent() {
         <div ref={terminalRef} className="reveal">
           <TerminalListing cwd="~/projects" items={terminalItems} />
         </div>
+
+        {/* The toolkit (moved up from expression 2026-07-13 — the terminal
+            is its native home; the scene-native register serves it as
+            less-able directories, this is the no-WebGL twin). */}
+        <details className="toolkit">
+          <summary>
+            <span style={{ color: 'var(--text-faint)' }}>$ </span>
+            <span style={{ color: 'var(--accent)' }}>cat</span> ~/.toolkit
+          </summary>
+          <div className="toolkit__body">
+            {toolkit.map((entry) => (
+              <div key={entry.key} className="toolkit__group">
+                <div
+                  className="toolkit__key"
+                  data-has-blurb={entry.blurb ? '' : undefined}
+                  onClick={entry.blurb ? () => setExpandedBlurb(entry.key) : undefined}
+                >
+                  {entry.key}
+                </div>
+                <div className="toolkit__val">{entry.value}</div>
+              </div>
+            ))}
+          </div>
+        </details>
       </div>
+      {expandedBlurb &&
+        (() => {
+          const entry = toolkit.find((t) => t.key === expandedBlurb);
+          if (!entry?.blurb) return null;
+          return (
+            <div className="holo-overlay" onClick={() => setExpandedBlurb(null)}>
+              <div className="holo-popup" onClick={(e) => e.stopPropagation()}>
+                <button className="holo-popup__close" onClick={() => setExpandedBlurb(null)}>
+                  esc
+                </button>
+                <div className="holo-popup__header">{entry.key}</div>
+                <div className="holo-popup__body">{entry.blurb}</div>
+              </div>
+            </div>
+          );
+        })()}
     </ScaleSection>
   );
 }

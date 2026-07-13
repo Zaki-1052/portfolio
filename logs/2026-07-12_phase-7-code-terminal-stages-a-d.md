@@ -44,11 +44,25 @@ are green. Visual verification (preview + live scroll feel) is the open item.
 - Cursor relay: shader (flight only) → CSS `intro-blink` (HTML live, incl. a bare
   cursor after the farewell) → survivor mesh frozen at `farewellHoldEnd`.
 
+## Preview verification (Playwright, dpr 2, 2026-07-12)
+
+- All beats render, console clean (favicon 404 only). Screenshots in
+  `.playwright-mcp/code-preview-*.png`.
+- Flight: small/deep/offset/tilted arrival pose correct. Plateau: locked
+  window, chrome correct (corners, traffic lights, brushed band, edge glow).
+- Dissolve/after: window recedes and hides; survivor cursor freezes world
+  position and blinks at the 530 ms rhythm; environment drains on schedule.
+- Draw calls: 3 scene calls at plateau (window + grid + motes) + shared
+  PostFX chain (~17 bloom-mip passes, pre-existing).
+- Screen-lock proof: pointer-parallax camera rotation left the window at NDC
+  (0,0) exactly — zero swim; the priority −1 ordering works end-to-end.
+
 ## Open items
 
-- Visual pass pending: `npm run dev` → `/code-preview.html?beat=…&dpr=2` (wheel
-  scrubs depth), draw calls via `window.__preview.gl.info.render`; then live-site
-  scrub/keyboard/reduced-motion passes (Stage D exit checks).
+- Live-site pass (Zara): scrub reversibility, HTML interior alignment,
+  keyboard/pager, reduced motion — the preview has no document layer.
+- Look tuning (leva): edge glow reads strong at 1.3; grid very faint at
+  0.16 behind the 0.86-fill window; body near-black under ACES — taste pass.
 - Stage E: leva tune + bake blessed values, runway-height feel pass, r3f-perf
   baseline per beat, optional tmux split-pane variant.
 - Survivor cursor freezes at an approximate prompt seat (−0.55 halfW, −0.2 halfH);

@@ -40,11 +40,12 @@ import {
 import { CODE_WINDOW_STANDOFF, windowLockedRect } from './code-window-pose';
 import { CODE_WINDOW_DEFAULTS } from './code-window-params';
 import { getCodeWindowOverride, subscribeCodeParams } from './code-live-params';
+import { getTerminalIdentity } from '@/content/loader';
 import { TerminalPromptLine } from './TerminalPromptLine';
 import { TerminalInteractiveListing } from './TerminalInteractiveListing';
 import { TerminalChips } from './TerminalChips';
 import { TerminalStatusBar } from './TerminalStatusBar';
-import { TerminalPager } from './TerminalPager';
+import { TerminalFocusCard } from './TerminalFocusCard';
 
 function beatParams(): TerminalBeatParams {
   return import.meta.env.DEV ? liveTerminalBeatParams : TERMINAL_BEAT_DEFAULTS;
@@ -179,7 +180,11 @@ export function TerminalWindowContent() {
           if (body.dataset.booted !== booted) {
             body.dataset.booted = booted;
             if (title) {
-              title.textContent = booted === '1' ? 'zara@macbook — ~/projects' : 'zara@macbook — ~';
+              const id = getTerminalIdentity();
+              title.textContent =
+                booted === '1'
+                  ? `${id.user}@${id.host} — ~/${id.projectsDir}`
+                  : `${id.user}@${id.host} — ~`;
             }
           }
           const exited = depth >= p.exitExecute ? '1' : '0';
@@ -190,9 +195,26 @@ export function TerminalWindowContent() {
     [],
   );
 
-  // Arrow-key roving focus over rows + chips (§3.6 — the zsh menu-select
-  // keys). Fires only while focus is already inside the body (the handler
-  // rides bubbling from the focused control), so arrow-key page scrolling
+  // Mirror the open card onto the body for the split-pane layout (desktop
+  // CSS docks the card right and shrinks .term-main when data-open is set).
+  useEffect(
+    () =>
+      useTerminalFocusStore.subscribe(
+        (s) => s.openProject,
+        (openProject) => {
+          const body = bodyRef.current;
+          if (!body) return;
+          const open = openProject !== null ? '1' : '0';
+          if (body.dataset.open !== open) body.dataset.open = open;
+        },
+        { fireImmediately: true },
+      ),
+    [],
+  );
+
+  // Arrow-key roving focus over the rows (§3.6 — the zsh menu-select keys).
+  // Fires only while focus is already inside the body (the handler rides
+  // bubbling from the focused control), so arrow-key page scrolling
   // everywhere else is untouched. Enter is native to buttons/links.
   const onBodyKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>): void => {
     if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
@@ -208,10 +230,12 @@ export function TerminalWindowContent() {
     items[next]?.focus();
   };
 
+  const identity = getTerminalIdentity();
+
   return (
     <div ref={containerRef} className="terminal-window" data-live="0">
       <div ref={titleRef} className="terminal-window__titlebar" aria-hidden="true">
-        zara@macbook — ~
+        {`${identity.user}@${identity.host} — ~`}
       </div>
       <div
         ref={bodyRef}
@@ -221,33 +245,36 @@ export function TerminalWindowContent() {
         data-beat="before"
         data-booted="0"
         data-exited="0"
+        data-open="0"
         onKeyDown={onBodyKeyDown}
       >
-        <TerminalPromptLine variant="boot" />
-        <TerminalInteractiveListing />
-        <TerminalPromptLine variant="live" />
-        <TerminalChips />
-        <div className="term-farewell" aria-hidden="true">
-          {FAREWELL_LINES.map((line, i) => (
+        <div className="term-main">
+          <TerminalPromptLine variant="boot" />
+          <TerminalInteractiveListing />
+          <TerminalPromptLine variant="live" />
+          <TerminalChips />
+          <div className="term-farewell" aria-hidden="true">
+            {FAREWELL_LINES.map((line, i) => (
+              <div
+                key={line}
+                className="term-line term-print--farewell"
+                style={{ '--print-delay': `${i * 150}ms` } as CSSProperties}
+              >
+                {line}
+              </div>
+            ))}
+            {/* The cursor that will outlive the window — renderer #2 hands it
+                to the survivor mesh when the HTML dies at the farewell hold. */}
             <div
-              key={line}
               className="term-line term-print--farewell"
-              style={{ '--print-delay': `${i * 150}ms` } as CSSProperties}
+              style={{ '--print-delay': '300ms' } as CSSProperties}
             >
-              {line}
+              <span className="term-cursor" />
             </div>
-          ))}
-          {/* The cursor that will outlive the window — renderer #2 hands it
-              to the survivor mesh when the HTML dies at the farewell hold. */}
-          <div
-            className="term-line term-print--farewell"
-            style={{ '--print-delay': '300ms' } as CSSProperties}
-          >
-            <span className="term-cursor" />
           </div>
+          <TerminalStatusBar />
         </div>
-        <TerminalStatusBar />
-        <TerminalPager />
+        <TerminalFocusCard />
       </div>
     </div>
   );

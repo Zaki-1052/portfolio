@@ -10,11 +10,16 @@ export interface Project {
   tags: string[];
   links: { github?: string; paper?: string };
   scale?: ScaleName;
-  /** Terminal-pager highlight bullets (2–3) — lorem placeholder until real
-   *  copy is written (the established content workflow). */
-  highlights?: string[];
-  /** Displayed README size for the listing's status-bar detail (e.g. "2.1 kB"). */
-  readmeSize?: string;
+  /** ls -laht size column (placeholder — e.g. lines of code "12k", or repo
+   *  size "1.2M"; Zara picks the metric). */
+  size?: string;
+  /** ls -laht date column (e.g. "Jun 2025") — doubles as the chronological
+   *  sort key the -t flag implies, so keep entries date-descending. */
+  date?: string;
+  /** Gold badge in the terminal listing (★ count), tier-2 style. */
+  stars?: number;
+  /** Gold badge fallback when stars don't fit the project (e.g. "◇ demo"). */
+  metric?: string;
 }
 
 export interface Tier2Project {
@@ -25,6 +30,20 @@ export interface Tier2Project {
   metric?: string;
   tags?: string[];
   links: { github: string };
+  /** ls -laht size column (see Project.size). */
+  size?: string;
+  /** ls -laht date column (see Project.date). */
+  date?: string;
+}
+
+/** Session identity strings for the code band's terminal — content, not
+ *  code, so the prompt/title-bar wording is editable without touching
+ *  components. NOTE: projectsDir must match the literal `cd projects` in
+ *  terminal-beats.ts' BOOT_COMMAND (the scrub math pins its length). */
+export interface TerminalIdentity {
+  user: string;
+  host: string;
+  projectsDir: string;
 }
 
 export interface ProjectsData {
