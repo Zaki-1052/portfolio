@@ -88,7 +88,7 @@ export function useCodeEnvironmentControls(collapsed: boolean): void {
         variant: { value: d.variant, options: ['both', 'grid', 'motes', 'none'] },
         gridOpacity: { value: d.gridOpacity, min: 0, max: 0.6, step: 0.005 },
         gridCellSize: { value: d.gridCellSize, min: 1, max: 12, step: 0.5 },
-        moteOpacity: { value: d.moteOpacity, min: 0, max: 0.5, step: 0.005 },
+        moteOpacity: { value: d.moteOpacity, min: 0, max: 1, step: 0.005 },
         moteCount: { value: d.moteCount, min: 0, max: 400, step: 5 },
         moteDriftSpeed: { value: d.moteDriftSpeed, min: 0, max: 1.5, step: 0.05 },
       },

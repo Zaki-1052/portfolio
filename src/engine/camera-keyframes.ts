@@ -182,14 +182,14 @@ export const CAMERA_KEYFRAMES: readonly CameraKeyframe[] = [
   {
     depth: 0.97,
     position: [-2.9, -34.0, -34.9],
-    target: [-2.8, -34.9, -45.9],
+    target: [-2.8, -36.4, -45.9],
     roll: -0.002,
     fov: 51,
   }, // closing — a slow centering drift as the broadcast winds down and the sign-off scrubs
   {
     depth: 1.0,
     position: [-2.6, -34.3, -34.6],
-    target: [-3.0, -34.8, -46.0],
+    target: [-3.0, -36.3, -46.0],
     roll: 0,
     fov: 52,
     reducedAnchor: true,

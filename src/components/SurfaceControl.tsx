@@ -1,20 +1,22 @@
 // src/components/SurfaceControl.tsx
 // The `> surface_` return control (§5.5.4) — sibling of the overture's
 // `> skip_` in every way that matters: same warm-gold register, same
-// decision precedent (instant jump under a fade, never a fast-scroll), and
-// the same overlay/button separation (a focusable control never lives
-// inside an aria-hidden subtree). The full-motion sequence: fade to dark
-// (~0.5 s) → lenis jump to 0 under cover of darkness → replay the
-// overture's camera push-in via surface-flight.ts while the dark lifts →
-// land at the hero. Esc / wheel / touch during the flight cancels to an
-// instant landing (the real scroll is already at 0 — only the decorative
-// track stops). Reduced motion: instant cut, no flight (the skip
-// precedent). Mounted LAST in app.tsx's chrome so natural DOM order makes
-// it the band's final Tab stop. This absorbs PLAN2 §9.5's scroll-to-top.
+// decision precedent, and the same overlay/button separation (a focusable
+// control never lives inside an aria-hidden subtree). Reduced motion always
+// wins first: an instant cut to the top, no animation (the skip precedent).
 //
-// DEV experiment (§5.5, parked): the leva 'expression surface' toggle flips
-// this to a long smooth reverse-scroll — the whole descent played backward.
-// import.meta.env.DEV-gated at the call site, so production always flies.
+// The SHIPPED closing is 'reverse-scroll' (§5.5): clicking plays the whole
+// descent backward as one long smooth Lenis scroll to 0 — Lenis leaves it
+// interruptible, so a wheel/touch just takes over, no cancel wiring needed.
+//
+// The 'push-in' mode (leva A/B in DEV) is the alternate: fade to dark
+// (~0.5 s) → lenis jump to 0 under cover of darkness → replay the overture's
+// camera push-in via surface-flight.ts while the dark lifts → land at the
+// hero; Esc / wheel / touch during that flight cancels to an instant
+// landing (real scroll is already 0 — only the decorative track stops).
+//
+// Mounted LAST in app.tsx's chrome so natural DOM order makes it the band's
+// final Tab stop. This absorbs PLAN2 §9.5's scroll-to-top.
 import { useCallback, useEffect, useRef } from 'react';
 import { invalidate } from '@react-three/fiber';
 import { gsap } from 'gsap';
@@ -71,18 +73,21 @@ export function SurfaceControl() {
     if (running.current) return;
     const lenis = getLenis();
 
-    // The parked experiment: play the whole descent backward. DEV-only —
-    // the toggle setter is bound in expression-dev-tools, itself DEV-gated.
-    if (import.meta.env.DEV && getSurfaceFlightMode() === 'reverse-scroll') {
-      lenis?.scrollTo(0, { duration: REVERSE_SCROLL_S });
+    const overlay = overlayRef.current;
+    if (useMotionStore.getState().reduced || !overlay) {
+      // Instant cut — the skip control's reduced path exactly. Wins over
+      // every flight mode: a 10 s auto-scroll is precisely what reduced
+      // motion must not do.
+      lenis?.scrollTo(0, { immediate: true, force: true });
+      invalidate();
       return;
     }
 
-    const overlay = overlayRef.current;
-    if (useMotionStore.getState().reduced || !overlay) {
-      // Instant cut — the skip control's reduced path exactly.
-      lenis?.scrollTo(0, { immediate: true, force: true });
-      invalidate();
+    // The shipped closing (§5.5): play the whole descent backward as one
+    // long smooth scroll. Lenis leaves it interruptible by user input, so
+    // no explicit cancel wiring is needed — a wheel/touch just takes over.
+    if (getSurfaceFlightMode() === 'reverse-scroll') {
+      lenis?.scrollTo(0, { duration: REVERSE_SCROLL_S });
       return;
     }
 

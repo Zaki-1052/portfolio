@@ -2,10 +2,11 @@
 // Dev-only override channel for the signal scene's look params (the
 // code-live-params pattern): null in production — scene components read
 // `getExpressionLookOverride() ?? SIGNAL_LOOK_DEFAULTS` and subscribe for
-// leva pushes. The surface-flight mode is a separate DEV experiment toggle
-// (§5.5's parked reverse-flight ascent): SurfaceControl reads it at click
-// time; the leva binding lives in expression-dev-tools and is
-// import.meta.env.DEV-gated, so production can never leave 'push-in'.
+// leva pushes. The surface-flight mode is the closing movement's variant
+// (§5.5): 'reverse-scroll' is the SHIPPED default — clicking `> surface_`
+// plays the whole descent backward as one long smooth scroll. The leva
+// toggle in expression-dev-tools lets a dev A/B it against the 'push-in'
+// camera replay; SurfaceControl reads the mode at click time.
 import type { SignalLookParams } from './signal-params';
 
 let lookOverride: SignalLookParams | null = null;
@@ -33,7 +34,7 @@ export function subscribeExpressionParams(listener: () => void): () => void {
 
 export type SurfaceFlightMode = 'push-in' | 'reverse-scroll';
 
-let surfaceFlightMode: SurfaceFlightMode = 'push-in';
+let surfaceFlightMode: SurfaceFlightMode = 'reverse-scroll';
 
 export function setSurfaceFlightMode(mode: SurfaceFlightMode): void {
   surfaceFlightMode = mode;

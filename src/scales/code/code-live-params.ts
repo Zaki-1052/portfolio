@@ -22,8 +22,8 @@ export const CODE_ENVIRONMENT_DEFAULTS: Readonly<CodeEnvironmentParams> = Object
   variant: 'both' as const,
   gridOpacity: 0.16,
   gridCellSize: 4,
-  moteOpacity: 0.1,
-  moteCount: 140,
+  moteOpacity: 0.5,
+  moteCount: 300,
   moteDriftSpeed: 0.35,
 });
 

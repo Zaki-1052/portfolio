@@ -493,6 +493,9 @@ Scroll from tissue through cellular into the coil band. The fiber renders with b
 
 > **Goal:** A real molecular structure rendered from PDB data (9AS8, the 5-HT2A receptor system), with scroll-driven trajectory animation from actual MD simulation data. Scene-native content for the Amaro Lab and structural biology work.
 > **Estimate:** 7-10 days. This phase includes a data pipeline step (PDB/DCD parsing) before scene construction.
+>
+> **Sub-plan:** `docs/PLAN-protein-scale.md` (session-phased implementation).
+> **Design spec:** `docs/protein-scale-design.md` (authoritative, supersedes this section where they diverge).
 
 ### Prerequisites
 

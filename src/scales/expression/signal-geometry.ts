@@ -61,7 +61,7 @@ export const SIGNAL_LINE_LENGTH = 14;
  * the expression camera knots (same session, same bake, so the 1.0
  * endpoint's framing and this point never drift apart).
  */
-export const AUTHORED_SIGNAL_ORIGIN: Vec3 = [-3.0, -34.8, -46.0];
+export const AUTHORED_SIGNAL_ORIGIN: Vec3 = [-3.0, -36.3, -46.0];
 
 /** Authored node extents once the ease lands — a touch larger than the
  *  terminal's character cell, for presence as the scene's one light source. */

@@ -7,9 +7,10 @@
 // Look params write the expression-live-params override (subscribable —
 // packet density rebuilds the pool); beat depths write
 // liveExpressionBeatParams directly (the liveTerminalBeatParams pattern).
-// The surface folder is the §5.5 parked reverse-flight experiment — DEV
-// module, so 'reverse-scroll' can never ship. Every slider range includes
-// its shipping default (leva silently clamps out-of-range → dev ≠ prod).
+// The surface folder A/Bs the closing movement: 'reverse-scroll' (the
+// shipped default) vs the 'push-in' camera replay. Every slider range
+// includes its shipping default (leva silently clamps out-of-range →
+// dev ≠ prod).
 import { useEffect } from 'react';
 import { invalidate } from '@react-three/fiber';
 import { folder, useControls } from 'leva';
@@ -40,7 +41,7 @@ export function useExpressionLookControls(
         tintStrength: { value: initial.tintStrength, min: 0, max: 1, step: 0.01 },
         fadeStart: { value: initial.fadeStart, min: 0.2, max: 0.9, step: 0.01 },
         focusDimStrength: { value: initial.focusDimStrength, min: 0, max: 1, step: 0.01 },
-        packetSize: { value: initial.packetSize, min: 0.05, max: 0.6, step: 0.005 },
+        packetSize: { value: initial.packetSize, min: 0.05, max: 1, step: 0.005 },
         packetOpacity: { value: initial.packetOpacity, min: 0, max: 1, step: 0.01 },
         packetDensity: { value: initial.packetDensity, min: 0, max: 20, step: 1 },
         scanlineMaxOpacity: { value: initial.scanlineMaxOpacity, min: 0, max: 0.15, step: 0.002 },
@@ -87,15 +88,16 @@ export function useExpressionBeatControls(collapsed: boolean): void {
   }, [values]);
 }
 
-/** The §5.5 reverse-flight ascent experiment: flip `> surface_` between the
- *  shipping fade+push-in and the parked long-smooth-scroll variant. */
+/** The §5.5 closing-movement A/B: flip `> surface_` between the shipped
+ *  long-smooth reverse-scroll and the 'push-in' camera replay. Initial
+ *  value mirrors the shipped default so DEV matches prod on load. */
 // eslint-disable-next-line react-refresh/only-export-components -- dev-only module, not a fast-refresh target
 export function useSurfaceFlightControls(collapsed: boolean): void {
   const [values] = useControls(() => ({
     'expression surface': folder(
       {
         flightMode: {
-          value: 'push-in' as SurfaceFlightMode,
+          value: 'reverse-scroll' as SurfaceFlightMode,
           options: ['push-in', 'reverse-scroll'],
         },
       },
