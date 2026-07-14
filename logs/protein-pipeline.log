@@ -1,0 +1,214 @@
+/opt/homebrew/anaconda3/envs/biochemcore/lib/python3.11/site-packages/MDAnalysis/coordinates/DCD.py:171: DeprecationWarning: DCDReader currently makes independent timesteps by copying self.ts while other readers update self.ts inplace. This behavior will be changed in 3.0 to be the same as other readers. Read more at https://github.com/MDAnalysis/mdanalysis/issues/3889 to learn if this change in behavior might affect you.
+  warnings.warn("DCDReader currently makes independent timesteps"
+/opt/homebrew/anaconda3/envs/biochemcore/lib/python3.11/site-packages/MDAnalysis/analysis/base.py:562: UserWarning: Reader has no dt information, set to 1.0 ps
+  self.times[idx] = ts.time
+Protein Scale Pipeline
+Output: /Users/zakiralibhai/Documents/VS_Code/new-portfolio/public/protein
+Validation: /Users/zakiralibhai/Documents/VS_Code/new-portfolio/scripts/validation
+
+============================================================
+Processing GQ system
+============================================================
+  Loading PSF + 10 DCDs...
+  Raw frames: 100, stride: 1, output frames: 100
+  Receptor CA: 266 (expected 266)
+  Galpha CA: 246 (expected 246)
+  Gbeta CA: 338 (expected 338)
+  Ggamma CA: 71 (expected 71)
+  Ligand heavy atoms: 15
+  Aligning trajectory to frame 0 (receptor CA)...
+  Alignment complete.
+  Running DSSP on frame 0...
+  Receptor SS: H=218, E=4, C=44
+  galpha SS: H=96, E=38, C=112
+  gbeta SS: H=26, E=149, C=163
+  ggamma SS: H=29, E=0, C=42
+    Override resid 1 (TM1): C -> H
+    Override resid 22 (ICL1): H -> C
+    Override resid 23 (ICL1): H -> C
+    Override resid 25 (ICL1): H -> C
+    Override resid 26 (ICL1): H -> C
+    Override resid 27 (ICL1): H -> C
+    Override resid 30 (ICL1): H -> C
+    Override resid 49 (TM2): C -> H
+    Override resid 59 (TM2): C -> H
+    Override resid 68 (ECL1): H -> C
+    Override resid 69 (ECL1): H -> C
+    Override resid 70 (ECL1): H -> C
+    Override resid 71 (ECL1): H -> C
+    Override resid 102 (ICL2): H -> C
+    Override resid 103 (ICL2): H -> C
+    Override resid 104 (ICL2): H -> C
+    Override resid 105 (ICL2): H -> C
+    Override resid 106 (ICL2): H -> C
+    Override resid 107 (ICL2): H -> C
+    Override resid 111 (ICL2): H -> C
+    Override resid 137 (TM4): C -> H
+    Override resid 138 (TM4): C -> H
+    Override resid 139 (TM4): C -> H
+    Override resid 140 (ECL2): H -> C
+    Override resid 141 (ECL2): H -> C
+    Override resid 142 (ECL2): H -> C
+    Override resid 144 (ECL2): E -> C
+    Override resid 145 (ECL2): E -> C
+    Override resid 148 (ECL2): E -> C
+    Override resid 149 (ECL2): E -> C
+    Override resid 154 (ECL2): H -> C
+    Override resid 155 (ECL2): H -> C
+    Override resid 156 (ECL2): H -> C
+    Override resid 157 (ECL2): H -> C
+    Override resid 158 (ECL2): H -> C
+    Override resid 159 (ECL2): H -> C
+    Override resid 165 (TM5): C -> H
+    Override resid 183 (TM5): C -> H
+    Override resid 184 (TM5): C -> H
+    Override resid 185 (TM5): C -> H
+    Override resid 187 (ICL3c): H -> C
+    Override resid 188 (ICL3c): H -> C
+    Override resid 189 (ICL3c): H -> C
+    Override resid 190 (ICL3c): H -> C
+    Override resid 191 (ICL3c): H -> C
+    Override resid 228 (ECL3): H -> C
+    Override resid 229 (ECL3): H -> C
+    Override resid 230 (ECL3): H -> C
+    Override resid 231 (ECL3): H -> C
+    Override resid 250 (TM7): C -> H
+    Override resid 255 (H8): C -> H
+    Override resid 256 (H8): C -> H
+    Override resid 257 (H8): C -> H
+    Override resid 265 (Ct): H -> C
+  DSSP overrides: 54
+  Receptor fragments: 2 — [(0, 184), (185, 265)]
+  Computing reference normals...
+    Fragment [0, 184]: 80 flips corrected
+    Fragment [185, 265]: 0 flips corrected
+  Phosphorus atoms: 282
+  Membrane: midplane Z=88.8, thickness=37.0 A, radius=101.2 A
+  Ligand bonds: 16
+  Binding pocket residues (lit): [155, 156, 159, 160, 163, 206, 229, 234, 235, 238, 239, 242, 336, 339, 340, 343, 366, 370]
+  Aromatic cage residues (lit): [234, 243, 336, 339, 340, 370]
+  Extracting 100 frames...
+    Frame 25/100
+    Frame 50/100
+    Frame 75/100
+    Frame 100/100
+  Extracted 100 frames, 5571 floats/frame
+
+============================================================
+Processing GI system
+============================================================
+  Loading PSF + 100 DCDs...
+  Raw frames: 1000, stride: 10, output frames: 100
+  Receptor CA: 262 (expected 262)
+  Galpha CA: 340 (expected 340)
+  Gbeta CA: 227 (expected 227)
+  Ggamma CA: 71 (expected 71)
+  Ligand heavy atoms: 15
+  Aligning trajectory to frame 0 (receptor CA)...
+  Alignment complete.
+  Running DSSP on frame 0...
+  Receptor SS: H=210, E=4, C=48
+  galpha SS: H=27, E=144, C=169
+  gbeta SS: H=103, E=41, C=83
+  ggamma SS: H=38, E=0, C=33
+    Override resid 1 (TM1): C -> H
+    Override resid 2 (TM1): C -> H
+    Override resid 21 (ICL1): H -> C
+    Override resid 22 (ICL1): H -> C
+    Override resid 29 (ICL1): H -> C
+    Override resid 48 (TM2): C -> H
+    Override resid 58 (TM2): C -> H
+    Override resid 69 (ECL1): H -> C
+    Override resid 70 (ECL1): H -> C
+    Override resid 101 (ICL2): H -> C
+    Override resid 102 (ICL2): H -> C
+    Override resid 103 (ICL2): H -> C
+    Override resid 104 (ICL2): H -> C
+    Override resid 105 (ICL2): H -> C
+    Override resid 106 (ICL2): H -> C
+    Override resid 107 (ICL2): H -> C
+    Override resid 110 (ICL2): H -> C
+    Override resid 143 (ECL2): E -> C
+    Override resid 144 (ECL2): E -> C
+    Override resid 147 (ECL2): E -> C
+    Override resid 148 (ECL2): E -> C
+    Override resid 153 (ECL2): H -> C
+    Override resid 154 (ECL2): H -> C
+    Override resid 155 (ECL2): H -> C
+    Override resid 156 (ECL2): H -> C
+    Override resid 157 (ECL2): H -> C
+    Override resid 158 (ECL2): H -> C
+    Override resid 164 (TM5): C -> H
+    Override resid 183 (TM5): C -> H
+    Override resid 186 (ICL3c): H -> C
+    Override resid 187 (ICL3c): H -> C
+    Override resid 188 (ICL3c): H -> C
+    Override resid 189 (ICL3c): H -> C
+    Override resid 224 (ECL3): H -> C
+    Override resid 225 (ECL3): H -> C
+    Override resid 226 (ECL3): H -> C
+    Override resid 227 (ECL3): H -> C
+    Override resid 246 (TM7): C -> H
+    Override resid 251 (H8): C -> H
+    Override resid 252 (H8): C -> H
+    Override resid 253 (H8): C -> H
+    Override resid 261 (Ct): H -> C
+  DSSP overrides: 42
+  Receptor fragments: 2 — [(0, 182), (183, 261)]
+  Computing reference normals...
+    Fragment [0, 182]: 74 flips corrected
+    Fragment [183, 261]: 0 flips corrected
+  Phosphorus atoms: 282
+  Membrane: midplane Z=85.6, thickness=37.2 A, radius=99.3 A
+  Ligand bonds: 16
+  Extracting 100 frames...
+    Frame 25/100
+    Frame 50/100
+    Frame 75/100
+    Frame 100/100
+  Extracted 100 frames, 5445 floats/frame
+
+  Shared receptor map: 262 residues
+    Gq-only lit_resids: [79, 263, 313, 314]
+    Gi-only lit_resids: []
+
+============================================================
+Processing MPro dimer (static)
+============================================================
+  Loaded 9544 atoms
+  DSSP: 612 residues assigned
+  Chain A: 306 CA atoms
+    Fragments: 1 — [(0, 305)]
+    SS: H=70, E=85, C=151
+    Fragment [0, 305]: 189 flips corrected
+  Chain B: 306 CA atoms
+    Fragments: 1 — [(0, 305)]
+    SS: H=70, E=85, C=151
+    Fragment [0, 305]: 189 flips corrected
+  Ligand 7YY: 37 heavy atoms, 41 bonds
+
+  Wrote gq-trajectory.bin: 2.13 MB
+
+  Wrote gi-trajectory.bin: 2.08 MB
+  Wrote protein-meta.json: 80.2 KB
+  Wrote mpro-static.json: 372.1 KB
+
+  Generating validation plot...
+    Fragment [0, 245]: 127 flips corrected
+    Fragment [0, 339]: 123 flips corrected
+  Validation plot saved: /Users/zakiralibhai/Documents/VS_Code/new-portfolio/scripts/validation/protein-pipeline-validation.png
+
+============================================================
+PIPELINE COMPLETE
+============================================================
+  Gq: 100 frames, 266 receptor residues, 655 G-protein residues
+  Gi: 100 frames, 262 receptor residues, 638 G-protein residues
+  Shared map: 262 residues
+  MPro chain A: 306 residues, 1224 guide points
+  MPro chain B: 306 residues, 1224 guide points
+
+  Output files in /Users/zakiralibhai/Documents/VS_Code/new-portfolio/public/protein/
+    gi-trajectory.bin: 2127.0 KB
+    gq-trajectory.bin: 2176.2 KB
+    mpro-static.json: 372.1 KB
+    protein-meta.json: 80.2 KB

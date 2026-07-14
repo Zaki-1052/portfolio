@@ -39,7 +39,7 @@ Data state (verified 2026-07-13 on disk):
 | Gi DCDs | `amarolab/new-Gi/charmm-gui-8313215931/openmm/step7_{1..100}.dcd` | **100 files** × ~32 MB |
 | Gi RMSF | `amarolab/new-Gi/analysis/phase3_rmsf/rmsf_data.csv` | Present |
 | MPro monomer | `mpro-analysis/vmd/mpro_ens_prepared.pdb` | Present (monomer only) |
-| MPro dimer | — | **Does not exist yet** (PyMOL export required) |
+| MPro dimer | `mpro-analysis/vmd/mpro_dimer.pdb` | Present (exported 2026-07-14) |
 
 **Gi trajectory discrepancy:** the design doc assumes 10 DCDs / 100 frames /
 10 ns. Reality is **100 DCDs / ~1000 frames / ~100 ns**. The pipeline must
@@ -82,14 +82,17 @@ These cannot be automated. The pipeline session can proceed on Gq + Gi
 without the MPro dimer — MPro is processed separately and needed only by
 Stage D.
 
-- [ ] **Export MPro dimer PDB from PyMOL.** Open
+- [x] **Export MPro dimer PDB from PyMOL.** Open
   `mpro-analysis/vmd/mpro_ens_prepared.pdb`, generate the biological
   assembly (C2 dimer), save as a two-chain PDB. Place at
   `mpro-analysis/vmd/mpro_dimer.pdb` or `public/protein/mpro_dimer.pdb`.
   The heart shape is the visual test — if it doesn't look like a heart,
   it's the wrong symmetry mate.
+  **Done 2026-07-14.** Saved to `mpro-analysis/vmd/mpro_dimer.pdb`.
+  Chains A+B, 4772 atoms each, 7YY ligand in both chains.
+  Reference: PDB 6Y2E biological assembly used for symmetry mate.
 
-- [ ] **Verify `biochemcore` conda env.** Run:
+- [x] **Verify `biochemcore` conda env.** Run:
   ```
   conda activate biochemcore
   python -c "import MDAnalysis; print(MDAnalysis.__version__)"
@@ -184,11 +187,13 @@ Saved to `scripts/validation/protein-pipeline-validation.png`.
 
 ### Session 1 done criteria
 
-- [ ] `scripts/process-protein-trajectory.py` exists, is complete and literal (no placeholders)
-- [ ] The script's input paths match verified file locations above
-- [ ] Output format matches §5.1 and §5.2 exactly
-- [ ] Validation plot generation is included
-- [ ] Gi frame sampling decision is documented in the script header
+- [x] `scripts/process-protein-trajectory.py` exists, is complete and literal (no placeholders)
+- [x] The script's input paths match verified file locations above
+- [x] Output format matches §5.1 and §5.2 exactly
+- [x] Validation plot generation is included
+- [x] Gi frame sampling decision is documented in the script header
+  **Done 2026-07-14.** Option B: stride every 10th frame across all 100 Gi DCDs
+  (1000 → 100 frames, full 100 ns). Script is 974 lines.
 
 ---
 
@@ -254,11 +259,14 @@ git add public/protein/
 
 ### Session 2 done criteria
 
-- [ ] Gate 1 passes (all 6 criteria above)
-- [ ] `public/protein/protein-meta.json` committed
-- [ ] `public/protein/gq-trajectory.bin` committed (~2.2 MB)
-- [ ] `public/protein/gi-trajectory.bin` committed (~2.2 MB)
-- [ ] Validation plot reviewed and filed
+- [x] Gate 1 passes (all 6 criteria above)
+- [x] `public/protein/protein-meta.json` committed
+- [x] `public/protein/gq-trajectory.bin` committed (~2.2 MB)
+- [x] `public/protein/gi-trajectory.bin` committed (~2.2 MB)
+- [x] Validation plot reviewed and filed
+  **Done 2026-07-14.** Gate 1 passed. Helix/sheet/coil assignments correct,
+  ICL3 gap produces 2 fragments, ligand at binding pocket, membrane ~37 Å.
+  MPro DSSP: H=70 E=85 C=151. `mpro-static.json` also committed.
 
 ---
 
