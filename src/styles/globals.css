@@ -426,7 +426,8 @@
 [data-webgl='active'] [data-scale='tissue'],
 [data-webgl='active'] [data-scale='cellular'],
 [data-webgl='active'] [data-scale='chromatin'],
-[data-webgl='active'] [data-scale='code'] {
+[data-webgl='active'] [data-scale='code'],
+[data-webgl='active'] [data-scale='expression'] {
   --section-bg: transparent;
 }
 [data-webgl='active'] [data-scale='approach']::before,
@@ -438,7 +439,9 @@
 [data-webgl='active'] [data-scale='chromatin']::before,
 [data-webgl='active'] [data-scale='chromatin']::after,
 [data-webgl='active'] [data-scale='code']::before,
-[data-webgl='active'] [data-scale='code']::after {
+[data-webgl='active'] [data-scale='code']::after,
+[data-webgl='active'] [data-scale='expression']::before,
+[data-webgl='active'] [data-scale='expression']::after {
   display: none;
 }
 [data-webgl='active'] [data-scale='approach'] + [data-scale],
@@ -450,7 +453,9 @@
 }
 /* The code band's OWN top seam: its predecessor (protein) is not yet
    scene-native, so no sibling rule above strips the hairline the base
-   [data-scale] + [data-scale] rule puts on code itself. */
+   [data-scale] + [data-scale] rule puts on code itself. (Expression needs no
+   such rule — its predecessor IS scene-native, so the code + [data-scale]
+   sibling rule above already strips expression's top hairline.) */
 [data-webgl='active'] [data-scale='code'] {
   border-top: none;
 }
@@ -1636,6 +1641,27 @@ hr {
   height: 70vh;
 }
 
+/* Last-band scene-native runways: arrival (custody handoff + intro prose),
+   plateau (the signal fan + contact annotations live), closing (wind-down,
+   sign-off scrub, warm bookend, > surface_). Same contract as the code
+   runways — heights only set how much real scroll the band takes; the
+   per-beat depths live in expression-beats.ts. */
+.expression-runway {
+  display: none;
+}
+[data-webgl='active'] .expression-runway--arrival {
+  display: block;
+  height: 100vh;
+}
+[data-webgl='active'] .expression-runway--plateau {
+  display: block;
+  height: 120vh;
+}
+[data-webgl='active'] .expression-runway--closing {
+  display: block;
+  height: 90vh;
+}
+
 /* The band's document register yields entirely to the scene-native one:
    the annotation overlay (below) is the real interface under WebGL, so the
    in-flow copy is fully removed (not sr-only — no phantom tab stops, no
@@ -1678,6 +1704,25 @@ hr {
    (TerminalWindowContent, Stage C) is the real interface under WebGL. */
 [data-webgl='active'] [data-scale='code'] .code-doc {
   display: none;
+}
+
+/* Last band: same document-register yield — the signal-origin annotations
+   (ExpressionAnnotations, Phase 8 Stage C) are the real interface under
+   WebGL; the contact links + mail trigger live there in scene costume. */
+[data-webgl='active'] [data-scale='expression'] .expression-doc {
+  display: none;
+}
+.expression-doc__kicker {
+  margin: 0 0 var(--space-2);
+  color: var(--accent);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  letter-spacing: 0.02em;
+}
+.expression-doc__title {
+  margin: 0 0 var(--space-6);
+  font-size: var(--text-3xl);
+  max-width: 20ch;
 }
 .code-doc__kicker {
   margin: 0 0 var(--space-2);
@@ -2803,4 +2848,431 @@ hr {
 }
 [data-motion='reduced'] .term-status-bar__flash {
   animation: none;
+}
+
+/* ============================================================
+   EXPRESSION INTRO — the last band's WebGL-register prose (Phase 8).
+   The CoilIntro twin: fixed click-through column, envelope-driven by the
+   ExpressionIntro ticker; display-gated so it never fights the fallback.
+   ============================================================ */
+.expression-intro {
+  display: none;
+}
+[data-webgl='active'] .expression-intro[data-active='true'] {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  pointer-events: none;
+}
+.expression-intro__col {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(620px, 82vw);
+  text-align: left;
+}
+.expression-intro__col::before {
+  content: '';
+  position: absolute;
+  inset: -40px -56px;
+  z-index: -1;
+  border-radius: var(--radius-organic, 16px);
+  background: radial-gradient(
+    ellipse 78% 94% at 50% 50%,
+    rgba(10, 14, 12, 0.72) 0%,
+    rgba(10, 14, 12, 0.45) 46%,
+    rgba(10, 14, 12, 0) 82%
+  );
+  opacity: var(--lens-alpha, 0);
+  pointer-events: none;
+}
+.expression-intro__inner {
+  opacity: 0; /* JS fades the TEXT here — kept off the lens's ancestor chain */
+  text-shadow:
+    0 1px 2px rgba(8, 12, 10, 0.9),
+    0 0 4px rgba(8, 12, 10, 0.85),
+    0 0 16px rgba(8, 12, 10, 0.5);
+  will-change: opacity, transform, filter;
+}
+.expression-intro__title {
+  margin: 0 0 var(--space-4);
+  /* The band's title IS a command ($ whoami --contact) — mono, not sans. */
+  font-family: var(--font-mono);
+  font-size: var(--text-xl);
+  color: var(--accent);
+  max-width: 24ch;
+}
+.expression-intro .prose {
+  color: var(--text-strong);
+  font-size: var(--text-base);
+}
+
+/* ============================================================
+   EXPRESSION ANNOTATIONS — the scene-native contact index (Phase 8).
+   The coil-annotation register in terminal costume: luminous MONO type +
+   hairline connectors, nothing boxed. Each .expression-annotation is
+   translated to its signal line's PROJECTED terminus every rendered frame;
+   the origin stack (mail prompt, sign-off, garnish) rides the projected
+   origin. --expression-warmth (0→1, written by the ticker) is the §5.5.3
+   amber bookend — color-mix pulls the register from green toward gold.
+   ============================================================ */
+.expression-scanline {
+  display: none;
+}
+[data-webgl='active'] .expression-scanline {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(152, 195, 121, 0.5) 0px,
+    rgba(152, 195, 121, 0.5) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+.expression-annotations {
+  display: none;
+  --expression-warmth: 0;
+  /* The register's live ink: green at rest, amber at the bookend. */
+  --signal-ink: color-mix(
+    in srgb,
+    var(--aod-gold) calc(var(--expression-warmth) * 100%),
+    var(--aod-green)
+  );
+}
+[data-webgl='active'] .expression-annotations {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  pointer-events: none;
+}
+.expression-annotation {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform;
+}
+.expression-annotation[data-focused] {
+  z-index: 2;
+}
+.expression-annotation__dot {
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffffff 0%, var(--signal-ink) 55%, transparent 75%);
+  box-shadow: 0 0 10px 2px color-mix(in srgb, var(--signal-ink) 65%, transparent);
+  animation: expression-dot-pulse 2.4s ease-in-out infinite;
+}
+.expression-annotation[data-focused] .expression-annotation__dot {
+  animation: none;
+}
+@keyframes expression-dot-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 1;
+  }
+}
+[data-motion='reduced'] .expression-annotation__dot {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .expression-annotation__dot {
+    animation: none;
+  }
+}
+.expression-annotation__line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 44px;
+  height: 1px;
+  background: color-mix(in srgb, var(--signal-ink) 45%, transparent);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--signal-ink) 35%, transparent);
+  transform-origin: 0 50%;
+  transform: rotate(-14deg);
+}
+.expression-annotation[data-side='left'] .expression-annotation__line,
+.expression-annotation[data-focused] .expression-annotation__line {
+  transform: rotate(194deg);
+}
+.expression-annotation[data-clamped='true'] .expression-annotation__line {
+  opacity: 0.15;
+}
+.expression-annotation__body {
+  position: absolute;
+  top: -22px;
+  left: 48px;
+  text-align: left;
+}
+.expression-annotation[data-side='left'] .expression-annotation__body,
+.expression-annotation[data-focused] .expression-annotation__body {
+  left: auto;
+  right: 48px;
+  text-align: right;
+}
+.expression-annotation__label {
+  pointer-events: auto;
+  background: none;
+  border: 0;
+  padding: 4px 6px;
+  cursor: pointer;
+  /* Terminal costume: mono, lowercase — a channel name, not a headline. */
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  color: var(--text-strong);
+  text-shadow:
+    0 0 14px color-mix(in srgb, var(--signal-ink) 80%, transparent),
+    0 0 4px color-mix(in srgb, var(--signal-ink) 60%, transparent),
+    0 1px 3px rgba(0, 0, 0, 0.9);
+  transition:
+    color var(--dur-fast, 160ms) ease,
+    text-shadow var(--dur-fast, 160ms) ease;
+}
+.expression-annotation__label:hover,
+.expression-annotation__label:focus-visible,
+.expression-annotation__label[aria-pressed='true'] {
+  color: #ffffff;
+  text-shadow:
+    0 0 18px var(--signal-ink),
+    0 0 6px color-mix(in srgb, var(--signal-ink) 80%, transparent),
+    0 1px 3px rgba(0, 0, 0, 0.9);
+}
+.expression-annotation__entries {
+  position: relative;
+  width: min(320px, 44vw);
+  margin-top: 6px;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 280ms var(--ease-out, ease-out),
+    transform 280ms var(--ease-out, ease-out),
+    visibility 0s linear 280ms;
+}
+.expression-annotation__entries::before {
+  content: '';
+  position: absolute;
+  inset: -48px -84px;
+  z-index: -1;
+  background: radial-gradient(
+    ellipse 74% 80% at 50% 44%,
+    rgba(10, 14, 12, 0.85),
+    rgba(10, 14, 12, 0.5) 54%,
+    transparent 76%
+  );
+  pointer-events: none;
+}
+.expression-annotation__entries[data-open] {
+  pointer-events: auto;
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+  transition-delay: 0s;
+}
+.expression-annotation__back {
+  pointer-events: auto;
+  background: none;
+  border: 0;
+  padding: 2px 4px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: #d6dfd9;
+  text-shadow:
+    0 0 10px color-mix(in srgb, var(--signal-ink) 45%, transparent),
+    0 1px 3px rgba(0, 0, 0, 0.9);
+  transition: color var(--dur-fast, 160ms) ease;
+}
+.expression-annotation__back:hover,
+.expression-annotation__back:focus-visible {
+  color: var(--text-strong);
+}
+.expression-entry__handle {
+  pointer-events: auto;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: #ffffff;
+  text-decoration: none;
+  text-shadow:
+    0 0 14px color-mix(in srgb, var(--signal-ink) 45%, transparent),
+    0 1px 4px rgba(0, 0, 0, 0.9);
+}
+.expression-entry__handle:hover,
+.expression-entry__handle:focus-visible {
+  color: var(--signal-ink);
+}
+.expression-entries__hint {
+  margin: 10px 0 0;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-style: italic;
+  color: #c4cfc7;
+  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.9);
+}
+
+/* The origin stack — pinned beneath the surviving cursor's projection. */
+.expression-origin {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding-top: 26px;
+  transform: translate3d(-50vw, -50vh, 0); /* parked offscreen until the first tick */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  will-change: transform;
+  text-align: center;
+}
+.expression-mail-trigger {
+  pointer-events: auto;
+  background: none;
+  border: 0;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  color: var(--text-strong);
+  text-shadow:
+    0 0 12px color-mix(in srgb, var(--signal-ink) 70%, transparent),
+    0 1px 3px rgba(0, 0, 0, 0.9);
+  transition: color var(--dur-fast, 160ms) ease;
+}
+.expression-mail-trigger:hover,
+.expression-mail-trigger:focus-visible {
+  color: #ffffff;
+}
+.expression-mail-trigger__prompt {
+  color: var(--signal-ink);
+}
+.expression-mail-trigger__caret {
+  display: inline-block;
+  margin-left: 0.18em;
+  color: var(--signal-ink);
+  animation: intro-blink 1.06s steps(2, start) infinite;
+}
+.expression-signoff,
+.expression-garnish {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: color-mix(in srgb, var(--signal-ink) 75%, #ffffff);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--signal-ink) 35%, transparent);
+  white-space: pre;
+  min-height: 1.4em;
+}
+.expression-signoff[data-active='false'],
+.expression-garnish[data-active='false'] {
+  visibility: hidden;
+}
+.expression-garnish {
+  color: color-mix(in srgb, var(--signal-ink) 55%, var(--text-faint));
+}
+
+/* Reduced motion: static caret + dot; the sign-off/garnish render whole
+   (their instant paths live in the components). Kept in sync with the
+   @media block below. */
+[data-motion='reduced'] .expression-mail-trigger__caret {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .expression-mail-trigger__caret {
+    animation: none;
+  }
+  .expression-annotation__entries {
+    transition: none;
+  }
+}
+[data-motion='reduced'] .expression-annotation__entries {
+  transition: none;
+}
+
+/* ============================================================
+   > SURFACE_ — the closing movement's return control (Phase 8, §5.5.4).
+   Sibling of the overture's > skip_ in register: mono, warm-gold, quiet,
+   blinking caret. The overlay is the skip decision precedent's dark cover
+   (instant jump under a fade, never a fast-scroll); the button is its
+   SIBLING at --z-nav — a focusable control never lives inside an
+   aria-hidden subtree.
+   ============================================================ */
+.surface-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-intro);
+  background: #191613;
+  opacity: 0;
+  pointer-events: none;
+}
+.surface-control {
+  --skip-text: #b3a184; /* mirrors .skip-intro */
+  --skip-accent: var(--aod-gold);
+  position: fixed;
+  bottom: clamp(18px, 6vh, 56px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-nav);
+  appearance: none;
+  background: none;
+  border: none;
+  padding: var(--space-1) var(--space-2);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.01em;
+  color: var(--skip-text);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    color var(--dur-fast) var(--ease-out),
+    opacity var(--dur-slow) var(--ease-out);
+}
+.surface-control[data-revealed] {
+  opacity: 1;
+  pointer-events: auto;
+}
+.surface-control .surface-prompt,
+.surface-control .surface-caret {
+  color: var(--skip-accent);
+}
+.surface-control .surface-caret {
+  display: inline-block;
+  margin-left: 0.05em;
+  animation: intro-blink 1.06s steps(2, start) infinite;
+}
+.surface-control:hover,
+.surface-control:focus-visible {
+  color: var(--skip-accent);
+}
+.surface-control:focus-visible {
+  outline: 1px solid var(--skip-accent);
+  outline-offset: 3px;
+}
+/* Reduced motion: static caret (the instant-cut behavior lives in the
+   component). Kept in sync with the @media block below. */
+[data-motion='reduced'] .surface-control .surface-caret {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .surface-control .surface-caret {
+    animation: none;
+  }
 }

@@ -27,6 +27,11 @@ import {
   coilFogDensityDeltaFor,
 } from '@/scales/chromatin/coil-fog';
 import { CODE_FOG_TINT, codeFogColorBlendT, codeFogDensityDeltaFor } from '@/scales/code/code-fog';
+import {
+  EXPRESSION_FOG_TINT,
+  expressionFogColorBlendT,
+  expressionFogDensityDeltaFor,
+} from '@/scales/expression/expression-fog';
 
 // Deep warm-interior fog target the breakthrough drifts toward (dim amber-umber).
 const INTERIOR_FOG = new Color('#31221a');
@@ -43,6 +48,7 @@ export function SceneAtmosphere() {
   const arborTint = useRef(new Color(ARBOR_FOG_TINT));
   const coilTint = useRef(new Color(COIL_FOG_TINT));
   const codeTint = useRef(new Color(CODE_FOG_TINT));
+  const expressionTint = useRef(new Color(EXPRESSION_FOG_TINT));
 
   useFrame(() => {
     const depth = useDepthStore.getState().depth;
@@ -85,13 +91,19 @@ export function SceneAtmosphere() {
     // light density, gone before the expression scale (the sparsest).
     const codeT = codeFogColorBlendT(depth);
     if (codeT > 0) fogColor.current.lerp(codeTint.current, codeT);
+    // Last-band bookend: the thinned remaining fog leans warm as the amber
+    // bleeds back in at the very bottom (§5.5.3) — composed last, over green.
+    const expressionT = expressionFogColorBlendT(depth);
+    if (expressionT > 0) fogColor.current.lerp(expressionTint.current, expressionT);
     const density =
       (o
         ? fogDensityFor(depth, o.densityEstablish, o.densityBase, o.densityInterior, o.densityVeil)
         : fogDensityFor(depth)) +
       arborFogDensityDeltaFor(depth) +
       coilFogDensityDeltaFor(depth) +
-      codeFogDensityDeltaFor(depth);
+      codeFogDensityDeltaFor(depth) +
+      // The one NEGATIVE delta — expression's relief (the fog lifts; §4).
+      expressionFogDensityDeltaFor(depth);
     if (fogRef.current) {
       fogRef.current.color.copy(fogColor.current);
       fogRef.current.density = density;

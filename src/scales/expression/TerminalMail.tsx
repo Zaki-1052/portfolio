@@ -7,9 +7,14 @@ import { trapFocus } from '@/utils/focus-trap';
 interface TerminalMailProps {
   open: boolean;
   onClose: () => void;
+  /** Fired once per successful submission — the expression scene's §5.3
+   *  submit-spark seam. Pass a STABLE function (module-level or memoized):
+   *  the effect below keys on it, and a per-render arrow would refire the
+   *  spark on unrelated parent re-renders. */
+  onSuccess?: () => void;
 }
 
-export function TerminalMail({ open, onClose }: TerminalMailProps) {
+export function TerminalMail({ open, onClose, onSuccess }: TerminalMailProps) {
   const { state, fields, errors, setField, submit, reset, canSubmit, rateLimited, config } =
     useTerminalMail();
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -49,6 +54,14 @@ export function TerminalMail({ open, onClose }: TerminalMailProps) {
     lenis?.stop();
     return () => lenis?.start();
   }, [open]);
+
+  // The success seam: the phase machine has exactly one 'success' site
+  // (useTerminalMail.submit), so a phase-keyed effect fires once per send —
+  // reset() returns the phase to 'composing', so a later send fires again,
+  // correctly (every message leaves as its own packet).
+  useEffect(() => {
+    if (state.phase === 'success') onSuccess?.();
+  }, [state.phase, onSuccess]);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {

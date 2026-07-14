@@ -87,6 +87,12 @@ export interface SectionFrontmatter {
   title: string;
   subtitle?: string;
   description?: string;
+  /** Expression only: the closing movement's scroll-scrubbed sign-off line
+   *  (DESIGN-terminal-expression §5.5.2 — a §6.5 content slot). */
+  signoff?: string;
+  /** Expression only: the idle easter-egg the cursor types after a long
+   *  dwell at the very bottom (§5.5.5). */
+  garnish?: string;
 }
 
 export interface ParsedSection {

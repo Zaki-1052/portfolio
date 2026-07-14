@@ -104,9 +104,12 @@ export function ProjectCard({ title, href, description, tags = [], meta }: Proje
             marginTop: 'var(--space-1)',
           }}
         >
-          {tags.map((t) => (
+          {tags.map((t, i) => (
+            // Index-qualified key: tag VALUES are content and may repeat
+            // (placeholder passes deliberately do), and the list is static
+            // per project — position is the honest identity.
             <span
-              key={t}
+              key={`${t}-${i}`}
               style={{
                 fontFamily: 'var(--font-mono)',
                 fontSize: 'var(--text-xs)',

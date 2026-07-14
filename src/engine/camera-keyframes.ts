@@ -155,14 +155,45 @@ export const CAMERA_KEYFRAMES: readonly CameraKeyframe[] = [
     roll: 0.004,
     fov: 50.5,
   }, // band exit — the dissolve hands the void to the surviving cursor (= SCALE_BOUNDARIES[6])
+  // --- The expression band (last scale): the signal origin. The camera
+  // stays essentially PARKED again — the surviving cursor's frozen seat is
+  // ~10 units ahead of the code band's exit pose, and the node eases onto
+  // the authored anchor (signal-geometry.ts AUTHORED_SIGNAL_ORIGIN, tuned
+  // together with these knots in one Stage-E bake so the framing and the
+  // anchor never drift apart). Every axis keeps a breath of drift; targets
+  // converge on the origin so the fan holds center-frame while the closing
+  // movement (wind-down → sign-off → warm bookend) plays out. Starter
+  // values — tuned live via camera-dev-tools (bake → paste). ---
+  {
+    depth: 0.88,
+    position: [-3.9, -33.1, -36.0],
+    target: [-2.4, -35.2, -46.2],
+    roll: 0.002,
+    fov: 50.5,
+  }, // arrival — the gaze swings off the dissolved window onto the lone cursor as the intro prose resolves
+  {
+    depth: 0.92,
+    position: [-3.4, -33.6, -35.4],
+    target: [-2.6, -35.0, -46.0],
+    roll: 0,
+    fov: 50,
+    reducedAnchor: true,
+  }, // plateau — parked drift framing the signal fan while the contact annotations are live
+  {
+    depth: 0.97,
+    position: [-2.9, -34.0, -34.9],
+    target: [-2.8, -34.9, -45.9],
+    roll: -0.002,
+    fov: 51,
+  }, // closing — a slow centering drift as the broadcast winds down and the sign-off scrubs
   {
     depth: 1.0,
-    position: [0, -46, -14],
-    target: [0, -56, -18],
+    position: [-2.6, -34.3, -34.6],
+    target: [-3.0, -34.8, -46.0],
     roll: 0,
-    fov: 55,
+    fov: 52,
     reducedAnchor: true,
-  }, // continued descent through the void
+  }, // the floor — settled dead-on the authored origin (= AUTHORED_SIGNAL_ORIGIN), the stillest frame of the site
 ];
 
 // The overture's push-in track, sampled by introProgress (0..1) instead of

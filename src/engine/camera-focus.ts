@@ -10,6 +10,11 @@ import { getBranchAnchors } from '@/scales/cellular/arbor-anchors';
 import { ARBOR_ORIGIN } from '@/scales/cellular/arbor-params';
 import { getRegionAnchors } from '@/scales/chromatin/coil-anchors';
 import { COIL_ORIGIN } from '@/scales/chromatin/coil-params';
+import {
+  SIGNAL_CHANNEL_DIRECTIONS,
+  SIGNAL_LINE_LENGTH,
+  type SignalChannelId,
+} from '@/scales/expression/signal-geometry';
 import type { CoilRegionIndex } from '@/stores/coil-focus';
 import { lookAtQuaternion, type CameraSample, type Quat, type Vec3 } from './camera-keyframes';
 
@@ -80,6 +85,41 @@ export function regionFocusPoseFor(region: CoilRegionIndex): CameraSample {
     position,
     quaternion: lookAtQuaternion(position, target, 0),
     fov: REGION_FOCUS_FOV,
+  };
+}
+
+// Channel focus (last band): §5.2's "the camera pivots slightly toward it" —
+// the gentlest pivot of the three focus layers. The camera pulls back along
+// the focused line's reverse bearing (so the line runs away from the lens)
+// and looks partway down it, holding both the origin node and the brightened
+// line in frame. Unlike the limb/region poses the anchor is NOT static — the
+// signal origin adopts the surviving cursor's frozen seat — so the RESOLVED
+// origin arrives as a parameter (camera-controller computes
+// resolveSignalOrigin(depth) once per frame) and this module stays pure.
+const CHANNEL_FOCUS_STANDOFF = 9;
+const CHANNEL_FOCUS_LIFT = 1.2;
+const CHANNEL_FOCUS_FOV = 47;
+/** Fraction of the line length the look-target sits at — far enough out
+ *  that the pivot reads as attention down the channel, near enough that the
+ *  origin stays in frame. */
+const CHANNEL_FOCUS_TARGET_T = 0.45;
+
+export function channelFocusPoseFor(origin: Vec3, channel: SignalChannelId): CameraSample {
+  const dir = SIGNAL_CHANNEL_DIRECTIONS[channel];
+  const target: Vec3 = [
+    origin[0] + dir[0] * SIGNAL_LINE_LENGTH * CHANNEL_FOCUS_TARGET_T,
+    origin[1] + dir[1] * SIGNAL_LINE_LENGTH * CHANNEL_FOCUS_TARGET_T,
+    origin[2] + dir[2] * SIGNAL_LINE_LENGTH * CHANNEL_FOCUS_TARGET_T,
+  ];
+  const position: [number, number, number] = [
+    origin[0] - dir[0] * CHANNEL_FOCUS_STANDOFF,
+    origin[1] - dir[1] * CHANNEL_FOCUS_STANDOFF + CHANNEL_FOCUS_LIFT,
+    origin[2] - dir[2] * CHANNEL_FOCUS_STANDOFF,
+  ];
+  return {
+    position,
+    quaternion: lookAtQuaternion(position, target, 0),
+    fov: CHANNEL_FOCUS_FOV,
   };
 }
 

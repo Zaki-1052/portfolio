@@ -63,7 +63,7 @@ export function CodeCursorSurvivor() {
     if (!active) {
       if (frozen.current.active) {
         frozen.current.active = false;
-        setCodeCursorState(0, 0, 0, false);
+        setCodeCursorState(0, 0, 0, 0, 0, false);
       }
       mesh.visible = false;
       return;
@@ -94,7 +94,12 @@ export function CodeCursorSurvivor() {
       frozen.current.active = true;
     }
 
-    mesh.visible = true;
+    // Custody transfer: at the band boundary the expression scene's
+    // SignalOriginNode renders the SAME frozen point/size/blink (the mirror
+    // gate — it shows exactly where this hides), so the survivor yields the
+    // visual while the state write below keeps feeding the adopting reader.
+    // Rewinding under 0.86 flips this back on with zero pop.
+    mesh.visible = depth < p.dissolveEnd;
     mesh.position.copy(frozen.current.position);
     mesh.scale.set(frozen.current.width, frozen.current.height, 1);
     // Billboard: a screen-space artifact, always facing the viewer.
@@ -107,7 +112,7 @@ export function CodeCursorSurvivor() {
     material.opacity = blinkOn ? 1 : 0;
 
     const fp = frozen.current.position;
-    setCodeCursorState(fp.x, fp.y, fp.z, true);
+    setCodeCursorState(fp.x, fp.y, fp.z, frozen.current.width, frozen.current.height, true);
   });
 
   return (

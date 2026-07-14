@@ -76,6 +76,11 @@ describe('REDUCED_ANCHOR_KEYFRAMES', () => {
     expect(REDUCED_ANCHOR_KEYFRAMES[0]!.depth).toBe(0);
     expect(REDUCED_ANCHOR_KEYFRAMES[REDUCED_ANCHOR_KEYFRAMES.length - 1]!.depth).toBe(1);
   });
+
+  it('anchors the expression band interior — the reduced track must not jump code → floor', () => {
+    const inside = REDUCED_ANCHOR_KEYFRAMES.filter((k) => k.depth > 0.86 && k.depth < 1);
+    expect(inside.length).toBeGreaterThanOrEqual(1);
+  });
 });
 
 describe('code band (the terminal plateau)', () => {

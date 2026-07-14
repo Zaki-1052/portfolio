@@ -22,6 +22,7 @@ import { CodeContent } from '@/scales/code/CodeContent';
 import { ExpressionContent } from '@/scales/expression/ExpressionContent';
 import { DepthIndicator } from '@/components/DepthIndicator';
 import { LoadingSequence } from '@/components/LoadingSequence';
+import { SurfaceControl } from '@/components/SurfaceControl';
 import { MotionToggle } from '@/components/MotionToggle';
 
 const theatreEnabled = import.meta.env.DEV && import.meta.env.VITE_THEATRE_ENABLED === 'true';
@@ -56,6 +57,11 @@ const CoilDevTools = import.meta.env.DEV
   : null;
 const CodeDevTools = import.meta.env.DEV
   ? lazy(() => import('@/dev/code-dev-tools').then((m) => ({ default: m.CodeDevTools })))
+  : null;
+const ExpressionDevTools = import.meta.env.DEV
+  ? lazy(() =>
+      import('@/dev/expression-dev-tools').then((m) => ({ default: m.ExpressionDevTools })),
+    )
   : null;
 const CameraTheatreSpike = theatreEnabled
   ? lazy(() =>
@@ -196,6 +202,9 @@ export function App() {
       <LoadingSequence />
       <DepthIndicator />
       <MotionToggle />
+      {/* `> surface_` — the closing movement's return control (Phase 8).
+          Mounted last so natural DOM order makes it the final Tab stop. */}
+      <SurfaceControl />
       {/* leva panel lives in the HTML layer (renders DOM), not the Canvas. */}
       {CameraDevTools && (
         <Suspense fallback={null}>
@@ -237,6 +246,12 @@ export function App() {
       {CodeDevTools && (
         <Suspense fallback={null}>
           <CodeDevTools />
+        </Suspense>
+      )}
+      {/* Signal look/beat/surface sliders ('expression …' folders, same panel). */}
+      {ExpressionDevTools && (
+        <Suspense fallback={null}>
+          <ExpressionDevTools />
         </Suspense>
       )}
     </>

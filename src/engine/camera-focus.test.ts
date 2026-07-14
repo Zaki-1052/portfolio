@@ -8,7 +8,17 @@ import { BRANCH_ORDER } from '@/content/branch-order';
 import { getBranchAnchors } from '@/scales/cellular/arbor-anchors';
 import { limbIndexOf } from '@/content/branch-order';
 import { getRegionAnchors } from '@/scales/chromatin/coil-anchors';
-import { blendCameraSample, focusPoseFor, regionFocusPoseFor } from './camera-focus';
+import {
+  AUTHORED_SIGNAL_ORIGIN,
+  SIGNAL_CHANNEL_DIRECTIONS,
+  SIGNAL_CHANNEL_IDS,
+} from '@/scales/expression/signal-geometry';
+import {
+  blendCameraSample,
+  channelFocusPoseFor,
+  focusPoseFor,
+  regionFocusPoseFor,
+} from './camera-focus';
 
 const qLen = (q: readonly number[]): number => Math.hypot(q[0]!, q[1]!, q[2]!, q[3]!);
 
@@ -75,6 +85,53 @@ describe('regionFocusPoseFor', () => {
       a.position[2] - b.position[2],
     );
     expect(d).toBeGreaterThan(2);
+  });
+});
+
+describe('channelFocusPoseFor', () => {
+  it('pulls back along the reverse bearing, looking DOWN the focused line', () => {
+    for (const channel of SIGNAL_CHANNEL_IDS) {
+      const pose = channelFocusPoseFor(AUTHORED_SIGNAL_ORIGIN, channel);
+      const dir = SIGNAL_CHANNEL_DIRECTIONS[channel];
+      // The camera sits behind the origin relative to the line's bearing…
+      const rel = [
+        pose.position[0] - AUTHORED_SIGNAL_ORIGIN[0],
+        pose.position[1] - AUTHORED_SIGNAL_ORIGIN[1],
+        pose.position[2] - AUTHORED_SIGNAL_ORIGIN[2],
+      ];
+      const along = rel[0]! * dir[0] + rel[1]! * dir[1] + rel[2]! * dir[2];
+      expect(along).toBeLessThan(0);
+      // …a working distance away, with a slightly tightened fov.
+      const d = Math.hypot(rel[0]!, rel[1]!, rel[2]!);
+      expect(d).toBeGreaterThan(6);
+      expect(d).toBeLessThan(12);
+      expect(pose.fov).toBeGreaterThan(38);
+      expect(pose.fov).toBeLessThan(52);
+      expect(qLen(pose.quaternion)).toBeCloseTo(1, 6);
+      expect(pose.position.every(Number.isFinite)).toBe(true);
+    }
+  });
+
+  it('is deterministic for a fixed origin and distinct per channel', () => {
+    const again = channelFocusPoseFor(AUTHORED_SIGNAL_ORIGIN, 'email');
+    expect(again).toEqual(channelFocusPoseFor(AUTHORED_SIGNAL_ORIGIN, 'email'));
+    const poses = SIGNAL_CHANNEL_IDS.map((c) => channelFocusPoseFor(AUTHORED_SIGNAL_ORIGIN, c));
+    for (let a = 0; a < poses.length; a++) {
+      for (let b = a + 1; b < poses.length; b++) {
+        const d = Math.hypot(
+          poses[a]!.position[0] - poses[b]!.position[0],
+          poses[a]!.position[1] - poses[b]!.position[1],
+          poses[a]!.position[2] - poses[b]!.position[2],
+        );
+        expect(d).toBeGreaterThan(2);
+      }
+    }
+  });
+
+  it('moves with the origin (the resolved handoff position is honored)', () => {
+    const shifted = channelFocusPoseFor([-1, -30, -40], 'github');
+    const base = channelFocusPoseFor(AUTHORED_SIGNAL_ORIGIN, 'github');
+    expect(shifted.position).not.toEqual(base.position);
   });
 });
 

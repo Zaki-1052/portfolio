@@ -25,6 +25,8 @@ import { useMotionStore } from '@/stores/motion';
 import { useIntroStore } from '@/stores/intro';
 import { shouldReleaseFocus, useBranchFocusStore } from '@/stores/branch-focus';
 import { useCoilFocusStore } from '@/stores/coil-focus';
+import { shouldReleaseSignalFocus, useSignalFocusStore } from '@/stores/signal-focus';
+import { resolveSignalOrigin } from '@/scales/expression/signal-geometry';
 import {
   INTRO_KEYFRAMES,
   liveCameraKeyframes,
@@ -33,8 +35,14 @@ import {
   sampleNearestKeyframe,
   type CameraSample,
 } from './camera-keyframes';
-import { blendCameraSample, focusPoseFor, regionFocusPoseFor } from './camera-focus';
+import {
+  blendCameraSample,
+  channelFocusPoseFor,
+  focusPoseFor,
+  regionFocusPoseFor,
+} from './camera-focus';
 import { setCameraPose } from './camera-pose';
+import { getSurfaceFlight } from './surface-flight';
 import {
   PARALLAX_MAX_PITCH,
   PARALLAX_MAX_YAW,
@@ -62,7 +70,12 @@ export function CameraController(): null {
     valid: false,
     pose: { position: [0, 0, 0], quaternion: [0, 0, 0, 1], fov: 50 },
   });
+  const heldChannelPose = useRef<{ valid: boolean; pose: CameraSample }>({
+    valid: false,
+    pose: { position: [0, 0, 0], quaternion: [0, 0, 0, 1], fov: 50 },
+  });
   const focusTween = useRef<gsap.core.Tween | null>(null);
+  const channelTween = useRef<gsap.core.Tween | null>(null);
 
   // Pointer target: normalized viewport position → drift angles. The canvas
   // is pointer-events:none, so the listener lives on window.
@@ -108,6 +121,38 @@ export function CameraController(): null {
     };
   }, []);
 
+  // Channel focus pivot (last band) — the branch subscription's mirror. The
+  // blend this tween owns doubles as SignalLines' uFocusDim: the camera
+  // pivot and the line dim are one gesture on one field.
+  useEffect(() => {
+    const unsubscribe = useSignalFocusStore.subscribe(
+      (s) => s.focusedChannel,
+      (channel) => {
+        channelTween.current?.kill();
+        const store = useSignalFocusStore.getState();
+        if (useMotionStore.getState().reduced) {
+          store.setFocusBlend(channel !== null ? 1 : 0);
+          invalidate();
+          return;
+        }
+        const proxy = { t: store.focusBlend };
+        channelTween.current = gsap.to(proxy, {
+          t: channel !== null ? 1 : 0,
+          duration: FOCUS_TWEEN_S,
+          ease: 'power2.inOut',
+          onUpdate: () => {
+            useSignalFocusStore.getState().setFocusBlend(proxy.t);
+            invalidate();
+          },
+        });
+      },
+    );
+    return () => {
+      unsubscribe();
+      channelTween.current?.kill();
+    };
+  }, []);
+
   useFrame(({ camera }, delta) => {
     const depth = useDepthStore.getState().depth;
     const reduced = useMotionStore.getState().reduced;
@@ -118,15 +163,27 @@ export function CameraController(): null {
     // After the landing: reduced motion snaps between the anchor beats only —
     // cutting through all ~9 spiral knots would read as a slideshow.
     const introActive = intro.phase !== 'done';
-    let s = introActive
-      ? sampleCamera(intro.introProgress, INTRO_KEYFRAMES)
-      : reduced
-        ? sampleNearestKeyframe(depth, liveReducedAnchorKeyframes)
-        : sampleCamera(depth, liveCameraKeyframes);
+    // The `> surface_` return replays the push-in track by its own progress
+    // (surface-flight.ts) — checked first: the real scroll is already at 0
+    // beneath it, so cancelling mid-flight falls through to the depth-driven
+    // sample at the flight's own endpoint (structurally pop-free).
+    const surface = getSurfaceFlight();
+    const surfaceActive = surface.active;
+    let s = surfaceActive
+      ? sampleCamera(surface.progress, INTRO_KEYFRAMES)
+      : introActive
+        ? sampleCamera(intro.introProgress, INTRO_KEYFRAMES)
+        : reduced
+          ? sampleNearestKeyframe(depth, liveReducedAnchorKeyframes)
+          : sampleCamera(depth, liveCameraKeyframes);
 
     // --- Focus blend (before parallax). ---
     const focus = useBranchFocusStore.getState();
-    if (!introActive && (focus.focusedBranch !== null || focus.focusBlend > 1e-4)) {
+    if (
+      !introActive &&
+      !surfaceActive &&
+      (focus.focusedBranch !== null || focus.focusBlend > 1e-4)
+    ) {
       // Real scrolling releases the focus — the scrub always wins.
       if (focus.focusedBranch !== null && shouldReleaseFocus(depth, focus.focusDepth)) {
         focus.setFocusedBranch(null, depth);
@@ -164,7 +221,11 @@ export function CameraController(): null {
     // sequencing — the blend passes through 0 exactly when the held pose
     // swaps, so the swap can never pop. ---
     const coil = useCoilFocusStore.getState();
-    if (!introActive && (coil.focusedRegion !== null || coil.unwindBlend > 1e-4)) {
+    if (
+      !introActive &&
+      !surfaceActive &&
+      (coil.focusedRegion !== null || coil.unwindBlend > 1e-4)
+    ) {
       const held = heldRegionPose.current;
       const region = coil.focusedRegion;
       if (region !== null) {
@@ -189,10 +250,49 @@ export function CameraController(): null {
       if (region === null && coil.unwindBlend < 1e-4) held.valid = false;
     }
 
+    // --- Channel focus (last band) — same held-pose composition as the
+    // branch block; the release rule lives here too (the branch precedent —
+    // there is no big mesh component to own it in this band). The focus
+    // pose derives from the LIVE resolved origin (the custody handoff), so
+    // camera-focus.ts stays pure and this frame's depth resolves it once. ---
+    const signal = useSignalFocusStore.getState();
+    if (
+      !introActive &&
+      !surfaceActive &&
+      (signal.focusedChannel !== null || signal.focusBlend > 1e-4)
+    ) {
+      // Real scrolling releases the focus — the scrub always wins.
+      if (signal.focusedChannel !== null && shouldReleaseSignalFocus(depth, signal.focusDepth)) {
+        signal.setFocusedChannel(null, depth);
+      }
+      const held = heldChannelPose.current;
+      const channel = useSignalFocusStore.getState().focusedChannel;
+      if (channel !== null) {
+        const targetPose = channelFocusPoseFor(resolveSignalOrigin(depth), channel);
+        if (!held.valid) {
+          held.pose = targetPose;
+          held.valid = true;
+        } else {
+          const k = 1 - Math.exp(-HELD_POSE_OMEGA * Math.min(delta, 0.1));
+          held.pose = blendCameraSample(held.pose, targetPose, k);
+          const dx = held.pose.position[0] - targetPose.position[0];
+          const dy = held.pose.position[1] - targetPose.position[1];
+          const dz = held.pose.position[2] - targetPose.position[2];
+          if (dx * dx + dy * dy + dz * dz > 1e-6) invalidate();
+          else held.pose = targetPose;
+        }
+      }
+      if (held.valid) {
+        const blend = reduced ? (channel !== null ? 1 : 0) : signal.focusBlend;
+        s = blendCameraSample(s, held.pose, blend);
+      }
+      if (channel === null && signal.focusBlend < 1e-4) held.valid = false;
+    }
+
     camera.position.set(s.position[0], s.position[1], s.position[2]);
     camera.quaternion.set(s.quaternion[0], s.quaternion[1], s.quaternion[2], s.quaternion[3]);
 
-    if (reduced || introActive) {
+    if (reduced || introActive || surfaceActive) {
       resetSpring(spring.current);
     } else {
       const t = target.current;
