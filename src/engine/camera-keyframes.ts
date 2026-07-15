@@ -130,14 +130,27 @@ export const CAMERA_KEYFRAMES: readonly CameraKeyframe[] = [
     fov: 50,
     reducedAnchor: true,
   }, // settled hold above the shoulder line, target pulled past the cluster so it rests low on the left third — annotation room right (≈ SCALE_BOUNDARIES[4])
+  // --- The protein band (fourth scale): the receptor in its membrane. The
+  // camera descends from the coil's settled shoulder, orbits to frame the
+  // GPCR complex in the cool-cyan medium, and settles off-axis for the
+  // annotation hold. Starter values — tuned live via camera-dev-tools
+  // (bake → paste). ---
+  {
+    depth: 0.59,
+    position: [-7, -25, -48],
+    target: [-4, -28, -42],
+    roll: -0.01,
+    fov: 50,
+    reducedAnchor: true,
+  }, // arrival — the receptor materializes out of the protein fog
+  { depth: 0.64, position: [-2, -27, -46], target: [-4, -29, -42], roll: 0, fov: 49 }, // orbital center — broadside framing of the receptor barrel
+  { depth: 0.69, position: [-4, -29.5, -41], target: [-3, -31, -45], roll: 0.005, fov: 50 }, // band exit — drifting toward the code register's entry
   // --- The code band (fifth scale): the terminal void. The camera all but
   // PARKS — the window does the flying (code-window-pose.ts) and is
   // camera-locked through the plateau, so these knots only steer the
   // environment parallax and thread the descent line into and out of the
   // band. Every axis keeps a breath of drift (an exactly-stationary axis
-  // reads as a camera stall). The knots sit on the existing 0.565 → 1.0
-  // descent line so the void transit through the unbuilt protein band is
-  // reshaped as little as possible. Starter values — tuned live via
+  // reads as a camera stall). Starter values — tuned live via
   // camera-dev-tools (bake → paste). ---
   { depth: 0.71, position: [-5, -31, -38], target: [-1, -36, -55], roll: -0.005, fov: 51 }, // band arrival — the window flies in against the receding void (= SCALE_BOUNDARIES[5])
   {

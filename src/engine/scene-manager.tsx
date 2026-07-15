@@ -14,6 +14,7 @@ import { SurfaceScene } from '@/scales/tissue/TissueScene';
 import { CellularScene } from '@/scales/cellular/CellularScene';
 import { ChromatinScene } from '@/scales/chromatin/ChromatinScene';
 import { CodeScene } from '@/scales/code/CodeScene';
+import { ProteinScene } from '@/scales/protein/ProteinScene';
 import { ExpressionScene } from '@/scales/expression/ExpressionScene';
 
 // The shell spans TWO bands on purpose: the whole approach journey outside it,
@@ -26,6 +27,7 @@ const SCENE_REGISTRY: Partial<Record<ScaleName, ComponentType>> = {
   tissue: SurfaceScene,
   cellular: CellularScene,
   chromatin: ChromatinScene,
+  protein: ProteinScene,
   code: CodeScene,
   expression: ExpressionScene,
 };
@@ -34,6 +36,7 @@ const SCENE_KEYS = new Map<ComponentType, string>([
   [SurfaceScene, 'shell'],
   [CellularScene, 'arbor'],
   [ChromatinScene, 'coil'],
+  [ProteinScene, 'receptor'],
   [CodeScene, 'code-window'],
   [ExpressionScene, 'signal-origin'],
 ]);

@@ -26,6 +26,11 @@ import {
   coilFogColorBlendT,
   coilFogDensityDeltaFor,
 } from '@/scales/chromatin/coil-fog';
+import {
+  PROTEIN_FOG_TINT,
+  proteinFogColorBlendT,
+  proteinFogDensityDeltaFor,
+} from '@/scales/protein/protein-fog';
 import { CODE_FOG_TINT, codeFogColorBlendT, codeFogDensityDeltaFor } from '@/scales/code/code-fog';
 import {
   EXPRESSION_FOG_TINT,
@@ -47,6 +52,7 @@ export function SceneAtmosphere() {
   const interiorFog = useRef(new Color('#31221a'));
   const arborTint = useRef(new Color(ARBOR_FOG_TINT));
   const coilTint = useRef(new Color(COIL_FOG_TINT));
+  const proteinTint = useRef(new Color(PROTEIN_FOG_TINT));
   const codeTint = useRef(new Color(CODE_FOG_TINT));
   const expressionTint = useRef(new Color(EXPRESSION_FOG_TINT));
 
@@ -86,6 +92,11 @@ export function SceneAtmosphere() {
     // composing AFTER the arbor term does the navy→blue crossfade.
     const coilT = coilFogColorBlendT(depth);
     if (coilT > 0) fogColor.current.lerp(coilTint.current, coilT);
+    // Band-four handoff: the protein's cool-cyan haze rises after the coil's
+    // teal fades — composing AFTER the coil term and BEFORE the code term
+    // does the teal→cyan→green crossfade across the three biological bands.
+    const proteinT = proteinFogColorBlendT(depth);
+    if (proteinT > 0) fogColor.current.lerp(proteinTint.current, proteinT);
     // Band-five handoff: the terminal's green-leaned dark takes over as the
     // theme reaches the digital register — a whisper of tint over the very
     // light density, gone before the expression scale (the sparsest).
@@ -101,6 +112,7 @@ export function SceneAtmosphere() {
         : fogDensityFor(depth)) +
       arborFogDensityDeltaFor(depth) +
       coilFogDensityDeltaFor(depth) +
+      proteinFogDensityDeltaFor(depth) +
       codeFogDensityDeltaFor(depth) +
       // The one NEGATIVE delta — expression's relief (the fog lifts; §4).
       expressionFogDensityDeltaFor(depth);

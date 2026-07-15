@@ -1,5 +1,13 @@
 // src/scales/protein/ProteinContent.tsx
-import { ScaleSection } from '@/components/ScaleSection';
+// The fourth band's content, in two registers:
+//   · WebGL active — the band is scene-native: scroll runways give the
+//     receptor its arrival and index beats, and the ONLY visible content
+//     will be the ProteinIntro overlay and ProteinAnnotations labels pinned
+//     to the scene (added in Session 4+). The document version below is
+//     display:none'd (globals.css).
+//   · No WebGL — the runways collapse and the full document version renders:
+//     kicker/title/prose and the status sidebar.
+import { ScaleBadge, ScaleSection } from '@/components/ScaleSection';
 import { Tag } from '@/components/Tag';
 import { MarkdownRenderer } from '@/content/markdown';
 import { getSection } from '@/content/loader';
@@ -43,13 +51,18 @@ export function ProteinContent() {
   const section = getSection('protein');
 
   return (
-    <ScaleSection
-      scale="protein"
-      magnification="1,000,000×"
-      title={section?.frontmatter.title}
-      kicker="structural biology, lately"
-    >
-      <div className="content-grid content-grid--asymmetric">
+    <ScaleSection scale="protein" hideBadge>
+      {/* Scene-native runways — heights are TUNED AGAINST THE CAMERA TIMING
+          (globals.css Scroll runways block); they only take space when the
+          Canvas owns the band. */}
+      <div className="protein-runway protein-runway--arrival" aria-hidden="true" />
+      <div className="protein-runway protein-runway--index" aria-hidden="true" />
+      {/* ProteinIntro and ProteinAnnotations mount here in Session 4+ */}
+
+      <div className="protein-doc">
+        <ScaleBadge scale="protein" magnification="1,000,000×" />
+        <p className="protein-doc__kicker">structural biology, lately</p>
+        <h2 className="protein-doc__title">{section?.frontmatter.title ?? 'Molecular Dynamics'}</h2>
         {section && <MarkdownRenderer content={section.body} className="prose" />}
 
         <aside
@@ -58,6 +71,7 @@ export function ProteinContent() {
             borderRadius: 'var(--radius)',
             padding: 'var(--space-5)',
             background: 'var(--surface-raised)',
+            marginTop: 'var(--space-7)',
           }}
         >
           <div

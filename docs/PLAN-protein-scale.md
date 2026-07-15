@@ -313,6 +313,22 @@ Loader successfully fetches and decodes the binary assets (verified via a
 throwaway `console.log` in the scene placeholder, or a unit test with a
 dev-server fetch).
 
+### Session 3 done criteria
+
+- [x] `src/utils/protein-loader.ts` + test — fetch + decode binary trajectory data
+- [x] `src/scales/protein/protein-params.ts` — PROTEIN_ORIGIN, cross-sections, envelope, RMSF
+- [x] `src/scales/protein/protein-fog.ts` + test — density delta + tint blend, non-overlap verified
+- [x] `src/stores/protein-focus.ts` + test — activeSystem, toggleBlend, focusedAnnotation
+- [x] `src/scales/protein/ProteinScene.tsx` — placeholder group, acquireAmbientRendering
+- [x] `src/engine/scene-manager.tsx` — protein entry in SCENE_REGISTRY + SCENE_KEYS
+- [x] `src/engine/scene-atmosphere.tsx` — protein fog composed between coil and code
+- [x] `src/engine/camera-keyframes.ts` + test — 3 new knots in [0.565, 0.71]
+- [x] `src/styles/globals.css` — WebGL reveal, theme → cyan, protein-doc yield, runways
+- [x] `src/scales/protein/ProteinContent.tsx` — reshaped to ChromatinContent pattern
+- [x] All tests pass (349/349), typecheck green, lint clean
+  **Done 2026-07-14.** 8 new files, 6 modified. CSS theme updated from rose to
+  cyan per design spec. Fog non-overlap with coil and code verified in tests.
+
 ---
 
 ## Session 4 / Stage B.1 — Ribbon geometry, materials, static render (Gate 2)

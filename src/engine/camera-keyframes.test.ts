@@ -83,6 +83,18 @@ describe('REDUCED_ANCHOR_KEYFRAMES', () => {
   });
 });
 
+describe('protein band (the receptor scale)', () => {
+  it('has at least one knot inside the protein band [0.57, 0.71)', () => {
+    const inBand = CAMERA_KEYFRAMES.filter((k) => k.depth >= 0.57 && k.depth < 0.71);
+    expect(inBand.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('parks a reduced-motion anchor inside the band', () => {
+    const inBand = REDUCED_ANCHOR_KEYFRAMES.filter((k) => k.depth >= 0.57 && k.depth < 0.71);
+    expect(inBand.length).toBeGreaterThanOrEqual(1);
+  });
+});
+
 describe('code band (the terminal plateau)', () => {
   it('parks a reduced-motion anchor inside the band', () => {
     const inBand = REDUCED_ANCHOR_KEYFRAMES.filter((k) => k.depth >= 0.71 && k.depth < 0.86);

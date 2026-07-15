@@ -261,13 +261,11 @@
 }
 
 [data-scale='protein'] {
-  --accent: var(--aod-rose);
-  --accent-soft: rgba(213, 122, 165, 0.16);
-  --accent-line: rgba(213, 122, 165, 0.4);
-  --bg: #262b30;
-  /* Rose-leaning dark (was cyan-leaning #243034) so the fog channel matches
-     the band's new accent; final value is a Phase 6 scene-tuning item. */
-  --fog-color: #2c2933;
+  --accent: var(--aod-cyan);
+  --accent-soft: rgba(86, 182, 194, 0.16);
+  --accent-line: rgba(86, 182, 194, 0.4);
+  --bg: #232d31;
+  --fog-color: #1e3038;
   --font-heading: var(--font-sans);
   --radius: var(--radius-base);
   --grain-opacity: 0.01;
@@ -370,7 +368,7 @@
 
 [data-scale='protein']::before {
   background:
-    radial-gradient(ellipse 65% 55% at 30% 60%, rgba(213, 122, 165, 0.09) 0%, transparent 65%),
+    radial-gradient(ellipse 65% 55% at 30% 60%, rgba(86, 182, 194, 0.09) 0%, transparent 65%),
     linear-gradient(to bottom, transparent 75%, var(--bg-next) 100%);
 }
 
@@ -426,6 +424,7 @@
 [data-webgl='active'] [data-scale='tissue'],
 [data-webgl='active'] [data-scale='cellular'],
 [data-webgl='active'] [data-scale='chromatin'],
+[data-webgl='active'] [data-scale='protein'],
 [data-webgl='active'] [data-scale='code'],
 [data-webgl='active'] [data-scale='expression'] {
   --section-bg: transparent;
@@ -438,6 +437,8 @@
 [data-webgl='active'] [data-scale='cellular']::after,
 [data-webgl='active'] [data-scale='chromatin']::before,
 [data-webgl='active'] [data-scale='chromatin']::after,
+[data-webgl='active'] [data-scale='protein']::before,
+[data-webgl='active'] [data-scale='protein']::after,
 [data-webgl='active'] [data-scale='code']::before,
 [data-webgl='active'] [data-scale='code']::after,
 [data-webgl='active'] [data-scale='expression']::before,
@@ -448,14 +449,13 @@
 [data-webgl='active'] [data-scale='tissue'] + [data-scale],
 [data-webgl='active'] [data-scale='cellular'] + [data-scale],
 [data-webgl='active'] [data-scale='chromatin'] + [data-scale],
+[data-webgl='active'] [data-scale='protein'] + [data-scale],
 [data-webgl='active'] [data-scale='code'] + [data-scale] {
   border-top: none;
 }
-/* The code band's OWN top seam: its predecessor (protein) is not yet
-   scene-native, so no sibling rule above strips the hairline the base
-   [data-scale] + [data-scale] rule puts on code itself. (Expression needs no
-   such rule — its predecessor IS scene-native, so the code + [data-scale]
-   sibling rule above already strips expression's top hairline.) */
+/* Belt-and-suspenders: protein is now scene-native (Phase 6 Stage A), so the
+   protein + [data-scale] sibling rule above handles code's top hairline.
+   Kept for resilience. */
 [data-webgl='active'] [data-scale='code'] {
   border-top: none;
 }
@@ -1619,6 +1619,21 @@ hr {
   height: 130vh;
 }
 
+/* Fourth-band scene-native runways: arrival (the receptor materializes out
+   of the protein fog, camera descends) and index (the settled framing where
+   the receptor annotations live). Same contract as the coil runways. */
+.protein-runway {
+  display: none;
+}
+[data-webgl='active'] .protein-runway--arrival {
+  display: block;
+  height: 120vh;
+}
+[data-webgl='active'] .protein-runway--index {
+  display: block;
+  height: 150vh;
+}
+
 /* Fifth-band scene-native runways: arrival (the window flies in + the boot
    command scrubs), plateau (the parked, screen-locked interactive listing),
    exit (the exit command, farewell hold, and dissolve). Same contract as
@@ -1695,6 +1710,24 @@ hr {
   letter-spacing: 0.02em;
 }
 .chromatin-doc__title {
+  margin: 0 0 var(--space-6);
+  font-size: var(--text-3xl);
+  max-width: 20ch;
+}
+
+/* Fourth band: same document-register yield — the scene-native receptor
+   (ProteinScene, Phase 6 Stage A) is the real interface under WebGL. */
+[data-webgl='active'] [data-scale='protein'] .protein-doc {
+  display: none;
+}
+.protein-doc__kicker {
+  margin: 0 0 var(--space-2);
+  color: var(--accent);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  letter-spacing: 0.02em;
+}
+.protein-doc__title {
   margin: 0 0 var(--space-6);
   font-size: var(--text-3xl);
   max-width: 20ch;
