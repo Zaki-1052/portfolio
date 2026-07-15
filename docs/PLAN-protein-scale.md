@@ -347,13 +347,14 @@ dev-server fetch).
 
 | File | Purpose |
 |------|---------|
-| `src/scales/protein/protein-geometry.ts` | The core ribbon sweep (§6.2). Takes per-residue Cα+O positions → Catmull-Rom spline (4 sub-samples/residue) → SS-dependent cross-section sweep → `BufferGeometry`. Exports `buildRibbonGeometry()` (initial build) and `writeRibbonPositions()` (in-place update for animation). Cross-section profiles: helix (flat ellipse 1.2×0.2), sheet (rectangle→arrow taper), coil (tube r=0.15). SS transitions morph over 2 guide points. Per-vertex attributes: `aResidueIndex`, `aSSType`, `aChainIndex`, `aShade`. |
-| `src/scales/protein/protein-geometry.test.ts` | Verify: guide-point count = residueCount × 4. Vertex count > 0. No NaN in positions/normals. Arrow taper fires for E-runs ≥ 3. Two fragments for receptor (ICL3 gap). |
-| `src/scales/protein/protein-materials.ts` | `ProteinRibbonMaterial` via drei `shaderMaterial`. Uniforms per §6.4. `applyProteinRibbonLook()`. RMSF DataTexture (set once from metadata). |
+| `src/scales/protein/protein-geometry.ts` | The core ribbon sweep (§6.2). Takes guide points → SS-dependent cross-section sweep → `BufferGeometry`. Exports `buildRibbonGeometry()` (initial build) and `writeRibbonGeometry()` (in-place update for animation). **Constant 8 radial segments for every SS type** — differing ring counts can't strip-connect or morph, and the animation write needs fixed topology; only the cross-section SHAPE varies. Profiles are superellipse `(a, b, n)` triples so an SS morph is a lerp of 3 scalars. **2 draw calls, not 5**: receptor fragments merge into one geometry, G-protein chains into another (only receptor-vs-G-protein needs independent opacity). Per-vertex attributes: `aResidueIndex`, `aSSType`, `aChainIndex`, `aRmsf` (raw Å — the shader owns the range), `aShade`. |
+| `src/scales/protein/protein-geometry.test.ts` | Verify: vertex counts against the formula (8516 receptor + 20966 G-protein = 29,482). No NaN in positions/normals. Arrow taper fires for E-runs ≥ 3; E-runs < 3 render as coil. Fragments share no triangle. Topology invariant across frames. Degenerate guard at the arrow tip. |
+| `src/scales/protein/protein-materials.ts` | `ProteinRibbonMaterial` via drei `shaderMaterial`. Uniforms per §6.4. `applyProteinRibbonLook()`. **No DataTexture** — the repo has zero precedent for uploading a per-element CPU array as a lookup texture (its three `DataTexture` uses are 1×1 bound-sampler placeholders or a GPU bake); the idiom for one-scalar-per-element is a `BufferAttribute`, so RMSF rides as `aRmsf`. Same answer for Session 8's pocket mask. |
 | `src/scales/protein/shaders/protein-ribbon.vert.glsl` | Per-vertex: position + normal from geometry. Ambient breathing displacement (RMSF-modulated sinusoidal, §6.3). Fog. |
 | `src/scales/protein/shaders/protein-ribbon.frag.glsl` | Monochrome cyan base. Chain-based brightness (receptor full, G-protein 60%). RMSF warmth modulation. Fresnel rim. Per-SS specular variation. Fog mix. Focus-dim uniform. |
 | `src/scales/protein/ProteinMesh.tsx` | Mounts receptor fragments (2 geometries) + G-protein chains (3 geometries) = 5 draw calls. Reads depth imperatively in `useFrame`. Frame-0 only this session — no interpolation yet. Depth-gated reveal envelope (§10.3 ordering: ligand first, membrane, ribbons). `DynamicDrawUsage` on position/normal attributes. |
-| `src/dev/protein-live-params.ts` | Leva override channel (coil-live-params pattern). |
+| `src/scales/protein/protein-guide.ts` + `.test.ts` | Pure guide math, no `three`: Catmull-Rom sub-sampling per fragment, tangents, the ribbon frame, flip correction, strand-run detection, `receptorCenter`. Split out of `protein-geometry.ts` per the `coil-thread-path.ts` ÷ `coil-geometry.ts` precedent — and because MPro (Session 7) feeds PRE-COMPUTED guides into the same sweep without this step. |
+| `src/scales/protein/protein-live-params.ts` | Leva override channel (coil-live-params pattern). **Co-located with the scale, NOT in `src/dev/`** — every existing `*-live-params.ts` is, deliberately: "kept out of the dev module so the shipping scene never imports leva". |
 | `src/dev/protein-dev-tools.tsx` | Leva panel: ribbon look, cross-section dimensions, camera override, RMSF range. Every slider range brackets its shipped default. |
 | `protein-preview.html` + `src/dev/protein-preview.tsx` | Isolated preview: `?depth=`, `?dpr=`, real PostFX, `window.__preview` for draw-call inspection. |
 
@@ -368,9 +369,24 @@ dev-server fetch).
 
 - [ ] Receptor complex renders as a recognizable GPCR (7 TM helices visible)
 - [ ] Gβ propeller shows sheet arrows
-- [ ] Membrane disc is translucent and positioned correctly (deferred if membrane is Session 5)
-- [ ] Ligand glows at the binding site (deferred if ligand is Session 5)
+- [ ] Membrane disc is translucent and positioned correctly (deferred — Session 5)
+- [ ] Ligand glows at the binding site (deferred — Session 5)
 - [ ] Screenshot of preview compared to VMD renders
+
+**Code complete 2026-07-15; gate NOT yet signed off** — it needs a browser.
+Everything testable in node passes (389/389, typecheck, lint), including an
+ideal-coil test that pins the ribbon frame convention and a decode of the real
+committed binaries. The GLSL has never been compiled. Review at
+`/protein-preview.html?depth=0.64&dpr=2` (`?orbit=1` to turn the structure,
+`?wheel=0` to lock the depth scrub). Session log:
+`logs/2026-07-15_protein-stage-b1.md`.
+
+**Placement corrections this session found** (the design doc assumed none were
+needed): the pipeline emits raw box coordinates, so the complex spans 123 Å with
+its centroid at ~(53, 64, 56) while the band camera sits 4.58 world units out.
+The mount therefore applies `PROTEIN_WORLD_SCALE = 0.035`, a −90° X rotation
+(the bilayer normal is +Z — see the §5.1 note on `midplaneY`), and a centre
+derived from frame 0. Geometry stays in Å; nothing is baked.
 
 **Note:** membrane and ligand rendering may land in this session or be
 deferred to Session 5. The gate's core test is the ribbon geometry — the

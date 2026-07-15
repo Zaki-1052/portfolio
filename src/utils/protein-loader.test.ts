@@ -1,8 +1,12 @@
 // src/utils/protein-loader.test.ts
-// Validate the decode + slice logic against a small synthetic binary.
-// No network tests — only the pure typed-array math.
+// Validate the decode + slice logic against a small synthetic binary, then
+// against the REAL committed assets read off disk — the network path is the
+// only part not covered, and the byte-length check is exactly where a drift
+// between the pipeline's output and this module's assumptions would surface.
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { decodeTrajectory, frameSlice } from './protein-loader';
+import { decodeTrajectory, frameSlice, type ProteinMeta } from './protein-loader';
 
 // Synthetic fixture: 2 frames, 3 receptor residues (×6), 2 G-protein
 // residues (×6), 1 ligand atom (×3). 33 floats/frame = 264 bytes total.
@@ -74,5 +78,122 @@ describe('frameSlice', () => {
   it('returns subarray views (zero-copy)', () => {
     const s = frameSlice(traj, 0);
     expect(s.receptor.buffer).toBe(traj.buffer.buffer);
+  });
+});
+
+// ---- The real committed assets ----
+//
+// These decode the actual files in public/protein/ rather than a fixture. The
+// module was written against the format spec before the pipeline had ever run,
+// so this is the first thing that proves the two agree — and it does it in
+// node, without a browser or a dev server.
+
+const ASSETS = join(process.cwd(), 'public', 'protein');
+
+function readMeta(): ProteinMeta {
+  return JSON.parse(readFileSync(join(ASSETS, 'protein-meta.json'), 'utf8')) as ProteinMeta;
+}
+
+function readBin(file: string): ArrayBuffer {
+  const b = readFileSync(join(ASSETS, file));
+  return b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer;
+}
+
+describe('the shipped assets', () => {
+  const meta = readMeta();
+
+  it('is the format this module was written for', () => {
+    expect(meta.format).toBe('protein-scale-v1');
+  });
+
+  it.each(['gq', 'gi'] as const)(
+    'decodes the %s trajectory at the byte length the meta implies',
+    (sys) => {
+      // decodeTrajectory throws on any mismatch, so reaching the assertions at
+      // all is most of the contract.
+      const traj = decodeTrajectory(
+        readBin(meta.systems[sys].file),
+        meta.systems[sys].frameCount,
+        meta.receptor[sys].residueCount,
+        meta.gprotein[sys].totalResidues,
+        meta.ligand.heavyAtomCount,
+      );
+      expect(traj.frameCount).toBe(100);
+      expect(traj.buffer.length).toBe(traj.floatsPerFrame * traj.frameCount);
+      expect(traj.receptorFloats).toBe(meta.receptor[sys].residueCount * 6);
+      expect(traj.gproteinFloats).toBe(meta.gprotein[sys].totalResidues * 6);
+      expect(traj.ligandFloats).toBe(meta.ligand.heavyAtomCount * 3);
+    },
+  );
+
+  it('carries every per-residue array at the length the sweep indexes by', () => {
+    for (const sys of ['gq', 'gi'] as const) {
+      const r = meta.receptor[sys];
+      expect(r.ss.length).toBe(r.residueCount);
+      expect(r.rmsf.length).toBe(r.residueCount);
+      expect(r.litResids.length).toBe(r.residueCount);
+      expect(r.regions.length).toBe(r.residueCount);
+      // One vec3 per residue — the sweep's flip reference.
+      expect(r.referenceNormals.length).toBe(r.residueCount * 3);
+      // Fragments must tile the chain exactly: a hole would drop residues from
+      // the sweep, an overlap would draw them twice.
+      expect(r.fragments.reduce((n, f) => n + f.count, 0)).toBe(r.residueCount);
+      expect(r.fragments[0]!.startResidue).toBe(0);
+      expect(r.fragments[r.fragments.length - 1]!.endResidue).toBe(r.residueCount - 1);
+      // Guide points are 4 per residue, per fragment.
+      expect(r.totalGuidePoints).toBe(r.residueCount * r.guidePointsPerResidue);
+    }
+  });
+
+  it('splits the supporting chains into blocks that sum to the binary layout', () => {
+    for (const sys of ['gq', 'gi'] as const) {
+      const g = meta.gprotein[sys];
+      const summed = g.chains.reduce((n, c) => n + c.residueCount, 0);
+      expect(summed).toBe(g.totalResidues);
+      for (const c of g.chains) expect(c.ss.length).toBe(c.residueCount);
+    }
+  });
+
+  it('places the bilayer on Z, not Y — the field name is a trap', () => {
+    // The subject straddles the midplane along the bilayer normal. Slice the
+    // real frame 0 and check which axis that actually holds for.
+    const meta0 = readMeta();
+    const traj = decodeTrajectory(
+      readBin(meta0.systems.gq.file),
+      meta0.systems.gq.frameCount,
+      meta0.receptor.gq.residueCount,
+      meta0.gprotein.gq.totalResidues,
+      meta0.ligand.heavyAtomCount,
+    );
+    const { receptor } = frameSlice(traj, 0);
+    const n = meta0.receptor.gq.residueCount;
+    const mean = [0, 0, 0];
+    for (let r = 0; r < n; r++)
+      for (let ax = 0; ax < 3; ax++) mean[ax]! += receptor[r * 6 + ax]! / n;
+
+    const midplane = meta0.membrane.gq.midplaneY;
+    // Z tracks the midplane within a couple of Å…
+    expect(Math.abs(mean[2]! - midplane)).toBeLessThan(3);
+    // …and Y emphatically does not. If this ever inverts, the mount's
+    // stand-upright rotation is wrong.
+    expect(Math.abs(mean[1]! - midplane)).toBeGreaterThan(10);
+  });
+
+  it('measures a physically real bilayer thickness', () => {
+    for (const sys of ['gq', 'gi'] as const) {
+      expect(meta.membrane[sys].thickness).toBeGreaterThan(30);
+      expect(meta.membrane[sys].thickness).toBeLessThan(45);
+    }
+  });
+
+  it('maps every residue of the smaller construct onto the larger for the later morph', () => {
+    const m = meta.receptor.sharedMap;
+    expect(m.gqResidueIndices.length).toBe(m.count);
+    expect(m.giResidueIndices.length).toBe(m.count);
+    expect(m.count).toBeLessThanOrEqual(meta.receptor.gi.residueCount);
+    for (let i = 0; i < m.count; i++) {
+      expect(m.gqResidueIndices[i]!).toBeLessThan(meta.receptor.gq.residueCount);
+      expect(m.giResidueIndices[i]!).toBeLessThan(meta.receptor.gi.residueCount);
+    }
   });
 });

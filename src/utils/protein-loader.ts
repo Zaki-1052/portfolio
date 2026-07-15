@@ -57,6 +57,22 @@ export interface LigandInfo {
 }
 
 export interface MembraneInfo {
+  /**
+   * Bilayer midplane along the raw box's **Z** axis, in Ångström — despite the
+   * name, which the v1 schema fixed before the pipeline chose its axis. The
+   * bilayer normal is +Z: verified against the shipped assets, where the
+   * subject's own Z centroid (89.52) sits on this value (88.78) while the
+   * supporting chains hang below it to Z = −6.44, and `thickness` measures a
+   * physically correct bilayer across the same axis.
+   *
+   * Assigning this to a `.y` is therefore always wrong. The scene stands the
+   * structure upright with a −90° X rotation at the mount (see ProteinMesh),
+   * which is what puts the bilayer in the world's horizontal plane.
+   *
+   * The key stays as-is because it is the shipped contract with the committed
+   * binaries; renaming it would mean re-running the pipeline and re-validating
+   * for no behavioural gain.
+   */
   midplaneY: number;
   thickness: number;
   radius: number;

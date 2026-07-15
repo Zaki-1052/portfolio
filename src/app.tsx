@@ -55,6 +55,9 @@ const FlagFlightDevTools = import.meta.env.DEV
 const CoilDevTools = import.meta.env.DEV
   ? lazy(() => import('@/dev/coil-dev-tools').then((m) => ({ default: m.CoilDevTools })))
   : null;
+const ProteinDevTools = import.meta.env.DEV
+  ? lazy(() => import('@/dev/protein-dev-tools').then((m) => ({ default: m.ProteinDevTools })))
+  : null;
 const CodeDevTools = import.meta.env.DEV
   ? lazy(() => import('@/dev/code-dev-tools').then((m) => ({ default: m.CodeDevTools })))
   : null;
@@ -240,6 +243,12 @@ export function App() {
       {CoilDevTools && (
         <Suspense fallback={null}>
           <CoilDevTools />
+        </Suspense>
+      )}
+      {/* Ribbon look/flexibility sliders ('protein …' folders, same panel). */}
+      {ProteinDevTools && (
+        <Suspense fallback={null}>
+          <ProteinDevTools />
         </Suspense>
       )}
       {/* Terminal window/beat/environment sliders ('code …' folders, same panel). */}

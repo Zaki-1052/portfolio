@@ -390,9 +390,19 @@ Separate, simpler path. Input: the user's PyMOL-exported dimer PDB.
     "bonds": [[0,1], [1,2], ...]  // index pairs for ball-and-stick
   },
 
+  // ⚠️ `midplaneY` HOLDS A Z VALUE. Verified 2026-07-15 against the shipped
+  // assets: the pipeline resolved §4.2's "mean Y (or Z, depending on alignment
+  // convention)" hedge in favour of Z — correctly, since the bilayer normal is
+  // +Z — but kept this schema's field name. The receptor's own Z centroid
+  // (89.52) sits on the value (88.78) while the G-protein hangs below it to
+  // Z = −6.44, and `thickness` measures a real bilayer across the same axis.
+  // Assigning it to a `.y` is always wrong; ProteinMesh stands the complex
+  // upright with a −90° X rotation at the mount instead. The key stays as-is
+  // because it is the shipped contract with the committed binaries. Real
+  // values below, not the placeholders this schema was drafted with.
   "membrane": {
-    "gq": { "midplaneY": 0.0, "thickness": 35.0, "radius": 60.0 },
-    "gi": { "midplaneY": 0.0, "thickness": 35.0, "radius": 60.0 }
+    "gq": { "midplaneY": 88.78, "thickness": 37.02, "radius": 101.24 },
+    "gi": { "midplaneY": 85.58, "thickness": 37.20, "radius": 99.27 }
   }
 }
 ```
@@ -511,6 +521,20 @@ src/utils/
 This is the core new code. It takes per-residue Cα+O positions, computes a Catmull-Rom spline (4 sub-samples per residue), derives tangents and ribbon normals (using the reference normals from `protein-meta.json` for flip consistency), and sweeps an SS-dependent cross-section along the resulting guide to produce a BufferGeometry.
 
 **Cross-section profiles:**
+
+> ⚠️ **Superseded 2026-07-15 (Stage B.1).** The per-SS radial-segment counts
+> below (8 / 4 / 6) cannot work: rings of differing vertex counts can't be
+> strip-connected to each other, can't morph across an SS boundary, and would
+> break the fixed topology the animation write depends on. Shipped instead:
+> **one `RIBBON_RADIAL_SEGMENTS = 8` for every SS type**, with only the
+> cross-section SHAPE varying, expressed as a superellipse `(a, b, n)` — half
+> width, half height, squareness — so a morph is a lerp of three scalars.
+> Helix `(0.6, 0.1, 2)`, sheet body `(0.3, 0.075, 4)` → peak `(0.9, 0.075, 4)`
+> → tip `(0, 0, 4)`, coil `(0.15, 0.15, 2)`. Two further corrections: E-runs
+> shorter than 3 residues render as coil (the ramp is undefined for them, and
+> Gβ1 has 15 such runs), and a `PROFILE_FLOOR = 0.02` guards the analytic
+> normal's `1/a`, `1/b` at the arrow tip — applied to the normal only, never to
+> the position, whose zero width is the intended point. See `protein-params.ts`.
 
 | SS type | Shape | Width | Height | Radial segments | Notes |
 |---------|-------|-------|--------|-----------------|-------|
@@ -894,7 +918,7 @@ These are things Zara must do that cannot be automated by the pipeline or the re
 | Term | Meaning in this document |
 |------|--------------------------|
 | **Guide point** | A point on the ribbon's centerline with position, tangent, and normal. 4 per residue (Catmull-Rom sub-samples). The geometry builder sweeps a cross-section at each guide point. |
-| **Ribbon normal** | The vector perpendicular to the ribbon surface and perpendicular to the tangent. Derived from the Cα→carbonyl-O direction. Determines the ribbon's orientation (flat face vs. edge-on). |
+| **Ribbon normal** | ⚠️ **Corrected 2026-07-15 (Stage B.1).** This entry originally read "the vector perpendicular to the ribbon surface", which contradicts its own next sentence: the Cα→carbonyl-O vector is the ribbon's **width axis**, not its surface normal. In an ideal helix the Cα tangent is tangential (θ̂) and the carbonyls point roughly *along* the helix axis (ẑ, the i→i+4 H-bond direction), so `side = GramSchmidt(Cα→O, tangent) ≈ ẑ` is the width axis and `up = tangent × side ≈ r̂` — radial — is the surface normal. That is the correct cartoon: broad face seen from the side, width along the axis. Reading it as the surface normal instead rotates every ribbon 90° into a stack of washers. Pinned by the ideal-coil test in `protein-guide.test.ts`. Beware the plausible-but-false premise that Cα→O points radially outward: it reaches the right formulas via broken logic and invites a swap. |
 | **Carbonyl flip** | An artifact where the ribbon normal reverses direction at certain residues (especially at helix-sheet boundaries), causing a 180° twist in the ribbon. Fixed by detecting and flipping negative dot products between consecutive normals. |
 | **SS** | Secondary structure assignment: H (helix), E (sheet/strand), C (coil/loop). |
 | **RMSF** | Root Mean Square Fluctuation — a per-residue measure of flexibility (how much each residue moves across the trajectory). Higher RMSF = more flexible = loops. Lower = rigid = helices. |
